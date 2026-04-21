@@ -19,9 +19,6 @@ export const LOCATION_OPTIONS = [
 export const WATERFRONT_OPTIONS = [
   'Gulf-front',
   'Bay-front',
-  'Beach Club Access',
-  'Walk to Beach',
-  'Off-water',
 ];
 
 export const PRICE_TIERS = [
@@ -92,8 +89,10 @@ function renderChips(containerId, options, counts, stateSet, onChange) {
     btn.innerHTML = `${escapeHtml(opt)}<span class="count">${count}</span>`;
     btn.addEventListener('click', () => {
       if (count === 0) return;
-      if (stateSet.has(opt)) stateSet.delete(opt);
-      else stateSet.add(opt);
+      const nowActive = !stateSet.has(opt);
+      if (nowActive) stateSet.add(opt);
+      else stateSet.delete(opt);
+      btn.classList.toggle('active', nowActive);
       onChange();
     });
     el.appendChild(btn);
@@ -118,8 +117,10 @@ function renderPriceChips(counts, onChange) {
     btn.innerHTML = `${escapeHtml(tier)}<span class="count">${count}</span>`;
     btn.addEventListener('click', () => {
       if (count === 0) return;
-      if (state.priceTiers.has(tier)) state.priceTiers.delete(tier);
-      else state.priceTiers.add(tier);
+      const nowActive = !state.priceTiers.has(tier);
+      if (nowActive) state.priceTiers.add(tier);
+      else state.priceTiers.delete(tier);
+      btn.classList.toggle('active', nowActive);
       onChange();
     });
     el.appendChild(btn);

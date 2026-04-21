@@ -79,49 +79,16 @@
   position: relative;
   height: 120px;
   margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
+  background: var(--teal);
 }
+.card-photo.photo-nbhd { background: var(--coral); }
 .card-photo img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-.card-photo.photo-condo {
-  background:
-    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22), transparent 55%),
-    linear-gradient(135deg, var(--teal) 0%, var(--teal-deep) 100%);
-}
-.card-photo.photo-nbhd {
-  background:
-    radial-gradient(circle at 30% 20%, rgba(255,255,255,0.25), transparent 55%),
-    linear-gradient(135deg, #E5A47A 0%, #B85A3F 100%);
-}
-.card-photo-initials {
-  font-family: 'Fraunces', serif;
-  font-size: 40px;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: rgba(255,255,255,0.92);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.12);
-}
-.card-photo-note {
-  position: absolute;
-  bottom: 8px;
-  right: 10px;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.85);
-  background: rgba(0,0,0,0.18);
-  padding: 3px 7px;
-  border-radius: 3px;
-  backdrop-filter: blur(2px);
 }
 .card:hover {
   border-color: var(--teal);

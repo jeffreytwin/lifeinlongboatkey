@@ -15,11 +15,10 @@
 .mapboxgl-canvas { outline: none; }
 .mapboxgl-map { font-family: 'Manrope', sans-serif; }
 
-/* Custom teardrop pin markers (reused from mockup) */
+/* Pin markers — condos are teardrops, neighborhoods are rounded squares.
+   Shape is the primary type signal; color reinforces it. */
 .pin {
   width: 28px; height: 28px;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
   border: 2px solid white;
   box-shadow: 0 2px 6px rgba(0,0,0,.3);
   display: flex;
@@ -29,18 +28,67 @@
   transition: transform 0.15s;
 }
 .pin-inner {
-  transform: rotate(45deg);
   color: white;
   font-size: 11px;
   font-weight: 700;
   font-family: 'Fraunces', serif;
 }
-.pin-condo { background: var(--teal); }
-.pin-nbhd { background: var(--coral); }
-.pin.highlighted {
+.pin-condo {
+  background: var(--teal);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+}
+.pin-condo .pin-inner { transform: rotate(45deg); }
+.pin-nbhd {
+  background: var(--coral);
+  border-radius: 6px;
+}
+.pin-condo.highlighted {
   transform: rotate(-45deg) scale(1.35);
   z-index: 1000 !important;
   box-shadow: 0 3px 10px rgba(0,0,0,.4);
+}
+.pin-nbhd.highlighted {
+  transform: scale(1.3);
+  z-index: 1000 !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,.4);
+}
+
+/* Zone bubbles — the big category markers shown at low zoom */
+.zone-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  background: var(--teal);
+  color: white;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+  cursor: pointer;
+  font-family: 'Manrope', sans-serif;
+  user-select: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.zone-bubble:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+}
+.zone-bubble-count {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.zone-bubble-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.92;
 }
 
 /* Cluster badges (styled on top of Mapbox circle layers by map.js) */

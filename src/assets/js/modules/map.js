@@ -1,23 +1,26 @@
 /**
- * Mapbox GL map — pins, clustering, popups, flyTo, card↔pin sync.
+ * Mapbox GL map — zone bubbles at low zoom, individual pins when zoomed in.
  *
- * Translates the mockup's Leaflet implementation (docs/longboat-key-map-mockup.html
- * lines 776–957) into Mapbox GL idioms. Markers are rendered as HTML
- * `mapboxgl.Marker` instances so the teardrop .pin styling from the mockup
- * reuses unchanged. Clustering is implemented via a GeoJSON source with
- * cluster:true and a supercluster-backed cluster layer.
+ * UX model: at zoom < ZONE_ZOOM_THRESHOLD, the map shows three big bubbles
+ * ("North End", "Mid-Key", "South End") with the count of matching
+ * communities in each zone. Click a bubble to fly into that zone and see
+ * individual pins. This is the primary view for orientation and
+ * intentionally avoids relying on exact per-community coordinates.
+ *
+ * At higher zoom the zone bubbles hide and the map shows Mapbox's built-in
+ * cluster bubbles (for any residual clustering) plus individual HTML
+ * markers for each community — those use the teardrop .pin styling from
+ * the mockup.
  */
 
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { locationLabel, escapeHtml } from './utils.js';
+import { locationLabel, escapeHtml, communityPhotoUrl } from './utils.js';
 
 const SOURCE_ID = 'communities';
-const ZONE_SOURCE_ID = 'zones';
-const ZONE_LAYER_ID = 'zone-labels';
 const CLUSTER_LAYER_ID = 'clusters';
 const CLUSTER_COUNT_LAYER_ID = 'cluster-count';
-const UNCLUSTERED_LAYER_ID = 'unclustered-hit'; // invisible; drives hit-testing / fallback
+const UNCLUSTERED_LAYER_ID = 'unclustered-hit';
 
 // Longboat Key bounds: [west, south], [east, north]
 const LBK_BOUNDS = [
@@ -25,33 +28,31 @@ const LBK_BOUNDS = [
   [-82.48, 27.52],
 ];
 
-const ZONE_LABELS = [
-  { label: 'North End', lng: -82.688, lat: 27.445 },
-  { label: 'Mid-Key', lng: -82.635, lat: 27.388 },
-  { label: 'South End', lng: -82.592, lat: 27.33 },
+// Zoom at/above which we switch from zone bubbles to individual pins.
+const ZONE_ZOOM_THRESHOLD = 13;
+
+// Zone anchor points — centroids where the big bubbles sit.
+const ZONES = [
+  { id: 'north', label: 'North End', lng: -82.683, lat: 27.418 },
+  { id: 'mid',   label: 'Mid-Key',   lng: -82.638, lat: 27.387 },
+  { id: 'south', label: 'South End', lng: -82.597, lat: 27.342 },
 ];
 
 let map = null;
 /** @type {Map<string, mapboxgl.Marker>} */
 const markerByName = new Map();
+/** @type {Map<string, mapboxgl.Marker>} */
+const zoneBubbleByZone = new Map();
 let currentPopup = null;
-/** @type {Array<object>} */
 let currentList = [];
-let communitiesRef = [];
 let onSelect = () => {};
 
 /**
  * Initialize the map. Must be called once at boot after index.html is in
  * the DOM. Returns true on success, false if we couldn't initialize (e.g.
- * missing Mapbox token) — callers should tolerate that and keep the list
- * view functional.
- *
- * @param {Array<object>} communities
- * @param {{ onSelect: (c: object) => void }} callbacks
- * @returns {boolean}
+ * missing Mapbox token).
  */
 export function initMap(communities, callbacks) {
-  communitiesRef = communities;
   onSelect = callbacks.onSelect || (() => {});
 
   const token = window.config?.mapboxAccessToken;
@@ -67,7 +68,7 @@ export function initMap(communities, callbacks) {
   map = new mapboxgl.Map({
     container,
     style: 'mapbox://styles/mapbox/light-v11',
-    center: [-82.62, 27.38],
+    center: [-82.635, 27.385],
     zoom: 11.5,
     minZoom: 10,
     maxZoom: 18,
@@ -77,26 +78,23 @@ export function initMap(communities, callbacks) {
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
 
   map.on('load', () => {
-    addZoneLabels();
     setCommunityFeatures(communities);
     wireClusterInteractions();
     syncMarkers(communities);
-    map.on('moveend', updateMarkerVisibility);
+    syncZoneBubbles(communities);
+    updateZoomDependentVisibility();
+    map.on('moveend', updateZoomDependentVisibility);
     map.on('sourcedata', (e) => {
-      if (e.sourceId === SOURCE_ID && e.isSourceLoaded) updateMarkerVisibility();
+      if (e.sourceId === SOURCE_ID && e.isSourceLoaded) updateZoomDependentVisibility();
     });
   });
 
-  // Close popup + clear highlight when clicking empty map
+  // Close popup when clicking empty map
   map.on('click', (e) => {
-    const hits = map.queryRenderedFeatures(e.point, {
-      layers: [CLUSTER_LAYER_ID],
-    });
-    if (!hits.length) {
-      if (currentPopup) {
-        currentPopup.remove();
-        currentPopup = null;
-      }
+    const hits = map.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER_ID] });
+    if (!hits.length && currentPopup) {
+      currentPopup.remove();
+      currentPopup = null;
     }
   });
 
@@ -115,40 +113,6 @@ function renderMapTokenNotice() {
     </div>`;
 }
 
-function addZoneLabels() {
-  if (!map) return;
-  map.addSource(ZONE_SOURCE_ID, {
-    type: 'geojson',
-    data: {
-      type: 'FeatureCollection',
-      features: ZONE_LABELS.map((z) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [z.lng, z.lat] },
-        properties: { label: z.label },
-      })),
-    },
-  });
-  map.addLayer({
-    id: ZONE_LAYER_ID,
-    type: 'symbol',
-    source: ZONE_SOURCE_ID,
-    layout: {
-      'text-field': ['get', 'label'],
-      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-      'text-size': 11,
-      'text-letter-spacing': 0.18,
-      'text-transform': 'uppercase',
-      'text-allow-overlap': true,
-      'text-ignore-placement': true,
-    },
-    paint: {
-      'text-color': '#083638',
-      'text-halo-color': 'rgba(255,255,255,0.9)',
-      'text-halo-width': 2,
-    },
-  });
-}
-
 function setCommunityFeatures(list) {
   if (!map) return;
   const data = toGeoJson(list);
@@ -161,11 +125,10 @@ function setCommunityFeatures(list) {
     type: 'geojson',
     data,
     cluster: true,
-    clusterMaxZoom: 13,
-    clusterRadius: 60,
+    clusterMaxZoom: 14,
+    clusterRadius: 55,
   });
 
-  // Cluster bubbles
   map.addLayer({
     id: CLUSTER_LAYER_ID,
     type: 'circle',
@@ -177,12 +140,8 @@ function setCommunityFeatures(list) {
       'circle-stroke-color': '#FFFFFF',
       'circle-stroke-width': 2,
       'circle-radius': [
-        'step',
-        ['get', 'point_count'],
-        18, 5,
-        22, 15,
-        28, 30,
-        34,
+        'step', ['get', 'point_count'],
+        16, 5, 20, 15, 26, 30, 32,
       ],
     },
   });
@@ -200,8 +159,7 @@ function setCommunityFeatures(list) {
     paint: { 'text-color': '#FFFFFF' },
   });
 
-  // Invisible hit layer for non-clustered points — we draw visible pins
-  // via HTML markers (styled with .pin classes from map.css).
+  // Invisible hit layer for non-clustered points.
   map.addLayer({
     id: UNCLUSTERED_LAYER_ID,
     type: 'circle',
@@ -217,8 +175,7 @@ function wireClusterInteractions() {
     const features = map.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER_ID] });
     if (!features.length) return;
     const clusterId = features[0].properties.cluster_id;
-    const source = map.getSource(SOURCE_ID);
-    source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+    map.getSource(SOURCE_ID).getClusterExpansionZoom(clusterId, (err, zoom) => {
       if (err) return;
       map.easeTo({ center: features[0].geometry.coordinates, zoom });
     });
@@ -235,23 +192,21 @@ function toGeoJson(list) {
       .map((c) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
-        properties: { name: c.name },
+        properties: { name: c.name, type: c.type },
       })),
   };
 }
 
 /**
- * Sync HTML markers with the current filtered list. Uses one mapboxgl.Marker
- * per community so the teardrop .pin styling reuses unchanged. Markers whose
- * underlying points are currently inside a cluster are hidden by
- * updateMarkerVisibility() — called on moveend and sourcedata.
+ * Sync individual community HTML markers with the current filtered list.
+ * Visibility is further constrained by updateZoomDependentVisibility() — at
+ * low zoom these are all hidden in favor of zone bubbles.
  */
 function syncMarkers(list) {
   if (!map) return;
   currentList = list;
   const desired = new Set(list.map((c) => c.name));
 
-  // Remove markers no longer in the list
   markerByName.forEach((marker, name) => {
     if (!desired.has(name)) {
       marker.remove();
@@ -259,30 +214,51 @@ function syncMarkers(list) {
     }
   });
 
-  // Add new markers
   list.forEach((c) => {
     if (markerByName.has(c.name)) return;
     const marker = buildMarker(c);
     marker.addTo(map);
     markerByName.set(c.name, marker);
   });
-
-  updateMarkerVisibility();
 }
 
 /**
- * Hide HTML markers for any point that Mapbox's clustering has folded into
- * a cluster bubble at the current zoom. Without this the teardrop pins
- * render on top of clusters and the map becomes unreadable at low zoom.
+ * Sync the three zone bubbles with per-zone counts from the filtered list.
+ * Zones with zero matches get their bubble hidden rather than removed.
  */
-function updateMarkerVisibility() {
-  if (!map || !map.isStyleLoaded()) return;
-  if (!map.getLayer(UNCLUSTERED_LAYER_ID)) return;
-  const visible = map.queryRenderedFeatures({ layers: [UNCLUSTERED_LAYER_ID] });
-  const visibleNames = new Set(visible.map((f) => f.properties.name));
-  markerByName.forEach((marker, name) => {
-    marker.getElement().style.display = visibleNames.has(name) ? '' : 'none';
+function syncZoneBubbles(list) {
+  if (!map) return;
+  const counts = { north: 0, mid: 0, south: 0 };
+  for (const c of list) if (counts[c.location] !== undefined) counts[c.location]++;
+  ZONES.forEach((z) => {
+    let marker = zoneBubbleByZone.get(z.id);
+    if (!marker) {
+      marker = buildZoneBubble(z);
+      marker.addTo(map);
+      zoneBubbleByZone.set(z.id, marker);
+    }
+    const el = marker.getElement();
+    el.querySelector('.zone-bubble-count').textContent = String(counts[z.id]);
+    el.dataset.empty = counts[z.id] === 0 ? 'true' : 'false';
   });
+}
+
+function buildZoneBubble(zone) {
+  const el = document.createElement('div');
+  el.className = 'zone-bubble';
+  el.dataset.zone = zone.id;
+  el.innerHTML = `
+    <div class="zone-bubble-count">0</div>
+    <div class="zone-bubble-label">${zone.label}</div>`;
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    map.flyTo({
+      center: [zone.lng, zone.lat],
+      zoom: 14,
+      duration: 900,
+    });
+  });
+  return new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([zone.lng, zone.lat]);
 }
 
 function buildMarker(c) {
@@ -304,6 +280,9 @@ function openPopupFor(c) {
   if (!map) return;
   if (currentPopup) currentPopup.remove();
   const html = `
+    <div class="popup-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
+      <img src="${escapeHtml(communityPhotoUrl(c))}" alt="" loading="lazy" />
+    </div>
     <div class="popup-title">${escapeHtml(c.name)}</div>
     <div class="popup-sub">${c.type === 'condo' ? 'Condo Community' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}</div>
     <div class="popup-price">${escapeHtml(c.priceRange || '—')}</div>
@@ -316,7 +295,45 @@ function openPopupFor(c) {
 }
 
 /**
- * Update the visible markers to match a new filtered list.
+ * Gate visibility for three things based on current zoom:
+ *   - zone bubbles: visible only below the threshold
+ *   - cluster bubbles + individual pins: visible only at/above the threshold
+ *   - among individual pins, only show those that Mapbox's clustering has
+ *     NOT folded into a cluster bubble at the current zoom (otherwise pins
+ *     render on top of clusters and the map becomes unreadable).
+ */
+function updateZoomDependentVisibility() {
+  if (!map || !map.isStyleLoaded()) return;
+  const zoomedOut = map.getZoom() < ZONE_ZOOM_THRESHOLD;
+
+  // Zone bubbles
+  zoneBubbleByZone.forEach((marker) => {
+    const el = marker.getElement();
+    el.style.display = zoomedOut && el.dataset.empty !== 'true' ? '' : 'none';
+  });
+
+  // Cluster layers
+  const clusterVis = zoomedOut ? 'none' : 'visible';
+  if (map.getLayer(CLUSTER_LAYER_ID)) {
+    map.setLayoutProperty(CLUSTER_LAYER_ID, 'visibility', clusterVis);
+    map.setLayoutProperty(CLUSTER_COUNT_LAYER_ID, 'visibility', clusterVis);
+  }
+
+  // Individual pins
+  if (zoomedOut) {
+    markerByName.forEach((m) => (m.getElement().style.display = 'none'));
+    return;
+  }
+  if (!map.getLayer(UNCLUSTERED_LAYER_ID)) return;
+  const visible = map.queryRenderedFeatures({ layers: [UNCLUSTERED_LAYER_ID] });
+  const visibleNames = new Set(visible.map((f) => f.properties.name));
+  markerByName.forEach((marker, name) => {
+    marker.getElement().style.display = visibleNames.has(name) ? '' : 'none';
+  });
+}
+
+/**
+ * Update the map to match a new filtered list.
  */
 export function renderMap(list) {
   if (!map) return;
@@ -324,26 +341,23 @@ export function renderMap(list) {
     map.once('load', () => {
       setCommunityFeatures(list);
       syncMarkers(list);
+      syncZoneBubbles(list);
+      updateZoomDependentVisibility();
     });
     return;
   }
   setCommunityFeatures(list);
   syncMarkers(list);
+  syncZoneBubbles(list);
+  updateZoomDependentVisibility();
 }
 
-/**
- * Highlight/un-highlight a pin by community name. Safe to call when the
- * map isn't ready — it's a no-op if the marker doesn't exist yet.
- */
 export function setHighlightedPin(name) {
   markerByName.forEach((marker, n) => {
     marker.getElement().classList.toggle('highlighted', n === name);
   });
 }
 
-/**
- * Fly to a community and open its popup. Used when a card is clicked.
- */
 export function focusCommunity(community) {
   if (!map) return;
   map.flyTo({
@@ -354,11 +368,7 @@ export function focusCommunity(community) {
   openPopupFor(community);
 }
 
-/**
- * Trigger a resize after the layout toggle changes the map container size.
- */
 export function invalidateSize() {
   if (!map) return;
-  // Wait for CSS transition to settle
   setTimeout(() => map.resize(), 120);
 }

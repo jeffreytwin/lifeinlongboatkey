@@ -34,6 +34,18 @@ export function countsBy(communities, field, isArrayField = false) {
   return counts;
 }
 
+/**
+ * Resolve a photo URL for a community. Falls back to a per-type stand-in
+ * until real photos are supplied. Set `imageUrl` on a community record to
+ * override for that one community.
+ */
+export function communityPhotoUrl(c) {
+  if (c.imageUrl) return c.imageUrl;
+  return c.type === 'condo'
+    ? '/images/placeholder-condo.jpg'
+    : '/images/placeholder-neighborhood.jpg';
+}
+
 /** Escape a string for safe use inside an HTML attribute or text node. */
 export function escapeHtml(str) {
   return String(str)
