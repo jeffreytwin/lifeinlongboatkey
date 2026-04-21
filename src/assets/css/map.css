@@ -1,0 +1,100 @@
+/* Map container */
+.map-wrap {
+  position: relative;
+  background: #CFE0E2;
+  min-height: 0;
+}
+.content.layout-list .map-wrap { display: none; }
+#map {
+  width: 100%;
+  height: 100%;
+  background: #CFE0E2;
+}
+
+/* Mapbox branding tweaks */
+.mapboxgl-canvas { outline: none; }
+.mapboxgl-map { font-family: 'Manrope', sans-serif; }
+
+/* Custom teardrop pin markers (reused from mockup) */
+.pin {
+  width: 28px; height: 28px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.pin-inner {
+  transform: rotate(45deg);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Fraunces', serif;
+}
+.pin-condo { background: var(--teal); }
+.pin-nbhd { background: var(--coral); }
+.pin.highlighted {
+  transform: rotate(-45deg) scale(1.35);
+  z-index: 1000 !important;
+  box-shadow: 0 3px 10px rgba(0,0,0,.4);
+}
+
+/* Cluster badges (styled on top of Mapbox circle layers by map.js) */
+.cluster-count {
+  color: white;
+  font-weight: 700;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+}
+
+/* Zone labels (North End / Mid-Key / South End) */
+.zone-label {
+  font-family: 'Manrope', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #083638;
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(2px);
+  padding: 4px 9px;
+  border-radius: 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Legend — top-right of map */
+.map-legend {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 1;
+  pointer-events: none;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid white;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+}
+.legend-condo { background: var(--teal); }
+.legend-nbhd { background: var(--coral); }

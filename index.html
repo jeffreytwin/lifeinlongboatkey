@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Life in Longboat Key — Interactive Map</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="./src/assets/css/main.css" rel="stylesheet">
+    <link href="./src/assets/css/sidebar.css" rel="stylesheet">
+    <link href="./src/assets/css/map.css" rel="stylesheet">
+    <link href="./src/assets/css/cards.css" rel="stylesheet">
+    <link href="./src/assets/css/details-panel.css" rel="stylesheet">
+    <link href="./src/assets/css/tablet.css" rel="stylesheet">
+    <link href="./src/assets/css/mobile.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="app">
+      <!-- Header -->
+      <header class="header">
+        <div class="brand">
+          <div class="brand-mark">Life in Longboat Key</div>
+          <div class="brand-sub">Neighborhoods &amp; Condos</div>
+        </div>
+        <div class="view-toggle" role="tablist" aria-label="Layout">
+          <button type="button" data-layout="split" class="active" role="tab">Split</button>
+          <button type="button" data-layout="list" role="tab">List Only</button>
+          <button type="button" data-layout="map" role="tab">Map Only</button>
+        </div>
+        <div class="result-count">
+          Showing <strong><span id="resultCount">0</span></strong> of <span id="totalCount">0</span> communities
+        </div>
+      </header>
+
+      <!-- Main layout -->
+      <div class="main">
+        <!-- Filters sidebar -->
+        <aside class="filters" aria-label="Filters">
+          <div class="filter-header">
+            <h2>Refine</h2>
+            <button id="clearBtn" type="button" class="clear-btn">Clear All</button>
+          </div>
+
+          <!-- Community Type pill selector -->
+          <div class="filter-section">
+            <div class="type-pills" role="radiogroup" aria-label="Community Type">
+              <button type="button" class="type-pill active" data-type="all" role="radio" aria-checked="true">All</button>
+              <button type="button" class="type-pill" data-type="neighborhood" role="radio" aria-checked="false">Neighborhoods</button>
+              <button type="button" class="type-pill" data-type="condo" role="radio" aria-checked="false">Condos</button>
+            </div>
+          </div>
+
+          <!-- Location on Island -->
+          <div class="filter-section">
+            <h3 class="filter-label">Location on Island</h3>
+            <div id="locationList" class="checklist"></div>
+          </div>
+
+          <!-- Waterfront -->
+          <div class="filter-section">
+            <h3 class="filter-label">Waterfront</h3>
+            <div id="waterfrontList" class="checklist"></div>
+          </div>
+
+          <!-- Price -->
+          <div class="filter-section">
+            <h3 class="filter-label">Price</h3>
+            <div id="priceList" class="chip-row"></div>
+          </div>
+
+          <!-- Home Type -->
+          <div class="filter-section">
+            <h3 class="filter-label">Home Type</h3>
+            <div id="homeTypeList" class="checklist"></div>
+          </div>
+
+          <!-- Bedrooms -->
+          <div class="filter-section">
+            <h3 class="filter-label">Bedrooms</h3>
+            <div id="bedroomList" class="chip-row"></div>
+          </div>
+
+          <!-- Amenities -->
+          <div class="filter-section">
+            <h3 class="filter-label">Amenities</h3>
+            <div id="amenityList" class="checklist checklist-scroll"></div>
+          </div>
+
+          <!-- 55+ toggle -->
+          <div class="filter-section">
+            <button id="age55Toggle" type="button" class="toggle-row" aria-pressed="false">
+              <span>55+ Community</span>
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </button>
+          </div>
+        </aside>
+
+        <!-- Content area: map + list -->
+        <section id="content" class="content layout-split">
+          <div class="map-wrap">
+            <div id="map" class="map"></div>
+            <div class="map-legend" aria-hidden="true">
+              <span class="legend-item"><span class="legend-dot legend-condo"></span>Condo</span>
+              <span class="legend-item"><span class="legend-dot legend-nbhd"></span>Neighborhood</span>
+            </div>
+          </div>
+
+          <div class="list-wrap">
+            <div class="list-header">
+              <span id="listCountLabel" class="list-count">0 Matches</span>
+              <label class="sort-label">
+                Sort
+                <select id="sortSelect">
+                  <option value="default">Featured</option>
+                  <option value="name">Name (A–Z)</option>
+                  <option value="price-asc">Price (low → high)</option>
+                  <option value="price-desc">Price (high → low)</option>
+                </select>
+              </label>
+            </div>
+            <div id="cardGrid" class="card-grid" role="list"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="./config.js"></script>
+    <script type="module" src="./src/assets/js/main.js"></script>
+  </body>
+</html>

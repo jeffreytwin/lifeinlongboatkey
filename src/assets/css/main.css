@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+/* Design tokens — source of truth. Ported from the mockup. */
+:root {
+  --bg: #F5F1E8;
+  --bg-card: #FFFFFF;
+  --ink: #1A2628;
+  --ink-soft: #4A5A5E;
+  --ink-muted: #8A9599;
+  --rule: #E3DBCC;
+  --rule-soft: #EFE8D9;
+  --teal: #0E5254;
+  --teal-deep: #083638;
+  --teal-hover: #0A4345;
+  --coral: #D97757;
+  --coral-soft: #F4E4DB;
+  --sand: #E8DFC9;
+  --gulf: #2B7A78;
+  --bay: #3A6EA5;
+  --ok: #4A7C59;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: 'Manrope', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; margin: 0; }
+button { font-family: inherit; cursor: pointer; }
+
+/* App shell */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Header */
+.header {
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.brand { display: flex; align-items: baseline; gap: 14px; }
+.brand-mark {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--teal);
+  letter-spacing: -0.02em;
+}
+.brand-mark::before {
+  content: "◐";
+  font-style: normal;
+  margin-right: 8px;
+  font-size: 18px;
+  color: var(--coral);
+}
+.brand-sub {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-muted);
+  border-left: 1px solid var(--rule);
+  padding-left: 14px;
+}
+
+.view-toggle {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 3px;
+}
+.view-toggle button {
+  border: none;
+  background: transparent;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  transition: all 0.15s ease;
+}
+.view-toggle button.active {
+  background: var(--teal);
+  color: white;
+}
+.view-toggle button:hover:not(.active) { color: var(--ink); }
+
+.result-count {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.result-count strong { color: var(--teal); font-weight: 700; font-size: 13px; }
+
+/* Main grid */
+.main {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  overflow: hidden;
+}
+
+/* Content area (map + list) */
+.content {
+  display: grid;
+  overflow: hidden;
+  position: relative;
+}
+.content.layout-split { grid-template-columns: 1.15fr 1fr; }
+.content.layout-map { grid-template-columns: 1fr; }
+.content.layout-list { grid-template-columns: 1fr; }

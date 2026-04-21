@@ -1,0 +1,55 @@
+/* Popup (Mapbox GL popup) — styled to match the mockup's Leaflet popup */
+.mapboxgl-popup-content {
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+  padding: 12px 14px;
+  font-family: 'Manrope', sans-serif;
+  max-width: 280px;
+}
+.mapboxgl-popup-close-button {
+  font-size: 18px;
+  color: var(--ink-muted);
+  padding: 2px 6px;
+}
+.mapboxgl-popup-close-button:hover { color: var(--ink); background: transparent; }
+.mapboxgl-popup-tip { border-top-color: var(--rule); }
+
+.popup-title {
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+.popup-sub {
+  font-size: 11px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+.popup-price {
+  font-size: 13px;
+  color: var(--teal);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.popup-desc {
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+.popup-link {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--coral);
+  text-decoration: none;
+  border-bottom: 1px solid var(--coral);
+  padding-bottom: 1px;
+}
+.popup-link:hover { color: var(--teal); border-bottom-color: var(--teal); }
