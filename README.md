@@ -1,96 +1,83 @@
-# Longboat Key Map — Claude Code Handoff Package
+# Life in Longboat Key — Interactive Map
 
-Everything you need to take the prototype from chat into a real, buildable project.
+Production interactive map for **lifeinlongboatkey.com**. Lets prospective buyers filter and browse the 108 neighborhoods and condo communities on Longboat Key, FL. Sibling implementation to [lifeatparish](https://github.com/jeffreytwin/lifeatparish).
 
-## What's in this folder
+Live (after first deploy): https://lifeinlongboatkey.web.app
 
-| File | What it is | Where it goes |
-|---|---|---|
-| `CLAUDE.md` | Project brief — architecture, data model, filter design, open decisions | **Project root.** Claude Code reads this automatically every session. |
-| `communities.json` | 108 enriched community records (derived from your Wix CSV) | `data/` folder in the project, or wherever Parrish keeps its data |
-| `longboat-key-map-mockup.html` | Working HTML prototype | Keep in project as design reference. Not part of the production build. |
-| `KICKOFF_PROMPT.md` | The first message to paste into Claude Code | Use once. Don't commit. |
+## Stack
 
-## Step-by-step workflow
+- Vanilla JS (ES modules) + Vite 7
+- Mapbox GL JS 3
+- Tailwind CSS v4 (+ plain CSS files per concern)
+- Firebase Hosting (auto-deploy via GitHub Actions)
 
-### 1. Set up the project folder (5 min)
+See [CLAUDE.md](./CLAUDE.md) for the full architecture, filter design, data model, and deferred decisions.
+
+## Local development
 
 ```bash
-# If forking Parrish:
-git clone https://github.com/jeffreytwin/[YOUR_PARRISH_REPO].git life-in-longboat-key-map
-cd life-in-longboat-key-map
+# One-time setup
+cp config.example.js public/config.js
+# edit public/config.js and paste your Mapbox public token
 
-# Update remote to point to a new repo you create on GitHub
-git remote set-url origin https://github.com/jeffreytwin/life-in-longboat-key-map.git
-git push -u origin main
-
-# Drop the handoff files into the project
+npm install
+npm run dev
 ```
 
-Copy these three files into the repo root:
-- `CLAUDE.md`
-- `communities.json`
-- `longboat-key-map-mockup.html`
+`public/config.js` is gitignored and served at `/config.js` by both the dev server and Firebase Hosting.
 
-Commit them so Claude Code has them available from the start:
+Open the URL Vite prints (default `http://localhost:5173`).
+
+If you don't have a Mapbox token yet, the filter panel and card list still work — only the map itself is disabled. Get a free token at [mapbox.com](https://mapbox.com) (free tier covers 50K loads/mo).
+
+## Build
+
 ```bash
-git add CLAUDE.md communities.json longboat-key-map-mockup.html
-git commit -m "Add handoff brief, data, and prototype"
+npm run build      # outputs to dist/
+npm run preview    # serves the built bundle locally
 ```
 
-### 2. Install Claude Code (if you don't have it)
+## Deployment
 
-If you haven't installed Claude Code on this machine yet, the fastest path is the VS Code extension — given your comfort level, I'd recommend it over the terminal version.
+Pushing to `main` triggers `.github/workflows/deploy.yml`, which builds and deploys to Firebase Hosting.
 
-- **Claude Code for VS Code** — install from the VS Code marketplace, sign in, it opens a chat panel inside your editor where you can see file changes happen in real time. Best fit for you.
-- **Claude Code terminal** — if you want to run it from the command line, install via `npm install -g @anthropic-ai/claude-code`, then run `claude` in the project directory. Identical capability, just a different interface.
+Required GitHub secrets on this repo:
 
-If you're unsure, use the VS Code extension. You can see exactly what Claude Code is doing and approve changes before they're applied.
+| Secret | Purpose |
+|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` | Firebase service-account JSON (Firebase Console → Project Settings → Service accounts → Generate new private key) |
+| `MAPBOX_ACCESS_TOKEN` | Mapbox public token, baked into `config.js` at build time |
 
-### 3. Start a Claude Code session
+Target Firebase project: `lifeinlongboatkey`.
 
-Open VS Code (or a terminal) in the project root. Launch Claude Code. Then:
+## Project layout
 
-1. Open `KICKOFF_PROMPT.md` and copy the "Paste this" block.
-2. Paste it as your first message in Claude Code.
-3. Wait for Claude Code to read the context and respond.
-4. Answer its clarifying questions.
-5. Only then give the green light to start coding.
+```
+src/
+├── data/communities.json       # 108 enriched records — MVP data source
+└── assets/
+    ├── css/                    # main, sidebar, map, cards, details-panel, tablet, mobile
+    └── js/
+        ├── main.js             # entry; wires modules
+        └── modules/
+            ├── data.js         # static loader (to be replaced with live Wix fetch)
+            ├── state.js        # central filter state
+            ├── utils.js        # labels, count helpers, HTML escape
+            ├── matches.js      # filter + sort logic
+            ├── filters.js      # filter panel render + events
+            ├── list.js         # card grid render + card↔pin sync
+            ├── map.js          # Mapbox init, clustering, pins, popup, flyTo
+            └── details-panel.js # stub for future detail panel
 
-### 4. First milestone — scaffold
+docs/
+├── longboat-key-map-mockup.html   # original working prototype (design reference)
+├── Neighborhoods & Condos.csv     # source Wix collection export (for future sync)
+└── KICKOFF_PROMPT.md              # historical first-session prompt
+```
 
-Before anything fancy, get the boring plumbing working:
-- Forked Parrish repo builds and runs locally (`npm run dev` or equivalent)
-- `communities.json` is loaded into the app state
-- Filter panel renders against the LBK data (counts update correctly per filter)
-- No map yet — just prove the data flows
+## Status
 
-This should be a single Claude Code session, maybe two.
-
-### 5. Second milestone — map
-
-- Leaflet shell with OSM tiles
-- Pins for all 108 communities (using estimated coords for now)
-- Marker clustering
-- Pin ↔ card sync (hover card highlights pin, click pin opens popup)
-
-### 6. Third milestone — polish
-
-- Mobile drawer
-- Community photos on cards
-- Real geocoding pass
-- Firebase deploy pipeline
-- Wix embed
-
-## Working rhythm with Claude Code
-
-A few things that helped on your Parrish / Lakewood Auto-Blogger projects that apply here too:
-
-- **Commit often.** Before any big Claude Code change, commit what's working. Makes it trivial to roll back if a suggestion breaks something.
-- **One scope per session.** Don't mix "build the filters" and "fix the deploy pipeline" in the same conversation. Claude Code stays sharper with one focused goal.
-- **Screenshot feedback works.** Same as our earlier sessions — if something looks off, screenshot it and drop it into Claude Code. Faster than describing visual issues in words.
-- **Update `CLAUDE.md` as decisions get locked in.** It's not a static doc. As you answer open questions, move them from "Open Decisions" to "Architecture Decisions" in the file.
-
-## If you get stuck
-
-The `CLAUDE.md` file is designed to be re-read at any point. If a session drifts, just tell Claude Code: "Re-read CLAUDE.md and tell me where we are against the plan." That resets it.
+- [x] **M1** — scaffold + filter panel + card list against `communities.json`
+- [x] **M2** — Mapbox GL map with clustering, popups, card↔pin sync, zone labels
+- [ ] **M3** — first Firebase deploy (requires Firebase project + secrets)
+- [ ] Follow-ups: mobile drawer, real geocoding, community photos, live Wix fetch, Wix iframe embed
