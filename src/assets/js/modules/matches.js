@@ -21,7 +21,13 @@ export function matches(c) {
   if (state.priceTiers.size && !c.priceTiers.some((t) => state.priceTiers.has(t))) return false;
   if (state.homeTypes.size && !c.homeTypes.some((t) => state.homeTypes.has(t))) return false;
   if (state.bedrooms.size && !c.bedTags.some((t) => state.bedrooms.has(t))) return false;
-  if (state.amenities.size && !c.amenities.some((a) => state.amenities.has(a))) return false;
+  // Amenities use AND: a community must have every checked amenity.
+  // All other multi-select filters are OR (a property can only be in one
+  // zone, but can legitimately match any of several selected price tiers,
+  // home types, bedrooms, or waterfront types).
+  if (state.amenities.size) {
+    for (const a of state.amenities) if (!c.amenities.includes(a)) return false;
+  }
   if (state.age55 && !c.is55plus) return false;
   return true;
 }
