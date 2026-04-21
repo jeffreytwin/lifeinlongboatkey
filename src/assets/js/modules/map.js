@@ -81,6 +81,10 @@ export function initMap(communities, callbacks) {
     setCommunityFeatures(communities);
     wireClusterInteractions();
     syncMarkers(communities);
+    map.on('moveend', updateMarkerVisibility);
+    map.on('sourcedata', (e) => {
+      if (e.sourceId === SOURCE_ID && e.isSourceLoaded) updateMarkerVisibility();
+    });
   });
 
   // Close popup + clear highlight when clicking empty map
@@ -157,8 +161,8 @@ function setCommunityFeatures(list) {
     type: 'geojson',
     data,
     cluster: true,
-    clusterMaxZoom: 14,
-    clusterRadius: 45,
+    clusterMaxZoom: 13,
+    clusterRadius: 60,
   });
 
   // Cluster bubbles
@@ -177,7 +181,8 @@ function setCommunityFeatures(list) {
         ['get', 'point_count'],
         18, 5,
         22, 15,
-        28,
+        28, 30,
+        34,
       ],
     },
   });
@@ -237,7 +242,9 @@ function toGeoJson(list) {
 
 /**
  * Sync HTML markers with the current filtered list. Uses one mapboxgl.Marker
- * per community so the teardrop .pin styling reuses unchanged.
+ * per community so the teardrop .pin styling reuses unchanged. Markers whose
+ * underlying points are currently inside a cluster are hidden by
+ * updateMarkerVisibility() — called on moveend and sourcedata.
  */
 function syncMarkers(list) {
   if (!map) return;
@@ -258,6 +265,23 @@ function syncMarkers(list) {
     const marker = buildMarker(c);
     marker.addTo(map);
     markerByName.set(c.name, marker);
+  });
+
+  updateMarkerVisibility();
+}
+
+/**
+ * Hide HTML markers for any point that Mapbox's clustering has folded into
+ * a cluster bubble at the current zoom. Without this the teardrop pins
+ * render on top of clusters and the map becomes unreadable at low zoom.
+ */
+function updateMarkerVisibility() {
+  if (!map || !map.isStyleLoaded()) return;
+  if (!map.getLayer(UNCLUSTERED_LAYER_ID)) return;
+  const visible = map.queryRenderedFeatures({ layers: [UNCLUSTERED_LAYER_ID] });
+  const visibleNames = new Set(visible.map((f) => f.properties.name));
+  markerByName.forEach((marker, name) => {
+    marker.getElement().style.display = visibleNames.has(name) ? '' : 'none';
   });
 }
 

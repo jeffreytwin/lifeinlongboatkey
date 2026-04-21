@@ -51,8 +51,16 @@ export function renderList(communities, callbacks) {
         .slice(0, 4)
         .map((a) => `<span class="amenity-chip">${escapeHtml(a)}</span>`)
         .join('');
+      const initials = getInitials(c.name);
+      const photo = c.imageUrl
+        ? `<img src="${escapeHtml(c.imageUrl)}" alt="" loading="lazy" />`
+        : `<span class="card-photo-initials">${escapeHtml(initials)}</span>
+           <span class="card-photo-note">Photo coming soon</span>`;
       return `
       <div class="card" role="listitem" data-name="${escapeHtml(c.name)}">
+        <div class="card-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
+          ${photo}
+        </div>
         <div class="card-top">
           <div class="card-name">${escapeHtml(c.name)}</div>
           <span class="card-type-tag ${c.type === 'condo' ? 'tag-condo' : 'tag-nbhd'}">
@@ -83,6 +91,17 @@ export function renderList(communities, callbacks) {
   });
 
   return list;
+}
+
+function getInitials(name) {
+  const stop = /^(the|at|of|a|an|on)$/i;
+  const words = name
+    .replace(/[()]/g, '')
+    .split(/\s+/)
+    .filter((w) => w && !stop.test(w));
+  const first = words[0]?.[0] || name[0] || '';
+  const second = words[1]?.[0] || (words[0]?.[1] ?? '');
+  return (first + second).toUpperCase();
 }
 
 /**
