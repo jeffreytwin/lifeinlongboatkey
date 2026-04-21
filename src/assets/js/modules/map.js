@@ -273,7 +273,10 @@ function buildMarker(c) {
     openPopupFor(c);
     onSelect(c);
   });
-  return new mapboxgl.Marker({ element: el, anchor: 'bottom' }).setLngLat([c.lng, c.lat]);
+  // Condos (teardrop) anchor to their pointed bottom; neighborhoods
+  // (outlined circles) anchor to their center since they read as an area.
+  const anchor = c.type === 'condo' ? 'bottom' : 'center';
+  return new mapboxgl.Marker({ element: el, anchor }).setLngLat([c.lng, c.lat]);
 }
 
 function openPopupFor(c) {
