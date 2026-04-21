@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Longboat Key — Interactive Neighborhoods & Condos Map (Mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css">
+<style>
+:root {
+  --bg: #F5F1E8;
+  --bg-card: #FFFFFF;
+  --ink: #1A2628;
+  --ink-soft: #4A5A5E;
+  --ink-muted: #8A9599;
+  --rule: #E3DBCC;
+  --rule-soft: #EFE8D9;
+  --teal: #0E5254;
+  --teal-deep: #083638;
+  --teal-hover: #0A4345;
+  --coral: #D97757;
+  --coral-soft: #F4E4DB;
+  --sand: #E8DFC9;
+  --gulf: #2B7A78;
+  --bay: #3A6EA5;
+  --ok: #4A7C59;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: 'Manrope', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; margin: 0; }
+button { font-family: inherit; cursor: pointer; }
+
+/* ---- Layout ---- */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---- Header ---- */
+.header {
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+.brand-mark {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--teal);
+  letter-spacing: -0.02em;
+}
+.brand-mark::before {
+  content: "◐";
+  font-style: normal;
+  margin-right: 8px;
+  font-size: 18px;
+  color: var(--coral);
+}
+.brand-sub {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-muted);
+  border-left: 1px solid var(--rule);
+  padding-left: 14px;
+}
+.view-toggle {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 3px;
+}
+.view-toggle button {
+  border: none;
+  background: transparent;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  transition: all 0.15s ease;
+}
+.view-toggle button.active {
+  background: var(--teal);
+  color: white;
+}
+.view-toggle button:hover:not(.active) {
+  color: var(--ink);
+}
+.result-count {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+.result-count strong { color: var(--teal); font-weight: 700; font-size: 13px; }
+
+/* ---- Main grid ---- */
+.main {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  overflow: hidden;
+}
+
+/* ---- Filters ---- */
+.filters {
+  background: var(--bg);
+  border-right: 1px solid var(--rule);
+  overflow-y: auto;
+  padding: 20px 22px 30px;
+}
+.filters::-webkit-scrollbar { width: 6px; }
+.filters::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.filter-header h2 {
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Manrope', sans-serif;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.clear-btn {
+  font-size: 11px;
+  color: var(--coral);
+  background: none;
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  padding: 4px 0;
+}
+.clear-btn:hover { color: var(--teal); }
+
+.filter-group {
+  margin-bottom: 22px;
+}
+.filter-group h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 10px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filter-group h3 .badge {
+  font-family: 'Manrope', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--coral);
+  background: var(--coral-soft);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* Type pills — big, front-and-center */
+.type-pills {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.type-pill {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 10px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  text-align: center;
+  transition: all 0.15s;
+  line-height: 1.2;
+}
+.type-pill .count {
+  display: block;
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--teal);
+  margin-bottom: 2px;
+}
+.type-pill.active {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: white;
+}
+.type-pill.active .count { color: white; }
+.type-pill:hover:not(.active) { border-color: var(--teal); }
+
+/* Checkbox filters */
+.check-list { display: flex; flex-direction: column; gap: 6px; }
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border-radius: 4px;
+  transition: background 0.1s;
+}
+.check-item:hover { background: var(--rule-soft); }
+.check-item input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--ink-muted);
+  border-radius: 3px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+.check-item input:checked {
+  background: var(--teal);
+  border-color: var(--teal);
+}
+.check-item input:checked::after {
+  content: "✓";
+  position: absolute;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.check-item .label { flex: 1; font-size: 13px; color: var(--ink); }
+.check-item .count {
+  font-size: 11px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Price chips */
+.chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.chip {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-weight: 500;
+  transition: all 0.12s;
+}
+.chip:hover { border-color: var(--teal); color: var(--teal); }
+.chip.active {
+  background: var(--teal);
+  color: white;
+  border-color: var(--teal);
+}
+
+/* Toggle (55+) */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.toggle-row span { font-size: 13px; font-weight: 500; }
+.toggle {
+  width: 34px;
+  height: 20px;
+  background: var(--rule);
+  border-radius: 999px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.15);
+}
+.toggle.on { background: var(--teal); }
+.toggle.on::after { transform: translateX(14px); }
+
+/* ---- Content area ---- */
+.content {
+  display: grid;
+  overflow: hidden;
+  position: relative;
+}
+.content.layout-split { grid-template-columns: 1.15fr 1fr; }
+.content.layout-map { grid-template-columns: 1fr; }
+.content.layout-list { grid-template-columns: 1fr; }
+
+.map-wrap {
+  position: relative;
+  background: #CFE0E2;
+}
+.content.layout-list .map-wrap { display: none; }
+#map { width: 100%; height: 100%; background: #CFE0E2; }
+.leaflet-container { background: #CFE0E2 !important; font-family: 'Manrope', sans-serif; }
+
+/* Custom marker styles */
+.pin {
+  width: 28px; height: 28px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.pin-inner {
+  transform: rotate(45deg);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Fraunces', serif;
+}
+.pin-condo { background: var(--teal); }
+.pin-nbhd { background: var(--coral); }
+.pin.highlighted { transform: rotate(-45deg) scale(1.35); z-index: 1000 !important; }
+
+.leaflet-popup-content-wrapper {
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+}
+.leaflet-popup-content { margin: 12px 14px; font-family: 'Manrope', sans-serif; }
+.popup-title { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500; margin-bottom: 4px; color: var(--ink); }
+.popup-sub { font-size: 11px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.popup-price { font-size: 13px; color: var(--teal); font-weight: 600; margin-bottom: 8px; }
+.popup-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.4; margin-bottom: 10px; }
+.popup-link {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--coral);
+  text-decoration: none;
+  border-bottom: 1px solid var(--coral);
+  padding-bottom: 1px;
+}
+
+/* List */
+.list-wrap {
+  background: var(--bg);
+  overflow-y: auto;
+  border-left: 1px solid var(--rule);
+}
+.content.layout-map .list-wrap { display: none; }
+.content.layout-split .list-wrap { border-left: 1px solid var(--rule); }
+.content.layout-list .list-wrap { border-left: none; }
+.list-header {
+  padding: 16px 24px 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
+  position: sticky; top: 0; z-index: 2;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.list-header h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted); font-family: 'Manrope', sans-serif; font-weight: 600; }
+.sort-select {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--ink);
+}
+.list-wrap::-webkit-scrollbar { width: 6px; }
+.list-wrap::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+.card-grid { padding: 14px 20px 40px; display: grid; gap: 10px; }
+.content.layout-list .card-grid { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); padding: 22px 32px 40px; gap: 14px; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.card:hover { border-color: var(--teal); box-shadow: 0 4px 12px rgba(14,82,84,0.08); transform: translateY(-1px); }
+.card.highlighted { border-color: var(--coral); background: var(--coral-soft); }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+.card-name { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 500; color: var(--ink); line-height: 1.25; }
+.card-type-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tag-condo { background: #E6EFEF; color: var(--teal); }
+.tag-nbhd { background: var(--coral-soft); color: #B85A3F; }
+.card-sub { font-size: 12px; color: var(--ink-muted); font-style: italic; margin-bottom: 8px; }
+.card-meta { display: flex; gap: 12px; font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; flex-wrap: wrap; }
+.card-meta .meta { display: inline-flex; align-items: center; gap: 4px; }
+.card-meta .meta-label { color: var(--ink-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+.card-meta .meta-val { font-weight: 600; color: var(--ink); }
+.card-price { font-family: 'Fraunces', serif; font-size: 17px; color: var(--teal); font-weight: 500; margin-bottom: 8px; }
+.card-amenities { display: flex; flex-wrap: wrap; gap: 4px; }
+.amenity-chip {
+  font-size: 10px;
+  padding: 2px 7px;
+  background: var(--sand);
+  color: var(--teal-deep);
+  border-radius: 3px;
+  font-weight: 500;
+}
+.amenity-chip.wf-gulf { background: #D4E7E6; color: var(--gulf); }
+.amenity-chip.wf-bay { background: #DFE7F0; color: var(--bay); }
+
+/* Empty state */
+.empty-state {
+  padding: 60px 30px;
+  text-align: center;
+  color: var(--ink-muted);
+}
+.empty-state h4 { font-family: 'Fraunces', serif; font-size: 22px; color: var(--ink); margin-bottom: 8px; font-weight: 500; }
+.empty-state p { font-size: 13px; margin-bottom: 16px; }
+
+/* Note banner */
+.note-banner {
+  background: var(--coral-soft);
+  border-bottom: 1px solid #E8CFC2;
+  padding: 8px 28px;
+  font-size: 11px;
+  color: #8C4E36;
+  letter-spacing: 0.01em;
+}
+.note-banner strong { color: #6D3A26; }
+
+/* Mobile fallback */
+@media (max-width: 860px) {
+  .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .filters { max-height: 40vh; }
+  .content.layout-split { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
+  .brand-sub { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="note-banner">
+    <strong>Mockup note:</strong> 108 communities plotted with <em>estimated</em> coordinates for demo purposes (real launch needs proper geocoding). Map tiles are OpenStreetMap — for production we can swap to Google Maps, Mapbox, or MapTiler with no code change beyond the tile URL.
+  </div>
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark">lifeinlongboatkey</div>
+      <div class="brand-sub">Explore · Filter · Find</div>
+    </div>
+    <div class="view-toggle" role="tablist">
+      <button class="active" data-layout="split">Map + List</button>
+      <button data-layout="map">Map Only</button>
+      <button data-layout="list">List Only</button>
+    </div>
+    <div class="result-count">
+      <strong id="resultCount">108</strong> of 108 communities
+    </div>
+  </div>
+  <div class="main">
+    <aside class="filters">
+      <div class="filter-header">
+        <h2>Refine</h2>
+        <button class="clear-btn" id="clearBtn">Clear all</button>
+      </div>
+
+      <div class="filter-group">
+        <h3>Community Type <span class="badge">Start here</span></h3>
+        <div class="type-pills" id="typePills">
+          <button class="type-pill active" data-type="all">
+            <span class="count">108</span>All
+          </button>
+          <button class="type-pill" data-type="neighborhood">
+            <span class="count">31</span>Neighborhoods
+          </button>
+          <button class="type-pill" data-type="condo">
+            <span class="count">77</span>Condo Comm.
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <h3>Location on Island</h3>
+        <div class="check-list" id="locationList"></div>
+      </div>
+
+      <div class="filter-group">
+        <h3>Waterfront</h3>
+        <div class="check-list" id="waterfrontList"></div>
+      </div>
+
+      <div class="filter-group">
+        <h3>Price</h3>
+        <div class="chip-grid" id="priceChips"></div>
+      </div>
+
+      <div class="filter-group">
+        <h3>Home Type</h3>
+        <div class="check-list" id="homeTypeList"></div>
+      </div>
+
+      <div class="filter-group">
+        <h3>Bedrooms</h3>
+        <div class="chip-grid" id="bedChips"></div>
+      </div>
+
+      <div class="filter-group">
+        <h3>Amenities</h3>
+        <div class="check-list" id="amenityList"></div>
+      </div>
+
+      <div class="filter-group">
+        <h3>55+ Community</h3>
+        <div class="toggle-row">
+          <span>Only show 55+</span>
+          <div class="toggle" id="age55Toggle"></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="content layout-split" id="content">
+      <div class="map-wrap">
+        <div id="map"></div>
+      </div>
+      <div class="list-wrap">
+        <div class="list-header">
+          <h3 id="listCountLabel">108 Matches</h3>
+          <select class="sort-select" id="sortSelect">
+            <option value="default">Sort: Default</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </div>
+        <div class="card-grid" id="cardGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script>
+/* ===== Data (embedded from your Wix CSV) ===== */
+const COMMUNITIES = [{"name":"Islander Club","type":"condo","subtitle":"Expansive beachfront residences","shortDescription":"The Islander Club is a beachfront condo community with tennis, a fitness center, sauna, clubhouse, and a large pool along private beach frontage. Consider it if you want classic Gulf-front living with strong amenities.","priceRange":"$800s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,200 - 2,400","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Fitness Center"],"location":"south","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.346483,"lng":-82.603849,"pageUrl":"/neighborhood/islander-club-(longboat-key-club)"},{"name":"Tangerine Bay Club","type":"condo","subtitle":"Luxury bayfront with marina","shortDescription":"The Tangerine Bay Club is an exclusive gated community with clubhouse, fitness center, pool, and day docks. Great for those considering a social waterfront lifestyle.","priceRange":"$800s - $2M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,200 - 3,000","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Condominiums"],"amenities":["Clubhouse","Community Pool","Fitness Center","Tennis","Gated","Personal Boat Slips"],"location":"south","waterfront":["Bay-front"],"is55plus":false,"lat":27.343325,"lng":-82.601714,"pageUrl":"/neighborhood/tangerine-bay-club"},{"name":"Vizcaya","type":"condo","subtitle":"Mediterranean Gulf-front elegance","shortDescription":"Vizcaya is a boutique Gulf-front community built around a resort-style pool setting, with Har-Tru tennis, a clubhouse with fitness center, and on-site management. It\u2019s ideal for buyers who want a quieter luxury feel\u2014more \u201cprivate resort residence\u201d than high-rise tower\u2014while staying right on the beac","priceRange":"$2M - $5M","priceTiers":["$2M\u2013$5M","$5M+"],"sqft":"2,500 - 6,000","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.352098,"lng":-82.607268,"pageUrl":"/neighborhood/vizcaya"},{"name":"Privateer (Longboat Key Club)","type":"condo","subtitle":"Beachfront within golf resort","shortDescription":"Privateer is a Gulf-front condominium within the Longboat Key Club featuring an Olympic-size pool, tennis and pickleball courts, fitness center with sauna, and clubhouse amenities. It offers a full beachfront club lifestyle within a gated resort setting.","priceRange":"$500s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,100 - 1,700","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center","Golf"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.330291,"lng":-82.588556,"pageUrl":"/neighborhood/privateer-(longboat-key-club)"},{"name":"Grand Bay (Bay Isles)","type":"condo","subtitle":"Luxury towers with panoramic views","shortDescription":"Grand Bay is essentially a luxury tower experience featuring pools, tennis, clubhouse facilities, and gated privacy. It's a high-end residence with resort-style amenities.","priceRange":"$1M - $3M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,200 - 4,000","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach-Club Access","Beach Access","Gated","Walking Paths","Fitness Center","Golf"],"location":"south","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.338049,"lng":-82.596542,"pageUrl":"/neighborhood/grand-bay"},{"name":"Marina Bay (Bay Isles)","type":"condo","subtitle":"Gated marina community","shortDescription":"Marina Bay is a bayfront condominium within Bay Isles featuring private boat slips, a heated pool, gated entry, and access to the Bay Isles Beach Club. It\u2019s ideal for buyers seeking a marina lifestyle with added private beach privileges.","priceRange":"$1M - $3M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,500 - 3,500","bedrooms":"3","bedTags":["3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach-Club Access","Beach Access","Gated","Walking Paths","Fitness Center","Marina Access","Golf"],"location":"south","waterfront":["Bay-front","Beach Club Access"],"is55plus":false,"lat":27.342917,"lng":-82.600786,"pageUrl":"/neighborhood/marina-bay-(bay-isles)"},{"name":"Lands End","type":"neighborhood","subtitle":"Private beachfront estate setting","shortDescription":"Lands End is a small gated enclave offering Har-Tru tennis, pickleball, a heated pool, and shared dockage. It\u2019s ideal for buyers who want privacy with an active waterfront lifestyle.","priceRange":"$2M - $4M","priceTiers":["$2M\u2013$5M"],"sqft":"1,800 - 4,000","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Single Family Homes"],"amenities":["Tennis","Community Pool","Beach Access","Gated","Marina Access","Personal Boat Slips","Pickleball"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.432457,"lng":-82.682,"pageUrl":"/neighborhood/lands-end"},{"name":"Harbour Circle (Bay Isles)","type":"neighborhood","subtitle":"Canal homes with dockage","shortDescription":"Harbour Circle is a maintenance-free Bay Isles villa neighborhood (42 homes) with a community pool and spa and a highly visible setting along the Longboat Key Club Harbourside golf corridor. It\u2019s a great fit for buyers who want the \u201clock-and-leave\u201d ease of a villa community while still living inside","priceRange":"$1M","priceTiers":["$1M\u2013$2M"],"sqft":"2,200 - 3,000","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Single Family Homes"],"amenities":["Community Pool","Free Maintenance","Beach-Club Access","Gated","Walking Paths"],"location":"south","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.349136,"lng":-82.605261,"pageUrl":"/neighborhood/harbour-circle-(bay-isles)"},{"name":"Silver Sands","type":"condo","subtitle":"Quiet Gulfside retreat","shortDescription":"Silver Sands stands out as a pure beachfront resort-style property with pool amenities and easy Gulf access. Consider it if you want a simple vacation-friendly condo setting.","priceRange":"$500s - $600s","priceTiers":["$500K\u2013$1M"],"sqft":"450 - 550","bedrooms":"1","bedTags":["1"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.432372,"lng":-82.679891,"pageUrl":"/neighborhood/silver-sands"},{"name":"Beachplace","type":"condo","subtitle":"Resort-style living in LBK Club","shortDescription":"Beachplace is a large, resort-style beachfront community with private beach access, community pools, fitness center, and tennis amenities set across expansive grounds. Consider it if you want a vacation-style atmosphere with abundant outdoor space.","priceRange":"$500s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,000 - 2,000","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Gated","Fitness Center"],"location":"south","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.345429,"lng":-82.602222,"pageUrl":"/neighborhood/beachplace"},{"name":"Lighthouse Point","type":"neighborhood","subtitle":"Canal-front boating access","shortDescription":"Lighthouse Point is an exclusive gated neighborhood at the south end of Longboat Key featuring deep-water docks and estate-style homes. It\u2019s a top choice for buyers seeking luxury waterfront privacy near St. Armands.","priceRange":"$8M - $14M","priceTiers":["$5M+"],"sqft":"4,900 - 7,200","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access","Gated","Personal Boat Slips","Tennis"],"location":"south","waterfront":["Bay-front"],"is55plus":false,"lat":27.34324,"lng":-82.601072,"pageUrl":"/neighborhood/lighthouse-point"},{"name":"Inn on the Beach (Longboat Key Club)","type":"condo","subtitle":"Beachfront resort villas","shortDescription":"Inn on the Beach is a Gulf-front condominium enclave within the Longboat Key Club resort featuring beachfront pools, spa amenities, and resort services. It\u2019s ideal for buyers seeking condo ownership with optional access to golf, tennis, dining, and spa experiences.","priceRange":"$300s - $1M","priceTiers":["Under $500K","$500K\u2013$1M","$1M\u2013$2M"],"sqft":"500 - 1,500","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center","Golf"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.329862,"lng":-82.587369,"pageUrl":"/neighborhood/longboat-key-club-condos"},{"name":"Longboat Arms","type":"condo","subtitle":"Canal-front boating access","shortDescription":"Longboat Arms is a bayfront condominium community offering boat slips, a heated pool, fishing pier, clubhouse, and outdoor recreation areas. Its boating amenities and nearby beach access create a relaxed waterfront lifestyle.","priceRange":"$500s - $800s","priceTiers":["$500K\u2013$1M"],"sqft":"1,000 - 1,300","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access","Marina Access","Personal Boat Slips"],"location":"mid","waterfront":["Bay-front"],"is55plus":false,"lat":27.388071,"lng":-82.641675,"pageUrl":"/neighborhood/longboat-arms"},{"name":"Bayou Hammock","type":"neighborhood","subtitle":"Private bayou-front enclave","shortDescription":"Bayou Hammock is a gated, ultra-low-density enclave known for some of the largest residential lots on Longboat Key and a quiet, old-Florida canopy-road setting. It\u2019s one to consider if you want rare privacy and estate-scale waterfront potential rather than \u201ccommunity amenity\u201d living.","priceRange":"$3M - $5M","priceTiers":["$2M\u2013$5M","$5M+"],"sqft":"3,300 - 4,000+","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access","Personal Boat Slips"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.444397,"lng":-82.692033,"pageUrl":"/neighborhood/bayou-hammock"},{"name":"Country Club Shores","type":"neighborhood","subtitle":"Canal-front boating neighborhood","shortDescription":"Country Club Shores is a classic, highly sought-after south-end neighborhood known for canal-front homes with private docks and an \u201cOld Florida\u201d waterfront layout. Buyers love it for the combination of boating convenience and deeded beach access, plus quick proximity to St. Armands and Sarasota.","priceRange":"$1M - $6M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"1,700 - 4,700","bedrooms":"3 - 5","bedTags":["3","4","5"],"homeTypes":["Single Family Homes"],"amenities":["Personal Boat Slips","Private Beach (Deeded)"],"location":"south","waterfront":["Gulf-front","Bay-front"],"is55plus":false,"lat":27.332543,"lng":-82.589517,"pageUrl":"/neighborhood/country-club-shores-(secs-i---v)"},{"name":"The Residences at The St. Regis","type":"condo","subtitle":"Ultra-luxury branded beachfront","shortDescription":"The Residences at The St. Regis Longboat Key are positioned as a guard-gated, ultra-luxury resort-residence experience with multiple pools, spa and fitness, and chef-driven dining, plus curated owner-only amenities like a residents\u2019 lounge and private pool/sun deck. This is the pick for buyers who w","priceRange":"$3M - $10M","priceTiers":["$2M\u2013$5M","$5M+"],"sqft":"1,500 - 5,300","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.345045,"lng":-82.601227,"pageUrl":"/neighborhood/tennis-gardens-(longboat-key-club"},{"name":"Seaplace","type":"condo","subtitle":"Amenity-rich beachfront community","shortDescription":"Seaplace is a guard-gated private beachfront community with multiple pools, tennis, fitness center, clubhouse, and walking paths.","priceRange":"$300s - $1M","priceTiers":["Under $500K","$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,000 - 3,500","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Walking Paths","Pickleball","Fitness Center"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.389191,"lng":-82.641928,"pageUrl":"/neighborhood/sea-gate-club"},{"name":"Sage Longboat Key","type":"condo","subtitle":"New luxury boutique residences","shortDescription":"Sage Longboat Key is a modern, ultra-boutique beachfront enclave built around wellness, with an Olympic-style lap pool, private cabanas, fire-pit lounges, a high-end fitness/wellness center, concierge service, and gated security. It\u2019s a high-end \u201cprivate resort at home\u201d pick for buyers who want new(","priceRange":"$4M - $7M","priceTiers":["$2M\u2013$5M","$5M+"],"sqft":"4,000 - 4,300","bedrooms":"3","bedTags":["3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.340666,"lng":-82.596606,"pageUrl":"/neighborhood/sabal-cove-(bay-isles)"},{"name":"Harbour Court (Bay Isles)","type":"neighborhood","subtitle":"Maintenance-free bayfront living","shortDescription":"Harbour Court is a boutique Bay Isles enclave of 18 homes where each residence includes a dock on the Bay Isles waterway with direct access out to Sarasota Bay. It\u2019s a standout for buyers who want a rare \u201cprivate home + built-in boating\u201d setup behind the gates, without the scale of a large neighborh","priceRange":"$1M - $2M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,900 - 3,100","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Villas"],"amenities":["Tennis","Community Pool","Beach-Club Access","Gated","Walking Paths","Marina Access"],"location":"south","waterfront":["Bay-front","Beach Club Access"],"is55plus":false,"lat":27.343292,"lng":-82.601967,"pageUrl":"/neighborhood/harbour-court-(bay-isles)"},{"name":"Pierre (Longboat Key Club)","type":"condo","subtitle":"Elegant beachfront high-rise","shortDescription":"Pierre is a Gulf-front condominium within the Longboat Key Club featuring private beach access, Har-Tru tennis courts, heated pool and spa, fitness center, and gated security. It\u2019s a luxury beachfront residence offering club-level amenities in a boutique tower setting.","priceRange":"$900s - $2M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,300 - 3,700","bedrooms":"3","bedTags":["3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center","Golf"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.330642,"lng":-82.588484,"pageUrl":"/neighborhood/pierre"},{"name":"Westchester","type":"condo","subtitle":"Direct beachfront views","shortDescription":"Westchester is a residential condo community with two heated pools, a clubhouse, and on-site management that supports an easy, low-maintenance lifestyle. It\u2019s a great fit for buyers who want a relaxed community feel and strong everyday amenities without paying for a massive resort-style tower enviro","priceRange":"$700s - $900s","priceTiers":["$500K\u2013$1M"],"sqft":"1,400","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.37841,"lng":-82.630946,"pageUrl":"/neighborhood/westchester"},{"name":"Regent Place (Longboat Key Club)","type":"condo","subtitle":"Exclusive beachfront enclave","shortDescription":"Regent Place - a part of the larger Longboat Key Club - offers luxury beachfront residences with a community pool, fitness amenities, and clubhouse spaces. Consider it if you want upscale beachfront living with access to the Longboat Key Club's larger amenities.","priceRange":"$2M - $5M","priceTiers":["$2M\u2013$5M","$5M+"],"sqft":"3,100 - 3,600","bedrooms":"3","bedTags":["3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center","Golf"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.332329,"lng":-82.589723,"pageUrl":"/neighborhood/regent-place-(longboat-key-club)"},{"name":"Beach Harbor Club","type":"condo","subtitle":"Affordable beach-to-bay lifestyle","shortDescription":"Beach Harbor Club is a bayside community featuring a heated pool, clubhouse, fitness room, boat slips, fishing pier, and social activity spaces. Its marina amenities and community atmosphere make it attractive to buyers who prioritize boating and social waterfront living.","priceRange":"$300s - $700s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"800 - 1,600","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access","Marina Access"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.431656,"lng":-82.679849,"pageUrl":"/neighborhood/beach-harbor-club"},{"name":"Dream Island","type":"neighborhood","subtitle":"Exclusive waterfront estates","shortDescription":"Dream Island is a north Longboat Key boating neighborhood known for deep-water canals, larger lots, and a quiet residential feel that dates back decades. It\u2019s a strong choice for buyers who prioritize waterfront dockage and \u201cneighborhood privacy\u201d over clubhouse-style amenities.","priceRange":"$1M - $4M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"1,700 - 4,400","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access","Personal Boat Slips"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.441942,"lng":-82.690308,"pageUrl":"/neighborhood/dream-island"},{"name":"Longboat Key Club","type":"condo","subtitle":"Resort and golf lifestyle hub","shortDescription":"Longboat Key Club is a master-planned resort and residential community offering golf, tennis, spa, dining, marina, and private beach club amenities. It delivers a full luxury resort lifestyle tied to multiple condominium residences within the gated campus.","priceRange":"$900s - $10M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"1,400 - 7,000","bedrooms":"1 - 4","bedTags":["1","2","3","4"],"homeTypes":["Condominiums","Villas","Single Family Homes"],"amenities":[],"location":"south","waterfront":["Gulf-front","Bay-front"],"is55plus":false,"lat":27.340769,"lng":-82.597528,"pageUrl":"/neighborhood/longboat-key-club"},{"name":"Sleepy Lagoon","type":"neighborhood","subtitle":"Canal-front boating community","shortDescription":"Sleepy Lagoon is a large north-end neighborhood spanning both sides of Gulf of Mexico Drive with a mix of canal and inland homes. It\u2019s attractive for buyers seeking neighborhood scale and Longboat lifestyle value.","priceRange":"$1M - $23M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"1,000 - 7,000","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access","Personal Boat Slips"],"location":"south","waterfront":["Bay-front"],"is55plus":false,"lat":27.341963,"lng":-82.599894,"pageUrl":"/neighborhood/sleepy-lagoon"},{"name":"Aria","type":"condo","subtitle":"Ultra-luxury modern beachfront residences","shortDescription":"Aria is a newer ultra-luxury Gulf-front enclave known for contemporary architecture and expansive water views. Consider it if you want modern design, privacy, and a high-end beachfront living experience.","priceRange":"$6M - $8M","priceTiers":["$5M+"],"sqft":"3,900 - 4,000","bedrooms":"4","bedTags":["4"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.347173,"lng":-82.60188,"pageUrl":"/neighborhood/aria"},{"name":"Casa Del Mar","type":"condo","subtitle":"Gulf-to-bay resort setting","shortDescription":"Casa Del Mar is a beachfront condominium community offering direct beach access, a resort pool, tennis courts, and lounge seating along the Gulf. It\u2019s well suited for buyers wanting a casual, resort-style setting with strong vacation and seasonal appeal.","priceRange":"$600s - $900s","priceTiers":["$500K\u2013$1M"],"sqft":"900 - 1,200","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.439744,"lng":-82.687862,"pageUrl":"/neighborhood/casa-del-mar"},{"name":"Longboat Terrace","type":"condo","subtitle":"Townhome-style Gulf-view layouts","shortDescription":"Longboat Terrace is a north-end Longboat Key condo community known for townhouse-style units and a smaller-scale setting. It\u2019s a good option for buyers who want a more residential floor-plan feel than a typical condo layout.","priceRange":"$800s","priceTiers":["$500K\u2013$1M"],"sqft":"1,300","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Clubhouse","Fitness Center","Beach Access","Free Maintenance"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.384442,"lng":-82.638241,"pageUrl":"/neighborhood/longboat-terrace"},{"name":"The Beach on Longboat Key","type":"condo","subtitle":"Boutique Gulf-front elegance","shortDescription":"The Beach on Longboat Key is a Gulf-front resort-style condo/hotel setup with on-site amenities like a heated Gulf-front pool, private beach access, and a BBQ/grilling area. It\u2019s ideal if you want true beachfront with a \u201clock-and-leave\u201d vibe that feels more like a boutique resort stay.","priceRange":"$200s - $600s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"300 - 800","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.442787,"lng":-82.690502,"pageUrl":"/neighborhood/the-beach-on-longboat-key"},{"name":"Conrad Beach","type":"neighborhood","subtitle":"Upscale coastal cottage community","shortDescription":"Conrad Beach is a boutique north-end enclave offering maintenance-free living with shared community amenities like a neighborhood pool. It\u2019s a great fit for buyers who want a \u201csingle-family feel\u201d near quiet beaches without the upkeep burden of a large lot or big association.","priceRange":"$2M","priceTiers":["$2M\u2013$5M"],"sqft":"2,300 - 3,100","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Single Family Homes"],"amenities":["Community Pool","Beach Access","Free Maintenance"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.427706,"lng":-82.676979,"pageUrl":"/neighborhood/conrad-beach"},{"name":"Players Club","type":"condo","subtitle":"Gulf-front with tennis amenities","shortDescription":"Players Club is a Gulf-front condominium community featuring private beach access, heated pool with cabanas, tennis courts, fitness center, and clubhouse amenities with 24-hour security. It delivers an upscale resort-tower experience with expansive Gulf views.","priceRange":"$800s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,400 - 1,800","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Gated","Fitness Center"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.377402,"lng":-82.632343,"pageUrl":"/neighborhood/players-club"},{"name":"Arbomar","type":"condo","subtitle":"Boutique beachfront living","shortDescription":"Arbomar is a boutique Gulf-front building offering direct beach access, a heated beachfront pool, fitness center, clubhouse, grilling areas, and secured entry. It\u2019s an intimate beachfront setting ideal for buyers who want quiet coastal living with classic resort touches.","priceRange":"$800s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,000 - 1,200","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.419705,"lng":-82.669783,"pageUrl":"/neighborhood/arbomar"},{"name":"Harbour Oaks (Bay Isles)","type":"neighborhood","subtitle":"Townhomes near marina","shortDescription":"Harbour Oaks is a Bay Isles villa neighborhood featuring a community pool and spa plus an active social atmosphere. It\u2019s appealing for buyers who want gated convenience and neighborly amenities without a high-rise environment.","priceRange":"$900s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"2,200 - 2,400","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Townhomes"],"amenities":["Community Pool","Free Maintenance","Beach-Club Access","Gated","Walking Paths"],"location":"south","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.339772,"lng":-82.597234,"pageUrl":"/neighborhood/harbour-oaks-(bay-isles)"},{"name":"Bay Harbour","type":"condo","subtitle":"Mid-rise bayfront with boat slips","shortDescription":"Bay Harbour is a bayfront condominium community known for private marina access, boat slips, a waterfront pool, and social gathering spaces overlooking Sarasota Bay. It\u2019s a strong fit for boating enthusiasts seeking a residential, marina-focused lifestyle on south Longboat Key.","priceRange":"$700s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,400 - 2,000","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Marina Access","Personal Boat Slips"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.429194,"lng":-82.677894,"pageUrl":"/neighborhood/bay-harbour"},{"name":"Buttonwood Harbor","type":"neighborhood","subtitle":"Hidden bay-side neighborhood feel","shortDescription":"Buttonwood Harbor is a small Longboat Key waterfront neighborhood with a hidden-gem reputation and limited inventory. It appeals to buyers seeking a quieter residential setting and who are comfortable making property-specific comparisons within a very small community.","priceRange":"$1M - $4M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"1,400 - 2,100","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Single Family Homes"],"amenities":["Personal Boat Slips"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.445011,"lng":-82.693513,"pageUrl":"/neighborhood/buttonwood-harbor"},{"name":"Villa di Lancia","type":"condo","subtitle":"Luxury Gulf-front residences","shortDescription":"Villa di Lancia is a Gulf-front community with a resort-style clubhouse (fitness + sauna), a pool and hot tub, and two Har-Tru tennis courts that also accommodate pickleball. It\u2019s a strong pick for buyers who want a true \u201cbeach + racquet sports\u201d lifestyle in a well-amenitized, established Longboat K","priceRange":"$1M - $2M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,500 - 4,900","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"north","waterfront":["Gulf-front"],"is55plus":false,"lat":27.43113,"lng":-82.679649,"pageUrl":"/neighborhood/villa-di-lancia"},{"name":"Sea Grape Inn","type":"condo","subtitle":"Gorgeous beach views","shortDescription":"Sea Grape Inn is an eight-unit beachfront boutique condo-resort located directly on the Gulf of Mexico in Longboat Key. It appeals to buyers seeking low-density beachfront ownership with a small-property feel rather than a large resort complex.","priceRange":"$700s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"900 - 2,600","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Beach Access"],"location":"north","waterfront":["Gulf-front"],"is55plus":false,"lat":27.424764,"lng":-82.67275,"pageUrl":"/neighborhood/sea-grape-inn"},{"name":"Islands West","type":"condo","subtitle":"High-rise with sweeping Gulf views","shortDescription":"Islands West is a Gulf-front high-rise featuring private beach access, a heated beachfront pool, fitness center, sauna, tennis, and social spaces. It offers a traditional beachfront tower lifestyle with strong core amenities.","priceRange":"$900s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,500 - 2,200","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Fitness Center"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.428554,"lng":-82.677379,"pageUrl":"/neighborhood/islands-west"},{"name":"Beach Castle","type":"condo","subtitle":"Direct beach access with Gulf views","shortDescription":"Beach Castle is a beachfront condominium community offering private beach access, a heated pool, and vacation-style rental flexibility in a laid-back Gulf setting. It\u2019s best suited for buyers seeking a casual coastal retreat with income potential and direct sand access.","priceRange":"$700s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,200 - 1,500","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.441453,"lng":-82.689356,"pageUrl":"/neighborhood/beach-castle"},{"name":"Jewfish Key","type":"neighborhood","subtitle":"Exclusive luxury estates","shortDescription":"Jewfish Key is a boat-access-only island area near Longboat Key known for exceptional privacy and a highly unique waterfront ownership experience. It\u2019s best suited for buyers who want a true island retreat and are prepared for the logistics of boat-based access and property maintenance.","priceRange":"$1M - $5M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"2,300 - 3,500","bedrooms":"2 - 5","bedTags":["2","3","4","5"],"homeTypes":["Single Family Homes"],"amenities":["Personal Boat Slips","Private Beach","Beach Access"],"location":"north","waterfront":["Gulf-front"],"is55plus":false,"lat":27.425985,"lng":-82.6756,"pageUrl":"/neighborhood/jewfish-key"},{"name":"Sunset Beach","type":"condo","subtitle":"Intimate beachfront enclave","shortDescription":"Sunset Beach is a gated, Gulf-front community centered around a heated pool and spa/hot tub, with under-building/assigned parking that keeps the day-to-day easy. It\u2019s a strong choice for buyers who want secure, no-fuss beachfront living in a more intimate complex.","priceRange":"$1M","priceTiers":["$1M\u2013$2M"],"sqft":"1,300 - 1,500","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access","Gated"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.439694,"lng":-82.687297,"pageUrl":"/neighborhood/seaside"},{"name":"Longboat Key Estates","type":"neighborhood","subtitle":"Spacious canal-front homes","shortDescription":"Longboat Key Estates is a quiet residential neighborhood with a strong boating orientation and relaxed island setting. It\u2019s ideal for buyers who want privacy and everyday livability on the Key.","priceRange":"$1M - $6M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"1,500 - 5,000","bedrooms":"3 - 5","bedTags":["3","4","5"],"homeTypes":["Single Family Homes"],"amenities":["Private Beach","Beach Access"],"location":"north","waterfront":["Gulf-front"],"is55plus":false,"lat":27.42191,"lng":-82.67143,"pageUrl":"/neighborhood/weston-pointe"},{"name":"The Sanctuary (Longboat Key Club)","type":"condo","subtitle":"Private luxury Gulf towers","shortDescription":"The Sanctuary is a Longboat Key Club gated enclave known for layered security (manned gate access) and resort-style amenities including a beachfront pool/spa, tennis courts (Har-Tru), fitness/recreation facilities, and beachfront gathering spots like a gazebo. It\u2019s a top contender for buyers who wan","priceRange":"$1M - $3M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"1,800 - 3,900","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center","Golf"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.333785,"lng":-82.59134,"pageUrl":"/neighborhood/the-residences-at-the-st.-regis"},{"name":"Neptune","type":"condo","subtitle":"Boutique, gulf-front views","shortDescription":"Neptune is a boutique Gulf-front condo building on Longboat Key with direct beach access and a low-density ownership feel. It\u2019s ideal for buyers who value beachfront location and simplicity over a large-scale condo campus.","priceRange":"$300s - $400s","priceTiers":["Under $500K"],"sqft":"650 - 1,100","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Private Beach","Community Pool","Beach Access"],"location":"north","waterfront":["Gulf-front"],"is55plus":false,"lat":27.420113,"lng":-82.669417,"pageUrl":"/neighborhood/neptune"},{"name":"Sands Point","type":"condo","subtitle":"Private beachside seclusion","shortDescription":"Sands Point is a Gulf-front community with a heated pool and spa, a walkway to a more secluded stretch of beach, and waterside extras like a fishing pier (with limited/optional docks referenced in community summaries). It\u2019s compelling for buyers who want \u201cquiet beach + boating proximity\u201d without the","priceRange":"$700s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,500 - 3,000","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated"],"location":"mid","waterfront":["Gulf-front"],"is55plus":false,"lat":27.387873,"lng":-82.639212,"pageUrl":"/neighborhood/sage-longboat-key"},{"name":"Infinity","type":"condo","subtitle":"Contemporary boutique waterfront","shortDescription":"Infinity is a boutique bayfront luxury tower featuring private boat slips, a heated pool and spa, fitness center, secure entry, and under-building parking. Its limited residences and upscale finishes create an exclusive waterfront living experience.","priceRange":"$2M - $4M","priceTiers":["$2M\u2013$5M"],"sqft":"2,500 - 3,500","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"mid","waterfront":["Gulf-front"],"is55plus":false,"lat":27.379526,"lng":-82.63202,"pageUrl":"/neighborhood/infinity"},{"name":"Buttonwood Cove","type":"condo","subtitle":"Boater-friendly bayfront condos","shortDescription":"Buttonwood Cove is a Gulf-to-Bay community offering private beach access, boat docks, kayak launch, tennis/pickleball courts, a clubhouse, and a heated bayside pool. Its dual-waterfront lifestyle makes it especially appealing for buyers who want both boating access and laid-back beach living.","priceRange":"$500s - $900s","priceTiers":["$500K\u2013$1M"],"sqft":"1,200 - 1,600","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access","Marina Access","Personal Boat Slips"],"location":"mid","waterfront":["Bay-front"],"is55plus":false,"lat":27.376516,"lng":-82.631135,"pageUrl":"/neighborhood/buttonwood-cove"},{"name":"The Beaches (Longboat Key Club)","type":"condo","subtitle":"Gulf-front within LBK Club","shortDescription":"The Beaches is a high-rise within the Longboat Key Club area, offering full-service conveniences like concierge/24-hour doorman, a heated pool and spa, fitness center, and a resident clubroom. It\u2019s a compelling option for buyers who want beachfront luxury with staffed building services and a more \u201ct","priceRange":"$600s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,500 - 4,000","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center","Golf"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.347764,"lng":-82.602648,"pageUrl":"/neighborhood/the-beaches-(longboat-key-club)"},{"name":"Seascape","type":"condo","subtitle":"Gulf-front with tennis courts","shortDescription":"Seascape is a small, quiet Gulf-front condo community with direct beach access plus straightforward essentials like a heated pool and elevator service. It\u2019s a great fit if you want \u201clow-drama\u201d beachfront living in a more intimate setting.","priceRange":"$900s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,500 - 1,900","bedrooms":"3","bedTags":["3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.391626,"lng":-82.644243,"pageUrl":"/neighborhood/seaplace"},{"name":"La Playa","type":"condo","subtitle":"Direct beachfront privacy","shortDescription":"La Playa is a Gulf-front condominium community featuring private beach access, a heated beachfront pool, and outdoor grilling areas. It\u2019s a relaxed beachfront setting suited for buyers seeking casual coastal living.","priceRange":"$900s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,300 - 1,700","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.38191,"lng":-82.635763,"pageUrl":"/neighborhood/la-playa"},{"name":"Sea Oats","type":"condo","subtitle":"Low-rise beach-to-bay setting","shortDescription":"Sea Oats appears to be a tiny, low-density building (8 units) on Gulf of Mexico Drive that\u2019s marketed in rental/listing materials as Gulf-front with walk-out beach access, but with a more \u201csimple basics\u201d amenity profile than the larger towers. It\u2019s one to consider if the priority is privacy and beac","priceRange":"$300s - $600s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"600 - 1,100","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.432912,"lng":-82.680307,"pageUrl":"/neighborhood/sea-oats"},{"name":"Sand Cay Beach Resort","type":"condo","subtitle":"Vacation-friendly beachfront condos","shortDescription":"Sand Cay Beach Resort is a beachfront condo-resort with classic vacation amenities like a heated pool, tennis, shuffleboard, and outdoor BBQ/picnic space steps from the sand. It\u2019s a strong fit for buyers who want simple Gulf-front living with an \u201ceasy rental-friendly resort\u201d vibe.","priceRange":"$700s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,000 - 1,300","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Tennis","Pickleball","Beach Access","Private Beach"],"location":"north","waterfront":["Gulf-front"],"is55plus":false,"lat":27.430989,"lng":-82.679224,"pageUrl":"/neighborhood/sand-cay-beach-resort"},{"name":"Beachcomber","type":"condo","subtitle":"Intimate beachfront escape","shortDescription":"Beachcomber is a direct Gulf-front condominium known for private beach access, a beachfront pool, and relaxed low-rise living along the shoreline. It\u2019s a classic Longboat Key beachfront option for buyers seeking simplicity, views, and walk-out beach proximity.","priceRange":"$900s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,300 - 1,600","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.424593,"lng":-82.673514,"pageUrl":"/neighborhood/beachcomber"},{"name":"Banyan Bay Club","type":"condo","subtitle":"Secluded bayfront with boat docks","shortDescription":"The Banyan Bay Club is a unique Gulf-to-Bay community featuring a clubhouse, pool, fitness center, tennis and pickleball courts, kayak storage, and bayside dockage with boat access. Its rare dual-waterfront layout makes it appealing for buyers who want both beach relaxation and boating lifestyle ame","priceRange":"$400s - $700s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"1,100 - 1,500","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Marina Access","Personal Boat Slips"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.445157,"lng":-82.691904,"pageUrl":"/neighborhood/banyan-bay-club"},{"name":"Emerald Harbor","type":"neighborhood","subtitle":"Deepwater canal luxury homes","shortDescription":"Emerald Harbor is a north-end boating community built around wide, deep-water canals with access out toward the Intracoastal Waterway. It\u2019s ideal for buyers who want true dock-and-go capability in an established, single-family neighborhood setting.","priceRange":"$1M - $5M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"2,300 - 4,000","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access","Personal Boat Slips"],"location":"mid","waterfront":["Bay-front"],"is55plus":false,"lat":27.37801,"lng":-82.631655,"pageUrl":"/neighborhood/emerald-harbor"},{"name":"Cabana Beach Club","type":"condo","subtitle":"Low-density beachfront charm","shortDescription":"Cabana Beach Club is a Gulf-front condominium community featuring private beach access, a heated pool, and outdoor grilling areas in an intimate low-rise setting. Its relaxed beachfront atmosphere makes it a strong fit for buyers seeking a quiet coastal retreat with classic Old Florida charm.","priceRange":"$600s - $900s","priceTiers":["$500K\u2013$1M"],"sqft":"700 - 1,100","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.395273,"lng":-82.648066,"pageUrl":"/neighborhood/cabana-beach-club"},{"name":"Grand Mariner","type":"condo","subtitle":"Marina-front boating lifestyle","shortDescription":"Grand Mariner is a bayfront condominium community featuring private boat slips, a heated waterfront pool, secure entry, and under-building parking along Sarasota Bay. It\u2019s especially appealing to boating enthusiasts seeking a marina-focused lifestyle with expansive water views.","priceRange":"$1M - $2M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,000 - 2,800","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Gated","Fitness Center","Marina Access","Personal Boat Slips"],"location":"mid","waterfront":["Bay-front"],"is55plus":false,"lat":27.397886,"lng":-82.649757,"pageUrl":"/neighborhood/grand-mariner"},{"name":"Tiffany Plaza","type":"condo","subtitle":"Classic Gulf-front high-rise","shortDescription":"Tiffany Plaza is a smaller Gulf-front building with a heated pool, clubhouse/meeting space, sauna, grilling area, and a private beach walkway (plus handy extras like storage/tiki hut beach storage noted by local listing sources). It\u2019s appealing for buyers who want intimate beachfront living with the","priceRange":"$500s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,400 - 3,100","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.441688,"lng":-82.689098,"pageUrl":"/neighborhood/tiffany-plaza"},{"name":"Longboat Shores","type":"neighborhood","subtitle":"Canal homes with Gulf access","shortDescription":"Longboat Shores is a canal-front neighborhood of roughly 50+ homes with docks and deep-water access to Sarasota Bay and beyond. It\u2019s a great fit for buyers prioritizing boating function over shared amenities.","priceRange":"$1M - $2M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"1,500 \u2013 2,500","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access","Personal Boat Slips"],"location":"mid","waterfront":["Bay-front"],"is55plus":false,"lat":27.389971,"lng":-82.643665,"pageUrl":"/neighborhood/longboat-shores"},{"name":"Seahorse Beach Resort","type":"condo","subtitle":"Quaint beachfront getaway","shortDescription":"Seahorse Beach Resort is a Gulf-front condo-resort with a heated pool overlooking the beach and a classic \u201cwalk-out private beach\u201d setup geared toward easy stays and repeat visits. It\u2019s a solid option for buyers who want a straightforward beachfront retreat with on-site operations and a proven vacat","priceRange":"$400s - $500s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"1,000","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.434323,"lng":-82.683406,"pageUrl":"/neighborhood/sea-horse"},{"name":"The Bayou (Bay Isles)","type":"neighborhood","subtitle":"Private bayou estate homes","shortDescription":"The Bayou is a Bay Isles single-family neighborhood with homes along the Bay Isles Waterway as well as golf and garden lots. It\u2019s appealing for buyers seeking custom-home living within the gates.","priceRange":"$1M - $5M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"2,600 - 5,700","bedrooms":"3 - 5","bedTags":["3","4","5"],"homeTypes":["Single Family Homes"],"amenities":["Beach-Club Access","Gated","Walking Paths"],"location":"south","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.345527,"lng":-82.603034,"pageUrl":"/neighborhood/the-bayou-(bay-isles)"},{"name":"Laguna Yacht Village","type":"neighborhood","subtitle":"Luxury marina-front estates","shortDescription":"Laguna Yacht Village is a boutique gated boating community with HOA-maintained grounds and a shared pool environment. It\u2019s compelling for buyers seeking beach and bay proximity within a very private neighborhood footprint.","priceRange":"$2M","priceTiers":["$2M\u2013$5M"],"sqft":"2,800 - 3,200","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Single Family Homes"],"amenities":["Community Pool","Gated","Marina Access","Personal Boat Slips","Free Maintenance","Private Beach (Deeded)"],"location":"north","waterfront":["Gulf-front","Bay-front"],"is55plus":false,"lat":27.441274,"lng":-82.688265,"pageUrl":"/neighborhood/laguna-yacht-village"},{"name":"Windward Bay","type":"condo","subtitle":"Bayfront with deeded beach access","shortDescription":"Windward Bay is a Gulf-to-Bay community with deeded beach access across the street, two pools, a fitness center with sauna, tennis and pickleball, clubhouse spaces, and helpful extras like kayak storage and walking trails. It\u2019s an excellent choice for buyers who want \u201cboating + beach\u201d flexibility in","priceRange":"$400s - $800s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"1,000 - 1,300","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Marina Access","Personal Boat Slips"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.431284,"lng":-82.680469,"pageUrl":"/neighborhood/windward-bay"},{"name":"Portobello","type":"condo","subtitle":"Mid-rise beachfront serenity","shortDescription":"Portobello is a mid-Key Gulf-front condominium featuring private beach access, a heated pool, tennis courts, clubhouse amenities, and elevator access. Its boutique scale and direct beachfront setting make it appealing for buyers seeking a quieter, traditional Longboat Key beach lifestyle.","priceRange":"$800s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,200 - 1,500","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Marina Access","Personal Boat Slips"],"location":"mid","waterfront":["Bay-front"],"is55plus":false,"lat":27.385261,"lng":-82.638303,"pageUrl":"/neighborhood/portobello"},{"name":"Sea Pines","type":"condo","subtitle":"Your gated beachfront retreat","shortDescription":"Sea Pines is a north-end Longboat Key beachfront condo community with a low-rise, lower-density feel. It\u2019s a good fit for buyers who want direct Gulf access and a quieter alternative to larger condo towers.","priceRange":"$700s - $900s","priceTiers":["$500K\u2013$1M"],"sqft":"1,100","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Tennis","Personal Boat Slips","Beach Access"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.424473,"lng":-82.672922,"pageUrl":"/neighborhood/sea-pines"},{"name":"Longboat Harbour Towers","type":"condo","subtitle":"Waterfront views with marina","shortDescription":"Longboat Harbour Towers is a Gulf-front condominium community featuring beachfront access, a heated pool, tennis courts, shuffleboard, fitness facilities, and on-site management. It offers a traditional beachfront living experience with a mix of recreational and coastal lifestyle amenities.","priceRange":"$500s - $900s","priceTiers":["$500K\u2013$1M"],"sqft":"1,200 - 1,800","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.442254,"lng":-82.689778,"pageUrl":"/neighborhood/longboat-harbour-towers"},{"name":"Longboat Landing","type":"condo","subtitle":"Beautiful bayfront community with boat slips","shortDescription":"Longboat Landing is a small bayfront Longboat Key condo community with only nine units and a quiet north-end setting. It stands out for buyers who want a boutique condominium with beach access and a less crowded feel.","priceRange":"$1M","priceTiers":["$1M\u2013$2M"],"sqft":"1,300","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Tennis","Personal Boat Slips","Beach Access"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.430647,"lng":-82.679454,"pageUrl":"/neighborhood/longboat-landing"},{"name":"Sutton Place","type":"condo","subtitle":"Bayfront with beach access","shortDescription":"Sutton Place is a bayside community with deeded private beach access, two pools, a clubhouse, fishing pier, and boat slips. Great for combining boating with beach access.","priceRange":"$400s - $600s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"700 - 1,450","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access","Marina Access"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.44428,"lng":-82.691925,"pageUrl":"/neighborhood/sunset-beach"},{"name":"Bayview Estates","type":"neighborhood","subtitle":"Classic north-key waterfront setting","shortDescription":"Bayview Estates is a Longboat Key waterfront neighborhood with a mix of older island homes, updated residences, and newer builds. It\u2019s a good fit for buyers who want single-family living and are comfortable comparing homes individually for condition, water access, and renovation level.","priceRange":"$1M - $4M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"1,000 - 4,100","bedrooms":"2 - 5","bedTags":["2","3","4","5"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access","Personal Boat Slips"],"location":"mid","waterfront":["Gulf-front","Bay-front"],"is55plus":false,"lat":27.376326,"lng":-82.629106,"pageUrl":"/neighborhood/bayview-estates"},{"name":"Sea Gate Club","type":"condo","subtitle":"Boutique Gulf-front living","shortDescription":"Sea Gate Club is a beachfront community offering a heated Gulf-front pool, Har-Tru tennis, a fitness center, and strong common spaces like a social room/kitchen and library, plus on-site management and covered parking/storage. It\u2019s a great choice for buyers who want a true \u201cresort-amenity checklist\u201d","priceRange":"$1M - $2M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"1,450 - 1,650","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Fitness Center"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.441914,"lng":-82.688541,"pageUrl":"/neighborhood/sands-point"},{"name":"Longboat Harbour","type":"condo","subtitle":"Active 55+ waterfront community","shortDescription":"Longboat Harbour is a large bayside community offering four pools, tennis courts, fitness center, clubhouse spaces, boat slips, kayak storage, and gated entry with private Gulf beach club access. It\u2019s one of the most amenity-rich boating communities on Longboat Key.","priceRange":"$300s - $700s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"700 - 1,400","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Fitness Center","Marina Access","Personal Boat Slips"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.427553,"lng":-82.67746,"pageUrl":"/neighborhood/longboat-harbour"},{"name":"Longboat Key Towers (Longboat Key Club)","type":"condo","subtitle":"Beachfront within LBK Club","shortDescription":"Longboat Key Towers is a beachfront condominium within the Longboat Key Club featuring private beach access, pool amenities, fitness facilities, and secure entry. It offers condo ownership paired with the broader luxury resort environment of the club.","priceRange":"$900s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,500 - 2,500","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center","Golf"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.330564,"lng":-82.588462,"pageUrl":"/neighborhood/longboat-key-towers-(longboat-key-club)"},{"name":"Emerald Pointe (Bay Isles)","type":"neighborhood","subtitle":"Gated bayfront estates","shortDescription":"Emerald Pointe is a private Bay Isles enclave (North & South) positioned for buyers who want a smaller, quieter neighborhood inside a gated master community. As part of Bay Isles, residents have access to the private Bay Isles Beach Club, adding a true \u201cbeach club lifestyle\u201d layer to the neighborhoo","priceRange":"$1M","priceTiers":["$1M\u2013$2M"],"sqft":"2,200 - 3,000","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Single Family Homes"],"amenities":["Free Maintenance","Beach-Club Access","Gated","Walking Paths"],"location":"south","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.338256,"lng":-82.595224,"pageUrl":"/neighborhood/emerald-pointe-(bay-isles)"},{"name":"Promenade","type":"condo","subtitle":"Luxury Gulf-front tower living","shortDescription":"Promenade is a Gulf-front luxury tower featuring private beach access, heated pool and spa, tennis courts, fitness center, concierge services, and social gathering spaces. It delivers a full-service high-rise lifestyle with strong resort-style amenities.","priceRange":"$600s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,600 - 4,200","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Gated","Fitness Center"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.379932,"lng":-82.633049,"pageUrl":"/neighborhood/pomenade-new"},{"name":"Longbeach Village","type":"neighborhood","subtitle":"Historic north-end charm","shortDescription":"Longbeach Village is a historic north-end neighborhood known for Old Florida cottages, walkability, and waterfront charm. It\u2019s perfect for buyers seeking character and culture over structured HOA amenities.","priceRange":"$600s - $3M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M","$2M\u2013$5M"],"sqft":"800 - 3,000","bedrooms":"1 - 3","bedTags":["1","2","3"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.444532,"lng":-82.690643,"pageUrl":"/neighborhood/longbeach-village"},{"name":"Regent Court (Longboat Key Club)","type":"neighborhood","subtitle":"Golf villa living","shortDescription":"Regent Court is an ultra-exclusive enclave behind the Longboat Key Club gates with a very limited number of luxury residences. It\u2019s designed for buyers seeking maximum privacy and proximity to resort amenities.","priceRange":"$19M","priceTiers":["$5M+"],"sqft":"9,300","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Villas"],"amenities":["Beach Access","Gated","Golf"],"location":"south","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.351836,"lng":-82.606901,"pageUrl":"/neighborhood/regent-court"},{"name":"Harbour Villa Club","type":"condo","subtitle":"Townhome-style bayfront living","shortDescription":"Harbour Villa Club is a bayside condominium community offering a private marina with boat slips, heated pool, fishing pier, and clubhouse amenities. It\u2019s a strong fit for buyers seeking a boating-oriented lifestyle in a smaller residential setting.","priceRange":"$1M - $2M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,400 - 3,200","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Villas"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Marina Access","Personal Boat Slips"],"location":"south","waterfront":["Bay-front"],"is55plus":false,"lat":27.332881,"lng":-82.592023,"pageUrl":"/neighborhood/harbour-villa-club"},{"name":"La Firenza","type":"condo","subtitle":"Boutique luxury on the Gulf","shortDescription":"La Firenza is an ultra-luxury Gulf-front boutique building offering private beach access, resort pool and spa amenities, fitness facilities, concierge services, and secure parking. It delivers a highly exclusive beachfront living experience.","priceRange":"$2M - $4M","priceTiers":["$2M\u2013$5M"],"sqft":"2,400 - 3,200","bedrooms":"3","bedTags":["3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"mid","waterfront":["Gulf-front"],"is55plus":false,"lat":27.395313,"lng":-82.646837,"pageUrl":"/neighborhood/la-firenza"},{"name":"Bay Isles - Harbor Section","type":"neighborhood","subtitle":"Luxury estates with deepwater docks","shortDescription":"The Bay Isles Harbor Section is a gated, prestige neighborhood inside larger Bay Isles, positioned for buyers who want a secure, private community feel on the south end of Longboat Key. A key lifestyle perk is Bay Isles ownership, which includes access to the private Bay Isles Beach Club on the Gulf","priceRange":"$800s - $9M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"2,000 - 7,400","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Single Family Homes"],"amenities":["Beach-Club Access","Gated","Walking Paths","Marina Access","Personal Boat Slips"],"location":"south","waterfront":["Bay-front","Beach Club Access"],"is55plus":false,"lat":27.353296,"lng":-82.610134,"pageUrl":"/neighborhood/bay-isles-harbor"},{"name":"Whitney Beach","type":"condo","subtitle":"North-end beachside charm","shortDescription":"Whitney Beach is an amenity-rich, beach-oriented community offering tennis/pickleball, shuffleboard, a resort-style heated pool, BBQ/picnic areas, and kayak launching\u2014plus private beach access through the Whitney Beach Conservancy. It\u2019s a standout for buyers who want an active, outdoorsy Longboat li","priceRange":"$300s - $1M","priceTiers":["Under $500K","$500K\u2013$1M","$1M\u2013$2M"],"sqft":"900 - 1,400","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Marina Access","Personal Boat Slips"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.435947,"lng":-82.684635,"pageUrl":"/neighborhood/whitney-beach"},{"name":"Northgate","type":"condo","subtitle":"A secluded north-end beach enclave","shortDescription":"Northgate is a boutique Longboat Key condo community with only nine units, making it one of the more limited-inventory options on the island. It appeals to buyers who want a quieter, smaller-scale building and north-end location.","priceRange":"$500s","priceTiers":["$500K\u2013$1M"],"sqft":"1,200","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Tennis","Personal Boat Slips","Free Lawn Maintenance"],"location":"north","waterfront":["Bay-front"],"is55plus":false,"lat":27.429565,"lng":-82.678265,"pageUrl":"/neighborhood/northgate"},{"name":"The Shore","type":"condo","subtitle":"Modern boutique beachfront","shortDescription":"The Shore is a Gulf-front community with a classic \u201cbeach club\u201d feel\u2014heated beachfront pool and spa, clubhouse/social spaces (often including library/social room), fitness room, sauna, and convenient private/covered parking. It\u2019s worth a look if you want direct beach access with solid amenities, wit","priceRange":"$600s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,600 - 2,200","bedrooms":"2","bedTags":["2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.382191,"lng":-82.636414,"pageUrl":"/neighborhood/the-shore"},{"name":"Aquarius Club","type":"condo","subtitle":"Gulf-front high-rise","shortDescription":"The Aquarius Club is an intimate, Gulf-front building with resort-style features like a heated pool, tennis/pickleball, a fitness center, and updated common spaces. It's exclusive beachfront is also stunning.","priceRange":"$500s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,500 - 3,000","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Fitness Center","Pickleball"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.394592,"lng":-82.645885,"pageUrl":"/neighborhood/aquarius-club"},{"name":"Weston Pointe (Bay Isles)","type":"neighborhood","subtitle":"Luxury homes near marina","shortDescription":"Weston Pointe is a small Bay Isles enclave positioned near shopping, the library, tennis facilities, and the Moorings marina. It\u2019s ideal for buyers who want gated living with exceptional day-to-day convenience.","priceRange":"$1M - $5M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"2,500 - 5,000","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Single Family Homes"],"amenities":["Community Pool","Free Maintenance","Beach-Club Access","Gated","Walking Paths","Marina Access","Personal Boat Slips"],"location":"south","waterfront":["Bay-front","Beach Club Access"],"is55plus":false,"lat":27.337485,"lng":-82.59549,"pageUrl":"/neighborhood/weston-pointe-(bay-isles)"},{"name":"Veinte","type":"condo","subtitle":"Exclusive mid-rise beachfront","shortDescription":"Veinte is an exclusive Gulf-front community known for being small and private, with direct beach access plus amenities like a Gulf-facing pool and on-site fitness; listing sources also note a tennis/pickleball court and gated/secure entry. It\u2019s best for buyers who want \u201cfew neighbors, big water view","priceRange":"$1M","priceTiers":["$1M\u2013$2M"],"sqft":"1,900 - 2,200","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.433354,"lng":-82.681408,"pageUrl":"/neighborhood/veinte"},{"name":"Harbour Links (Bay Isles)","type":"neighborhood","subtitle":"Golf course paired villas","shortDescription":"Harbour Links is a small Bay Isles enclave known for spacious residences with garages and golf-course views within a gated setting. It\u2019s a strong pick for buyers seeking low-density Bay Isles living with an upscale residential feel.","priceRange":"$1M - $2M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,100 - 2,500","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Villas"],"amenities":["Community Pool","Free Maintenance","Beach-Club Access","Gated","Walking Paths"],"location":"south","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.347078,"lng":-82.603709,"pageUrl":"/neighborhood/harbour-links"},{"name":"Sabal Cove","type":"neighborhood","subtitle":"Maintenance-free bayfront homes","shortDescription":"Sabal Cove is a Bay Isles single-family enclave featuring custom-built homes within a quiet gated environment. It\u2019s ideal for buyers wanting newer-style Bay Isles living in a curated residential setting.","priceRange":"$2M","priceTiers":["$2M\u2013$5M"],"sqft":"3,200 - 5,200","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Single Family Homes"],"amenities":["Beach-Club Access","Gated","Walking Paths"],"location":"north","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.421864,"lng":-82.671868,"pageUrl":"/neighborhood/queens-harbour-(bay-isles)"},{"name":"Turtle Crawl Inn","type":"condo","subtitle":"Laid-back beachfront villas","shortDescription":"Turtle Crawl Inn is a Gulf-front, resort-style condo property with a heated pool, beach access, and \u201ceasy vacation living\u201d perks like grills/BBQ areas and tropical grounds (frequently highlighted by guest-facing materials). It\u2019s a strong match for buyers who want a casual, stay-and-play beachfront s","priceRange":"$700s - $900s","priceTiers":["$500K\u2013$1M"],"sqft":"700 - 1,000","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.427426,"lng":-82.675636,"pageUrl":"/neighborhood/turtle-crawl-inn"},{"name":"Hideaway Bay","type":"neighborhood","subtitle":"No-bridge, deep-water docks","shortDescription":"Hideaway Bay is a secluded Longboat Key waterfront neighborhood on Millar Bay with strong appeal for boating-focused buyers. It stands out for its deep-water dockage profile and no-bridge access, combined with a private cul-de-sac setting.","priceRange":"$1M - $7M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"2,900 - 5,400","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access","Tennis","Personal Boat Slips"],"location":"mid","waterfront":["Gulf-front","Bay-front"],"is55plus":false,"lat":27.394604,"lng":-82.645632,"pageUrl":"/neighborhood/hideaway-bay"},{"name":"Queens Harbour","type":"neighborhood","subtitle":"Gated bayfront elegance","shortDescription":"Queens Harbour is a Bay Isles neighborhood where select homes feature boat docks on navigable water, with others oriented to golf or lake views. It\u2019s appealing for buyers seeking gated prestige with optional boating access.","priceRange":"$1M - $3M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,200 - 4,600","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Single Family Homes"],"amenities":["Community Pool","Free Maintenance","Beach-Club Access","Gated","Walking Paths"],"location":"mid","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.391558,"lng":-82.643695,"pageUrl":"/neighborhood/queens-harbour"},{"name":"Club Longboat","type":"condo","subtitle":"Gulf-front with tennis facilities","shortDescription":"Club Longboat is a beachfront condominium community at 5055 Gulf of Mexico Drive featuring 8 Har-Tru tennis courts, two heated pools, a Jacuzzi, sauna/spa features, a fitness center, and a clubhouse with social spaces. It\u2019s a true \u201cbeach + tennis resort\u201d lifestyle for buyers who want an amenity-rich","priceRange":"$400s - $800s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"1,500","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Pickleball","Fitness Center"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.439015,"lng":-82.685745,"pageUrl":"/neighborhood/club-longboat"},{"name":"L'Ambiance (Longboat Key Club)","type":"condo","subtitle":"Premier luxury beachfront towers","shortDescription":"L'Ambiance is a luxury Gulf-front condo community with concierge services, tennis, pools, and private beach access. Experience a resort lifestyle in L'Ambiance.","priceRange":"$4M - $10M","priceTiers":["$2M\u2013$5M","$5M+"],"sqft":"3,000 - 7,000","bedrooms":"2 - 4","bedTags":["2","3","4"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center","Golf"],"location":"south","waterfront":["Gulf-front"],"is55plus":false,"lat":27.350295,"lng":-82.606419,"pageUrl":"/neighborhood/l'ambiance-(bay-isles)"},{"name":"Harris Bayou","type":"neighborhood","subtitle":"Bayou-side canal living","shortDescription":"Harris Bayou is a waterfront Longboat Key residential area that appeals to buyers seeking canal/bayou access and single-family home living. It\u2019s best for buyers willing to evaluate each property individually for dockage, navigation, and lot-specific boating utility.","priceRange":"$1M - $6M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M","$5M+"],"sqft":"2,200 - 6,000","bedrooms":"3 - 5","bedTags":["3","4","5"],"homeTypes":["Single Family Homes"],"amenities":["Beach Access","Private Beach (Deeded)","Personal Boat Slips"],"location":"north","waterfront":["Gulf-front","Bay-front"],"is55plus":false,"lat":27.433576,"lng":-82.680575,"pageUrl":"/neighborhood/harris-bayou"},{"name":"Spanish Main Yacht Club (55+)","type":"neighborhood","subtitle":"Active 55+ waterfront living","shortDescription":"The Spanish Main Yacht Club is a 55+ community offering a clubhouse, pool, boating slips, and beach access. It\u2019s a strong option for buyers seeking social, maintenance-friendly living with boating perks.","priceRange":"$300s - $600s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"800 - 1,600","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Villas"],"amenities":["Community Pool","Beach Access","Marina Access","Personal Boat Slips","55+Communities","Free Maintenance"],"location":"north","waterfront":["Bay-front"],"is55plus":true,"lat":27.427715,"lng":-82.678144,"pageUrl":"/neighborhood/spanish-main-yacht-club-(55%2B)"},{"name":"En Provence","type":"condo","subtitle":"Luxury Gulf-front exclusivity","shortDescription":"En Provence is an ultra-luxury Gulf-front enclave offering private beach access, a resort pool and spa, fitness center, and concierge-style services within a gated setting. It delivers a boutique tower experience for buyers seeking privacy and high-end beachfront living.","priceRange":"$3M - $8M","priceTiers":["$2M\u2013$5M","$5M+"],"sqft":"3,300 - 6,000","bedrooms":"3 - 4","bedTags":["3","4"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"mid","waterfront":["Gulf-front"],"is55plus":false,"lat":27.390906,"lng":-82.641653,"pageUrl":"/neighborhood/en-provence"},{"name":"Cedars West","type":"condo","subtitle":"Bayside villas with amenities","shortDescription":"Cedars West is a bayfront residential enclave connected to the Cedars Tennis Resort, with access to tennis facilities, pool amenities, and fitness spaces. It appeals to buyers who want racquet sports and waterfront living combined in a quieter residential setting.","priceRange":"$400s - $800s","priceTiers":["Under $500K","$500K\u2013$1M"],"sqft":"1,300 - 1,600","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.432735,"lng":-82.681408,"pageUrl":"/neighborhood/cedars-west"},{"name":"Castillian","type":"condo","subtitle":"Spacious Gulf-front residences","shortDescription":"The Castillian is a Gulf-front condo community offering a heated pool and spa, tennis, clubhouse/game room with kitchen, BBQ/picnic pavilion, elevators, secure entry, under-building parking, storage, and kayak storage racks. It\u2019s a classic beachfront building for buyers who want strong \u201ccore ameniti","priceRange":"$800s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,300 - 1,500","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.380704,"lng":-82.633512,"pageUrl":"/neighborhood/castillian"},{"name":"Positano","type":"condo","subtitle":"Mediterranean-inspired luxury","shortDescription":"Positano is a luxury Gulf-front condominium enclave featuring direct beach access, a heated pool, fitness center, clubhouse and recreation facilities, gated security, and private garages. Its low-density design and modern construction create an exclusive beachfront lifestyle for high-end buyers.","priceRange":"$2M - $4M","priceTiers":["$2M\u2013$5M"],"sqft":"2,400 - 3,200","bedrooms":"3","bedTags":["3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"mid","waterfront":["Gulf-front"],"is55plus":false,"lat":27.385342,"lng":-82.637543,"pageUrl":"/neighborhood/positano"},{"name":"Longboat Beach House","type":"condo","subtitle":"Charming Gulfside villas","shortDescription":"Longboat Beach House is a Gulf-front condominium community featuring private beach access, a heated pool, and outdoor grilling spaces. It\u2019s a laid-back beachfront option with strong vacation appeal.","priceRange":"$500s - $600s","priceTiers":["$500K\u2013$1M"],"sqft":"1,000 - 1,500","bedrooms":"1 - 3","bedTags":["1","2","3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Free Maintenance","Beach Access"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.381327,"lng":-82.634752,"pageUrl":"/neighborhood/longboat-beach-house"},{"name":"Cedars East","type":"condo","subtitle":"Tennis resort with rental flexibility","shortDescription":"Cedars East is located within the Cedars Tennis Resort, offering access to Har-Tru tennis courts, a Junior Olympic pool, fitness facilities, and clubhouse amenities. It\u2019s ideal for buyers seeking an active, tennis-centric lifestyle in a resort-style setting.","priceRange":"$500s - $900s","priceTiers":["$500K\u2013$1M"],"sqft":"1,300 - 1,700","bedrooms":"1 - 4","bedTags":["1","2","3","4"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Fitness Center","Walking Paths"],"location":"north","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.444088,"lng":-82.690583,"pageUrl":"/neighborhood/cedars-east"},{"name":"Winding Oaks (Bay Isles)","type":"neighborhood","subtitle":"Gated enclave with privacy","shortDescription":"Winding Oaks is a Bay Isles community featuring a pool, private park, and walking trails within a lush residential setting. It\u2019s a great fit for buyers who want gated privacy with nature-oriented surroundings.","priceRange":"$700s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,500 - 2,600","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Single Family Homes"],"amenities":["Community Pool","Free Maintenance","Beach-Club Access","Gated","Walking Paths"],"location":"south","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.331578,"lng":-82.590821,"pageUrl":"/neighborhood/winding-oaks-(bay-isles)"},{"name":"The Grande at Longboat Key","type":"condo","subtitle":"Luxury Gulf-front \u201cflow-through\u201d views","shortDescription":"The Grande at Longboat Key is a Gulf-front luxury condo community with just eight residences, giving it a private, low-density feel. It\u2019s a strong fit for buyers seeking larger floor plans, direct beach access, and a more exclusive ownership experience.","priceRange":"$2M - $3M","priceTiers":["$2M\u2013$5M"],"sqft":"3,200","bedrooms":"3","bedTags":["3"],"homeTypes":["Condominiums"],"amenities":["Community Pool","Private Beach","Private Beach (Deeded)","Beach Access"],"location":"mid","waterfront":["Gulf-front"],"is55plus":false,"lat":27.383936,"lng":-82.636713,"pageUrl":"/neighborhood/grande-at-longboat-key"},{"name":"Water Club","type":"condo","subtitle":"Premier resort-style towers","shortDescription":"The Water Club is a luxurious gated condominium complex with concierge services, a fitness center, a spa, tennis courts, and resort-style pool amenities. It's a private club-style living experience.","priceRange":"$1M - $3M","priceTiers":["$1M\u2013$2M","$2M\u2013$5M"],"sqft":"1,500 - 5,000","bedrooms":"3","bedTags":["3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Private Beach","Beach Access","Gated","Fitness Center"],"location":"mid","waterfront":["Gulf-front"],"is55plus":false,"lat":27.375495,"lng":-82.630107,"pageUrl":"/neighborhood/the-sanctuary-(longboat-key-club)"},{"name":"Bayport Beach & Tennis","type":"condo","subtitle":"Tennis-focused bayside community","shortDescription":"Bayport Beach & Tennis is a sprawling Gulf-to-Bay community with private beach access, multiple pools, Har-Tru tennis courts, a fitness center, clubhouse, and fishing pier. Its expansive grounds and amenity depth create an active, resort-style environment with a low-density residential feel.","priceRange":"$500s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,500 - 2,000","bedrooms":"1 - 2","bedTags":["1","2"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Walking Paths","Fitness Center"],"location":"mid","waterfront":["Walk to Beach"],"is55plus":false,"lat":27.388587,"lng":-82.641456,"pageUrl":"/neighborhood/bayport-beach-%26-tennis"},{"name":"Corey's Landing","type":"neighborhood","subtitle":"Secluded bayfront with boat slips","shortDescription":"Corey\u2019s Landing is a gated Bay Isles neighborhood of roughly 61 homes featuring a community pool and tennis, with a mix of bayfront and golf-course-oriented properties. It\u2019s compelling for buyers who want a residential neighborhood vibe inside Bay Isles while staying close to the south-end amenities","priceRange":"$700s - $4M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M","$2M\u2013$5M"],"sqft":"2,200 - 6,200","bedrooms":"3 - 5","bedTags":["3","4","5"],"homeTypes":["Single Family Homes"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach-Club Access","Gated","Walking Paths","Marina Access"],"location":"mid","waterfront":["Bay-front","Beach Club Access"],"is55plus":false,"lat":27.388047,"lng":-82.641322,"pageUrl":"/neighborhood/corey's-landing-(bay-isles)"},{"name":"Pelican Harbour & Beach Club","type":"condo","subtitle":"Beach-to-bay boating lifestyle","shortDescription":"Pelican Harbour & Beach Club is a waterfront community offering marina access, heated pool, tennis, fitness facilities, and clubhouse amenities. Its boating access combined with beach privileges creates a balanced Gulf-to-Bay lifestyle.","priceRange":"$600s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,200 - 2,000","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach Access","Marina Access","Personal Boat Slips"],"location":"north","waterfront":["Bay-front","Beach Club Access"],"is55plus":false,"lat":27.443726,"lng":-82.692336,"pageUrl":"/neighborhood/pelican-harbour-%26-beach-club"},{"name":"Fairway Bay (Bay Isles)","type":"condo","subtitle":"Gated golf course surroundings","shortDescription":"Fairway Bay  (part of the larger Bay Isles community) offers tennis, fitness, clubhouse spaces, and multiple pools within a gated setting. Consider it if you want an active lifestyle with access to the larger Bay Isles amenities.","priceRange":"$500s - $1M","priceTiers":["$500K\u2013$1M","$1M\u2013$2M"],"sqft":"1,200 - 2,500","bedrooms":"2 - 3","bedTags":["2","3"],"homeTypes":["Condominiums","Villas"],"amenities":["Tennis","Community Pool","Free Maintenance","Beach-Club Access","Beach Access","Gated","Walking Paths","Fitness Center","Golf"],"location":"south","waterfront":["Beach Club Access"],"is55plus":false,"lat":27.33289,"lng":-82.590919,"pageUrl":"/neighborhood/fairway-bay-(longboat-key-club)"}];
+
+/* ===== Filter state ===== */
+const state = {
+  type: 'all',
+  locations: new Set(),
+  waterfronts: new Set(),
+  priceTiers: new Set(),
+  homeTypes: new Set(),
+  bedrooms: new Set(),
+  amenities: new Set(),
+  age55: false,
+  layout: 'split',
+  sort: 'default',
+  highlightedName: null,
+};
+
+const LOCATION_OPTIONS = [
+  { key: 'north', label: 'North End' },
+  { key: 'mid', label: 'Mid-Key' },
+  { key: 'south', label: 'South End (LBK Club / Bay Isles)' },
+];
+const WATERFRONT_OPTIONS = [
+  { key: 'Gulf-front', label: 'Gulf-front' },
+  { key: 'Bay-front', label: 'Bay-front / Marina' },
+  { key: 'Beach Club Access', label: 'Beach Club Access' },
+  { key: 'Walk to Beach', label: 'Walk to Beach' },
+  { key: 'Off-water', label: 'Off-water' },
+];
+const PRICE_TIERS = ['Under $500K', '$500K–$1M', '$1M–$2M', '$2M–$5M', '$5M+'];
+const BEDROOM_OPTIONS = ['1', '2', '3', '4', '5'];
+
+/* ===== Compute filter option counts ===== */
+function countsBy(field, isArrayField=false) {
+  const counts = {};
+  COMMUNITIES.forEach(c => {
+    const vals = isArrayField ? c[field] : [c[field]];
+    vals.forEach(v => { if (v === undefined || v === null) return; counts[v] = (counts[v]||0)+1; });
+  });
+  return counts;
+}
+const locationCounts = countsBy('location');
+const waterfrontCounts = countsBy('waterfront', true);
+const homeTypeCounts = countsBy('homeTypes', true);
+const amenityCounts = countsBy('amenities', true);
+const priceTierCounts = countsBy('priceTiers', true);
+const bedCounts = countsBy('bedTags', true);
+
+/* ===== Render filter UIs ===== */
+function renderChecklist(containerId, options, counts, stateSet) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  options.forEach(opt => {
+    const key = typeof opt === 'string' ? opt : opt.key;
+    const label = typeof opt === 'string' ? opt : opt.label;
+    const count = counts[key] || 0;
+    const item = document.createElement('label');
+    item.className = 'check-item';
+    item.innerHTML = `<input type="checkbox" ${stateSet.has(key)?'checked':''}>
+      <span class="label">${label}</span>
+      <span class="count">${count}</span>`;
+    item.querySelector('input').addEventListener('change', (e) => {
+      if (e.target.checked) stateSet.add(key); else stateSet.delete(key);
+      applyFilters();
+    });
+    el.appendChild(item);
+  });
+}
+function renderChips(containerId, options, counts, stateSet) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (stateSet.has(opt) ? ' active' : '');
+    const count = counts[opt] || 0;
+    btn.innerHTML = `${opt} <span style="opacity:0.55;margin-left:3px;">${count}</span>`;
+    btn.addEventListener('click', () => {
+      if (stateSet.has(opt)) stateSet.delete(opt); else stateSet.add(opt);
+      applyFilters();
+    });
+    el.appendChild(btn);
+  });
+}
+function renderFilters() {
+  renderChecklist('locationList', LOCATION_OPTIONS, locationCounts, state.locations);
+  renderChecklist('waterfrontList', WATERFRONT_OPTIONS, waterfrontCounts, state.waterfronts);
+  renderChipsPrice();
+  renderChecklist('homeTypeList', Object.keys(homeTypeCounts).sort(), homeTypeCounts, state.homeTypes);
+  renderChips('bedChips', BEDROOM_OPTIONS, bedCounts, state.bedrooms);
+  renderChecklist('amenityList',
+    Object.keys(amenityCounts).sort((a,b) => amenityCounts[b]-amenityCounts[a]),
+    amenityCounts, state.amenities);
+}
+function renderChipsPrice() {
+  renderChips('priceChips', PRICE_TIERS, priceTierCounts, state.priceTiers);
+}
+
+/* ===== Type pills ===== */
+document.querySelectorAll('.type-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    state.type = pill.dataset.type;
+    applyFilters();
+  });
+});
+
+/* ===== 55+ toggle ===== */
+document.getElementById('age55Toggle').addEventListener('click', (e) => {
+  state.age55 = !state.age55;
+  e.currentTarget.classList.toggle('on', state.age55);
+  applyFilters();
+});
+
+/* ===== Clear all ===== */
+document.getElementById('clearBtn').addEventListener('click', () => {
+  state.type = 'all';
+  state.locations.clear(); state.waterfronts.clear();
+  state.priceTiers.clear(); state.homeTypes.clear();
+  state.bedrooms.clear(); state.amenities.clear();
+  state.age55 = false;
+  document.querySelectorAll('.type-pill').forEach(p => p.classList.toggle('active', p.dataset.type==='all'));
+  document.getElementById('age55Toggle').classList.remove('on');
+  renderFilters();
+  applyFilters();
+});
+
+/* ===== Layout toggle ===== */
+document.querySelectorAll('.view-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.layout = btn.dataset.layout;
+    const content = document.getElementById('content');
+    content.className = 'content layout-' + state.layout;
+    // leaflet needs a resize when map becomes visible/hidden
+    setTimeout(() => { if (map) map.invalidateSize(); }, 120);
+  });
+});
+
+/* ===== Sort ===== */
+document.getElementById('sortSelect').addEventListener('change', (e) => {
+  state.sort = e.target.value;
+  renderList();
+});
+
+/* ===== Filter logic ===== */
+function matches(c) {
+  if (state.type !== 'all' && c.type !== state.type) return false;
+  if (state.locations.size && !state.locations.has(c.location)) return false;
+  if (state.waterfronts.size && !c.waterfront.some(w => state.waterfronts.has(w))) return false;
+  if (state.priceTiers.size && !c.priceTiers.some(t => state.priceTiers.has(t))) return false;
+  if (state.homeTypes.size && !c.homeTypes.some(t => state.homeTypes.has(t))) return false;
+  if (state.bedrooms.size && !c.bedTags.some(t => state.bedrooms.has(t))) return false;
+  if (state.amenities.size && !c.amenities.some(a => state.amenities.has(a))) return false;
+  if (state.age55 && !c.is55plus) return false;
+  return true;
+}
+
+function priceSortValue(c) {
+  // Lowest non-zero price tier value for sorting
+  const order = { 'Under $500K': 0, '$500K–$1M': 1, '$1M–$2M': 2, '$2M–$5M': 3, '$5M+': 4 };
+  if (!c.priceTiers.length) return 99;
+  return Math.min(...c.priceTiers.map(t => order[t] ?? 99));
+}
+
+function getFiltered() {
+  let list = COMMUNITIES.filter(matches);
+  if (state.sort === 'price-asc') list.sort((a,b)=>priceSortValue(a)-priceSortValue(b));
+  else if (state.sort === 'price-desc') list.sort((a,b)=>priceSortValue(b)-priceSortValue(a));
+  else if (state.sort === 'name') list.sort((a,b)=>a.name.localeCompare(b.name));
+  return list;
+}
+
+/* ===== Map ===== */
+let map, clusterGroup;
+const markerByName = new Map();
+let leafletReady = false;
+
+function initMap() {
+  if (typeof L === 'undefined') {
+    console.warn('Leaflet not loaded — map disabled, list view still works.');
+    const mapEl = document.getElementById('map');
+    if (mapEl) {
+      mapEl.innerHTML = '<div style="padding:40px;text-align:center;color:#4A5A5E;font-family:Manrope,sans-serif;"><div style="font-family:Fraunces,serif;font-size:20px;margin-bottom:8px;color:#1A2628">Map library blocked</div><p style="font-size:13px;max-width:360px;margin:0 auto">The Leaflet library was blocked from loading in this preview. Download the file and open it in your browser directly, or switch to <strong>List Only</strong> view.</p></div>';
+      mapEl.style.display = 'flex';
+      mapEl.style.alignItems = 'center';
+      mapEl.style.justifyContent = 'center';
+    }
+    return;
+  }
+  try {
+    // Bounds focused on the Longboat Key area
+    const bounds = [[27.26, -82.76], [27.52, -82.48]];
+    map = L.map('map', {
+      center: [27.380, -82.620],
+      zoom: 12,
+      minZoom: 11,
+      maxZoom: 18,
+      scrollWheelZoom: true,
+      maxBounds: bounds,
+      maxBoundsViscosity: 0.9,
+    });
+
+    // ---- Real OSM tile layer (production can swap to Google/Mapbox) ----
+    let tilesLoaded = false;
+    let tileErrorCount = 0;
+    const tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    });
+    tileLayer.on('load', () => { tilesLoaded = true; });
+    tileLayer.on('tileerror', () => {
+      tileErrorCount++;
+      // If many tiles fail quickly, fall back to the stylized vector basemap
+      if (tileErrorCount >= 4 && !tilesLoaded) {
+        console.warn('Tile server blocked — falling back to stylized vector basemap.');
+        map.removeLayer(tileLayer);
+        addVectorBasemap();
+      }
+    });
+    tileLayer.addTo(map);
+
+    // Location zone overlays ("North End" / "Mid-Key" / "South End") — shown on top of tiles
+    const zoneLabelIcon = (text) => L.divIcon({
+      className: '',
+      html: `<div style="
+        font-family: 'Manrope', sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #083638;
+        background: rgba(255,255,255,0.85);
+        backdrop-filter: blur(2px);
+        padding: 4px 9px;
+        border-radius: 3px;
+        white-space: nowrap;
+        pointer-events: none;
+        user-select: none;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      ">${text}</div>`,
+      iconSize: [110, 22],
+      iconAnchor: [55, 11],
+    });
+    L.marker([27.445, -82.688], { icon: zoneLabelIcon('North End'), interactive: false, zIndexOffset: -500 }).addTo(map);
+    L.marker([27.388, -82.635], { icon: zoneLabelIcon('Mid-Key'), interactive: false, zIndexOffset: -500 }).addTo(map);
+    L.marker([27.330, -82.592], { icon: zoneLabelIcon('South End'), interactive: false, zIndexOffset: -500 }).addTo(map);
+
+    if (typeof L.markerClusterGroup === 'function') {
+      clusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 45,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: false,
+      });
+    } else {
+      clusterGroup = L.layerGroup();
+    }
+    map.addLayer(clusterGroup);
+
+    leafletReady = true;
+  } catch (err) {
+    console.error('Map init failed:', err);
+  }
+}
+
+/* ---- Vector fallback basemap (only activated if tile server is blocked) ---- */
+function addVectorBasemap() {
+  const bounds = [[27.26, -82.76], [27.52, -82.48]];
+  L.rectangle(bounds, { fillColor: '#CFE0E2', fillOpacity: 1, stroke: false, interactive: false }).addTo(map);
+
+  const landStyle = {
+    fillColor: '#F4EBD5', fillOpacity: 1,
+    color: '#C8B896', weight: 1.2,
+    interactive: false,
+  };
+
+  const LONGBOAT_KEY = [
+    [27.4455, -82.6920], [27.4410, -82.6895], [27.4345, -82.6840],
+    [27.4260, -82.6770], [27.4170, -82.6680], [27.4080, -82.6595],
+    [27.3990, -82.6510], [27.3900, -82.6430], [27.3810, -82.6345],
+    [27.3720, -82.6265], [27.3635, -82.6185], [27.3545, -82.6110],
+    [27.3460, -82.6035], [27.3375, -82.5960], [27.3295, -82.5895],
+    [27.3215, -82.5835], [27.3155, -82.5790], [27.3125, -82.5755],
+    [27.3110, -82.5735], [27.3115, -82.5715],
+    [27.3175, -82.5755], [27.3260, -82.5820], [27.3345, -82.5885],
+    [27.3430, -82.5955], [27.3515, -82.6025], [27.3605, -82.6100],
+    [27.3690, -82.6175], [27.3780, -82.6255], [27.3870, -82.6340],
+    [27.3960, -82.6425], [27.4050, -82.6515], [27.4140, -82.6605],
+    [27.4230, -82.6695], [27.4315, -82.6785], [27.4395, -82.6865],
+    [27.4450, -82.6915], [27.4455, -82.6920]
+  ];
+  L.polygon(LONGBOAT_KEY, landStyle).addTo(map);
+
+  const ANNA_MARIA = [
+    [27.4625, -82.7300], [27.4780, -82.7280], [27.4950, -82.7260],
+    [27.5100, -82.7220], [27.5150, -82.7150], [27.5140, -82.7060],
+    [27.5100, -82.6990], [27.5000, -82.6975], [27.4870, -82.6990],
+    [27.4740, -82.7020], [27.4625, -82.7080], [27.4575, -82.7160],
+    [27.4585, -82.7240], [27.4625, -82.7300]
+  ];
+  L.polygon(ANNA_MARIA, landStyle).addTo(map);
+
+  const SARASOTA_COAST = [
+    [27.4800, -82.5200], [27.4800, -82.5400], [27.4600, -82.5440],
+    [27.4400, -82.5420], [27.4200, -82.5410], [27.4000, -82.5400],
+    [27.3800, -82.5380], [27.3600, -82.5360], [27.3400, -82.5340],
+    [27.3200, -82.5310], [27.3000, -82.5280], [27.2800, -82.5250],
+    [27.2800, -82.5200], [27.4800, -82.5200]
+  ];
+  L.polygon(SARASOTA_COAST, landStyle).addTo(map);
+
+  // Small "approximate map" notice so viewer knows it's a fallback
+  const notice = L.control({ position: 'bottomleft' });
+  notice.onAdd = () => {
+    const div = L.DomUtil.create('div');
+    div.innerHTML = '<div style="background:#F4E4DB;border:1px solid #E8CFC2;padding:6px 10px;border-radius:4px;font-size:11px;color:#8C4E36;font-family:Manrope,sans-serif;max-width:260px;">Real map tiles blocked in this preview — showing stylized outline. Tiles load fine when opened locally or on production site.</div>';
+    return div;
+  };
+  notice.addTo(map);
+}
+
+function buildMarker(c) {
+  const pinClass = c.type === 'condo' ? 'pin-condo' : 'pin-nbhd';
+  const letter = c.type === 'condo' ? 'C' : 'N';
+  const icon = L.divIcon({
+    className: '',
+    html: `<div class="pin ${pinClass}" data-name="${c.name.replace(/"/g,'&quot;')}"><div class="pin-inner">${letter}</div></div>`,
+    iconSize: [28, 34],
+    iconAnchor: [14, 30],
+    popupAnchor: [0, -28],
+  });
+  const m = L.marker([c.lat, c.lng], { icon });
+  const popup = `
+    <div class="popup-title">${c.name}</div>
+    <div class="popup-sub">${c.type === 'condo' ? 'Condo Community' : 'Neighborhood'} · ${locationLabel(c.location)}</div>
+    <div class="popup-price">${c.priceRange || '—'}</div>
+    <div class="popup-desc">${c.subtitle || ''}</div>
+    <a class="popup-link" href="https://www.lifeinlongboatkey.com${c.pageUrl}" target="_blank" rel="noopener">View community →</a>`;
+  m.bindPopup(popup);
+  m.on('click', () => highlight(c.name));
+  return m;
+}
+function locationLabel(loc) {
+  return { north: 'North End', mid: 'Mid-Key', south: 'South End' }[loc] || loc;
+}
+
+function renderMap(list) {
+  if (!leafletReady || !clusterGroup) return;
+  clusterGroup.clearLayers();
+  markerByName.clear();
+  list.forEach(c => {
+    const m = buildMarker(c);
+    clusterGroup.addLayer(m);
+    markerByName.set(c.name, m);
+  });
+}
+
+/* ===== List ===== */
+function renderList() {
+  const list = getFiltered();
+  const grid = document.getElementById('cardGrid');
+  const countLabel = document.getElementById('listCountLabel');
+  countLabel.textContent = `${list.length} Match${list.length===1?'':'es'}`;
+
+  if (!list.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <h4>No matches.</h4>
+        <p>Try clearing a filter or widening your price range.</p>
+      </div>`;
+    return;
+  }
+  grid.innerHTML = list.map(c => {
+    const wfBadges = c.waterfront.map(w => {
+      const cls = w === 'Gulf-front' ? 'wf-gulf' : (w === 'Bay-front' ? 'wf-bay' : '');
+      return `<span class="amenity-chip ${cls}">${w}</span>`;
+    }).join('');
+    const ageTag = c.is55plus ? `<span class="amenity-chip" style="background:#EADFEF;color:#6B4A80">55+</span>` : '';
+    const topAmenities = c.amenities.slice(0, 4).map(a => `<span class="amenity-chip">${a}</span>`).join('');
+    return `
+      <div class="card" data-name="${c.name.replace(/"/g,'&quot;')}">
+        <div class="card-top">
+          <div class="card-name">${c.name}</div>
+          <span class="card-type-tag ${c.type==='condo'?'tag-condo':'tag-nbhd'}">${c.type==='condo'?'Condo':'Neighborhood'}</span>
+        </div>
+        <div class="card-sub">${c.subtitle || ''}</div>
+        <div class="card-price">${c.priceRange || '—'}</div>
+        <div class="card-meta">
+          <span class="meta"><span class="meta-label">Location</span><span class="meta-val">${locationLabel(c.location)}</span></span>
+          ${c.bedrooms?`<span class="meta"><span class="meta-label">Beds</span><span class="meta-val">${c.bedrooms}</span></span>`:''}
+          ${c.sqft?`<span class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${c.sqft}</span></span>`:''}
+        </div>
+        <div class="card-amenities">${wfBadges}${ageTag}${topAmenities}</div>
+      </div>`;
+  }).join('');
+
+  // Card hover → pin highlight
+  grid.querySelectorAll('.card').forEach(card => {
+    const name = card.dataset.name;
+    card.addEventListener('mouseenter', () => highlight(name, false));
+    card.addEventListener('mouseleave', () => highlight(null, false));
+    card.addEventListener('click', () => {
+      const c = COMMUNITIES.find(x => x.name === name);
+      if (!c) return;
+      // Fly to & open popup
+      if (map) {
+        map.setView([c.lat, c.lng], Math.max(map.getZoom(), 14));
+        const m = markerByName.get(name);
+        if (m) {
+          clusterGroup.zoomToShowLayer(m, () => { m.openPopup(); });
+        }
+      }
+    });
+  });
+}
+
+/* ===== Highlighting sync between list and map ===== */
+function highlight(name, scroll=true) {
+  state.highlightedName = name;
+  document.querySelectorAll('.card').forEach(card => {
+    card.classList.toggle('highlighted', card.dataset.name === name);
+  });
+  document.querySelectorAll('.pin').forEach(pin => {
+    pin.classList.toggle('highlighted', pin.dataset.name === name);
+  });
+}
+
+/* ===== Main apply ===== */
+function applyFilters() {
+  const list = getFiltered();
+  document.getElementById('resultCount').textContent = list.length;
+  try { renderMap(list); } catch (err) { console.warn('Map render skipped:', err); }
+  renderList();
+}
+
+/* ===== Boot ===== */
+initMap();
+renderFilters();
+applyFilters();
+</script>
+</body>
+</html>
