@@ -6,6 +6,9 @@
  */
 
 import communities from '../../../data/communities.json';
+import neighborhoods from '../../../data/neighborhoods.geojson?raw';
+
+const neighborhoodsGeoJson = JSON.parse(neighborhoods);
 
 /**
  * @typedef {Object} Community
@@ -31,4 +34,9 @@ import communities from '../../../data/communities.json';
 /** @returns {Community[]} */
 export function getCommunities() {
   return communities;
+}
+
+/** Returns the raw neighborhood polygon FeatureCollection. */
+export function getNeighborhoodPolygons() {
+  return neighborhoodsGeoJson;
 }

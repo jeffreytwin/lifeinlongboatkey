@@ -21,6 +21,9 @@ const SOURCE_ID = 'communities';
 const CLUSTER_LAYER_ID = 'clusters';
 const CLUSTER_COUNT_LAYER_ID = 'cluster-count';
 const UNCLUSTERED_LAYER_ID = 'unclustered-hit';
+const NBHD_SOURCE_ID = 'neighborhoods';
+const NBHD_FILL_LAYER_ID = 'neighborhoods-fill';
+const NBHD_LINE_LAYER_ID = 'neighborhoods-line';
 
 // Longboat Key bounds: [west, south], [east, north]
 const LBK_BOUNDS = [
@@ -46,6 +49,10 @@ const zoneBubbleByZone = new Map();
 let currentPopup = null;
 let currentList = [];
 let onSelect = () => {};
+let neighborhoodPolygons = null; // FeatureCollection
+/** Names of neighborhoods that have a polygon — these skip the circle marker. */
+const polygonNames = new Set();
+let hoveredPolygonName = null;
 
 /**
  * Initialize the map. Must be called once at boot after index.html is in
@@ -54,6 +61,10 @@ let onSelect = () => {};
  */
 export function initMap(communities, callbacks) {
   onSelect = callbacks.onSelect || (() => {});
+  neighborhoodPolygons = callbacks.neighborhoodPolygons || null;
+  if (neighborhoodPolygons) {
+    for (const f of neighborhoodPolygons.features) polygonNames.add(f.properties.name);
+  }
 
   const token = window.config?.mapboxAccessToken;
   if (!token || token === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE') {
@@ -78,10 +89,13 @@ export function initMap(communities, callbacks) {
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
 
   map.on('load', () => {
+    addNeighborhoodPolygons();
     setCommunityFeatures(communities);
     wireClusterInteractions();
+    wireNeighborhoodPolygonInteractions(communities);
     syncMarkers(communities);
     syncZoneBubbles(communities);
+    setNeighborhoodPolygonFilter(communities);
     updateZoomDependentVisibility();
     map.on('moveend', updateZoomDependentVisibility);
     map.on('sourcedata', (e) => {
@@ -89,9 +103,11 @@ export function initMap(communities, callbacks) {
     });
   });
 
-  // Close popup when clicking empty map
+  // Close popup when clicking empty map (anywhere not a cluster or polygon).
   map.on('click', (e) => {
-    const hits = map.queryRenderedFeatures(e.point, { layers: [CLUSTER_LAYER_ID] });
+    const layers = [CLUSTER_LAYER_ID];
+    if (map.getLayer(NBHD_FILL_LAYER_ID)) layers.push(NBHD_FILL_LAYER_ID);
+    const hits = map.queryRenderedFeatures(e.point, { layers });
     if (!hits.length && currentPopup) {
       currentPopup.remove();
       currentPopup = null;
@@ -111,6 +127,100 @@ function renderMapTokenNotice() {
         <p style="font-size:13px;margin:0">Set a Mapbox access token in <code>config.js</code> to enable the map. The filter panel and list view work without it.</p>
       </div>
     </div>`;
+}
+
+function addNeighborhoodPolygons() {
+  if (!map || !neighborhoodPolygons) return;
+  // Each feature gets a state-backed 'hover' flag used for the hover style.
+  map.addSource(NBHD_SOURCE_ID, {
+    type: 'geojson',
+    data: neighborhoodPolygons,
+    promoteId: 'name',
+  });
+  map.addLayer({
+    id: NBHD_FILL_LAYER_ID,
+    type: 'fill',
+    source: NBHD_SOURCE_ID,
+    paint: {
+      'fill-color': '#E47A5C',  // coral
+      'fill-opacity': [
+        'case',
+        ['boolean', ['feature-state', 'hover'], false], 0.38,
+        0.18,
+      ],
+    },
+  });
+  map.addLayer({
+    id: NBHD_LINE_LAYER_ID,
+    type: 'line',
+    source: NBHD_SOURCE_ID,
+    paint: {
+      'line-color': '#B85A3F',
+      'line-width': [
+        'case',
+        ['boolean', ['feature-state', 'hover'], false], 2.5,
+        1.5,
+      ],
+    },
+  });
+}
+
+function wireNeighborhoodPolygonInteractions(communities) {
+  if (!map || !neighborhoodPolygons) return;
+
+  map.on('mouseenter', NBHD_FILL_LAYER_ID, () => {
+    map.getCanvas().style.cursor = 'pointer';
+  });
+  map.on('mouseleave', NBHD_FILL_LAYER_ID, () => {
+    map.getCanvas().style.cursor = '';
+    if (hoveredPolygonName) {
+      map.setFeatureState(
+        { source: NBHD_SOURCE_ID, id: hoveredPolygonName },
+        { hover: false },
+      );
+      hoveredPolygonName = null;
+    }
+  });
+  map.on('mousemove', NBHD_FILL_LAYER_ID, (e) => {
+    if (!e.features?.length) return;
+    const name = e.features[0].properties.name;
+    if (hoveredPolygonName === name) return;
+    if (hoveredPolygonName) {
+      map.setFeatureState(
+        { source: NBHD_SOURCE_ID, id: hoveredPolygonName },
+        { hover: false },
+      );
+    }
+    hoveredPolygonName = name;
+    map.setFeatureState(
+      { source: NBHD_SOURCE_ID, id: name },
+      { hover: true },
+    );
+  });
+  map.on('click', NBHD_FILL_LAYER_ID, (e) => {
+    if (!e.features?.length) return;
+    const name = e.features[0].properties.name;
+    const c = communities.find((x) => x.name === name);
+    if (!c) return;
+    openPopupFor(c);
+    onSelect(c);
+  });
+}
+
+/**
+ * Show only the polygons that match the current filtered list.
+ */
+function setNeighborhoodPolygonFilter(list) {
+  if (!map || !map.getLayer(NBHD_FILL_LAYER_ID)) return;
+  const visibleNames = new Set(
+    list.filter((c) => c.type === 'neighborhood').map((c) => c.name),
+  );
+  const namesArr = [...visibleNames];
+  const filter = namesArr.length
+    ? ['in', ['get', 'name'], ['literal', namesArr]]
+    : ['==', ['get', 'name'], '__none__'];  // match nothing
+  map.setFilter(NBHD_FILL_LAYER_ID, filter);
+  map.setFilter(NBHD_LINE_LAYER_ID, filter);
 }
 
 function setCommunityFeatures(list) {
@@ -205,7 +315,9 @@ function toGeoJson(list) {
 function syncMarkers(list) {
   if (!map) return;
   currentList = list;
-  const desired = new Set(list.map((c) => c.name));
+  // Neighborhoods with a polygon are rendered as polygons, not markers.
+  const markerable = list.filter((c) => !(c.type === 'neighborhood' && polygonNames.has(c.name)));
+  const desired = new Set(markerable.map((c) => c.name));
 
   markerByName.forEach((marker, name) => {
     if (!desired.has(name)) {
@@ -214,7 +326,7 @@ function syncMarkers(list) {
     }
   });
 
-  list.forEach((c) => {
+  markerable.forEach((c) => {
     if (markerByName.has(c.name)) return;
     const marker = buildMarker(c);
     marker.addTo(map);
@@ -322,6 +434,12 @@ function updateZoomDependentVisibility() {
     map.setLayoutProperty(CLUSTER_COUNT_LAYER_ID, 'visibility', clusterVis);
   }
 
+  // Neighborhood polygons — hide at zoomed-out so zone bubbles dominate
+  if (map.getLayer(NBHD_FILL_LAYER_ID)) {
+    map.setLayoutProperty(NBHD_FILL_LAYER_ID, 'visibility', clusterVis);
+    map.setLayoutProperty(NBHD_LINE_LAYER_ID, 'visibility', clusterVis);
+  }
+
   // Individual pins
   if (zoomedOut) {
     markerByName.forEach((m) => (m.getElement().style.display = 'none'));
@@ -345,6 +463,7 @@ export function renderMap(list) {
       setCommunityFeatures(list);
       syncMarkers(list);
       syncZoneBubbles(list);
+      setNeighborhoodPolygonFilter(list);
       updateZoomDependentVisibility();
     });
     return;
@@ -352,6 +471,7 @@ export function renderMap(list) {
   setCommunityFeatures(list);
   syncMarkers(list);
   syncZoneBubbles(list);
+  setNeighborhoodPolygonFilter(list);
   updateZoomDependentVisibility();
 }
 
