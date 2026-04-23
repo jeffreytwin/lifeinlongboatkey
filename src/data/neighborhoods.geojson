@@ -4594,7 +4594,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Queens Harbour"
+        "name": "Queens Harbour (Bay Isles)"
       },
       "geometry": {
         "coordinates": [
@@ -5128,7 +5128,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Sabal Cove"
+        "name": "Sabal Cove (Bay Isles)"
       },
       "geometry": {
         "coordinates": [
