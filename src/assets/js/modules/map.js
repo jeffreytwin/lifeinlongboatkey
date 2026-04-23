@@ -202,7 +202,6 @@ function wireNeighborhoodPolygonInteractions(communities) {
     const name = e.features[0].properties.name;
     const c = communities.find((x) => x.name === name);
     if (!c) return;
-    openPopupFor(c);
     onSelect(c);
   });
 }
@@ -234,9 +233,10 @@ function setCommunityFeatures(list) {
   map.addSource(SOURCE_ID, {
     type: 'geojson',
     data,
-    cluster: true,
-    clusterMaxZoom: 14,
-    clusterRadius: 55,
+    // Clustering intentionally off: the zone-bubble view handles the
+    // low-zoom "too many pins" problem, so cluster circles between
+    // ZONE_ZOOM_THRESHOLD and full zoom were just visual noise.
+    cluster: false,
   });
 
   map.addLayer({
@@ -382,7 +382,6 @@ function buildMarker(c) {
   el.innerHTML = `<div class="pin-inner">${c.type === 'condo' ? 'C' : 'N'}</div>`;
   el.addEventListener('click', (e) => {
     e.stopPropagation();
-    openPopupFor(c);
     onSelect(c);
   });
   // Condos (teardrop) anchor to their pointed bottom; neighborhoods
@@ -488,7 +487,6 @@ export function focusCommunity(community) {
     zoom: Math.max(map.getZoom(), 14),
     duration: 650,
   });
-  openPopupFor(community);
 }
 
 export function invalidateSize() {

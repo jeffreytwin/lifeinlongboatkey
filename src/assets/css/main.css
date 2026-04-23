@@ -76,30 +76,6 @@ button { font-family: inherit; cursor: pointer; }
   padding-left: 14px;
 }
 
-.view-toggle {
-  display: flex;
-  background: var(--bg-card);
-  border: 1px solid var(--rule);
-  border-radius: 999px;
-  padding: 3px;
-}
-.view-toggle button {
-  border: none;
-  background: transparent;
-  padding: 7px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--ink-soft);
-  border-radius: 999px;
-  transition: all 0.15s ease;
-}
-.view-toggle button.active {
-  background: var(--teal);
-  color: white;
-}
-.view-toggle button:hover:not(.active) { color: var(--ink); }
-
 .result-count {
   font-size: 12px;
   color: var(--ink-muted);
@@ -120,6 +96,7 @@ button { font-family: inherit; cursor: pointer; }
   overflow: hidden;
   position: relative;
 }
-.content.layout-split { grid-template-columns: 1.15fr 1fr; }
-.content.layout-map { grid-template-columns: 1fr; }
-.content.layout-list { grid-template-columns: 1fr; }
+/* Map fills the content area by default. When a community is selected the
+   details panel slides in on the right as a fixed-width column. */
+.content.layout-map    { grid-template-columns: 1fr; }
+.content.layout-detail { grid-template-columns: 1fr 420px; }

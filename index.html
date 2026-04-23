@@ -24,11 +24,6 @@
           <div class="brand-mark">Life in Longboat Key</div>
           <div class="brand-sub">Neighborhoods &amp; Condos</div>
         </div>
-        <div class="view-toggle" role="tablist" aria-label="Layout">
-          <button type="button" data-layout="split" class="active" role="tab">Split</button>
-          <button type="button" data-layout="list" role="tab">List Only</button>
-          <button type="button" data-layout="map" role="tab">Map Only</button>
-        </div>
         <div class="result-count">
           Showing <strong><span id="resultCount">0</span></strong> of <span id="totalCount">0</span> communities
         </div>
@@ -92,7 +87,7 @@
         </aside>
 
         <!-- Content area: map + list -->
-        <section id="content" class="content layout-split">
+        <section id="content" class="content layout-map">
           <div class="map-wrap">
             <div id="map" class="map"></div>
             <div class="map-legend" aria-hidden="true">
@@ -101,21 +96,10 @@
             </div>
           </div>
 
-          <div class="list-wrap">
-            <div class="list-header">
-              <span id="listCountLabel" class="list-count">0 Matches</span>
-              <label class="sort-label">
-                Sort
-                <select id="sortSelect">
-                  <option value="default">Featured</option>
-                  <option value="name">Name (A–Z)</option>
-                  <option value="price-asc">Price (low → high)</option>
-                  <option value="price-desc">Price (high → low)</option>
-                </select>
-              </label>
-            </div>
-            <div id="cardGrid" class="card-grid" role="list"></div>
-          </div>
+          <aside class="detail-panel" aria-label="Community details" aria-hidden="true">
+            <button id="detailClose" type="button" class="detail-close" aria-label="Close details">×</button>
+            <div id="detailContent" class="detail-content"></div>
+          </aside>
         </section>
       </div>
     </div>

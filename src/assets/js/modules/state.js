@@ -24,12 +24,17 @@ export const state = {
   amenities: new Set(),
   /** @type {boolean} */
   age55: false,
-  /** @type {"split"|"list"|"map"} */
-  layout: 'split',
+  /**
+   * 'map' (default): panel closed, map fills the content area.
+   * 'detail': panel open showing the selected community's details.
+   */
+  layout: 'map',
   /** @type {"default"|"name"|"price-asc"|"price-desc"} */
   sort: 'default',
   /** @type {string|null} */
   highlightedName: null,
+  /** @type {object|null} — the community currently shown in the details panel */
+  selectedCommunity: null,
 };
 
 export function resetFilters() {

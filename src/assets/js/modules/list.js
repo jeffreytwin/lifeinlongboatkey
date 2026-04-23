@@ -1,99 +1,85 @@
 /**
- * Community card list — rendering + card↔pin sync.
+ * Community details panel — renders one selected community into the side
+ * panel and toggles panel open/closed.
  *
- * Ported from docs/longboat-key-map-mockup.html lines 960–1016.
+ * Superseded the multi-card list grid: the list pane is now a "details on
+ * demand" surface that opens when the user clicks a pin/polygon/zone bubble
+ * and closes via the X button in the panel header.
  */
 
-import { getFiltered } from './matches.js';
 import { locationLabel, escapeHtml, communityPhotoUrl } from './utils.js';
+import { state } from './state.js';
 
 /**
- * @typedef {Object} ListCallbacks
- * @property {(name: string|null, opts?: {scroll?: boolean}) => void} onHighlight
- * @property {(community: object) => void} onCardClick
- */
-
-/**
- * Render the card grid for the currently filtered set. Returns the filtered
- * list so callers (map.js) can use the same list to update markers.
+ * Render the selected community into the detail panel and open it.
  *
- * @param {Array<object>} communities
- * @param {ListCallbacks} callbacks
- * @returns {Array<object>}
+ * @param {object} community
  */
-export function renderList(communities, callbacks) {
-  const list = getFiltered(communities);
-  const grid = document.getElementById('cardGrid');
-  const countLabel = document.getElementById('listCountLabel');
-  if (!grid || !countLabel) return list;
+export function showDetail(community) {
+  state.selectedCommunity = community;
+  const el = document.getElementById('detailContent');
+  if (!el) return;
 
-  countLabel.textContent = `${list.length} Match${list.length === 1 ? '' : 'es'}`;
-
-  if (!list.length) {
-    grid.innerHTML = `
-      <div class="empty-state">
-        <h4>No matches.</h4>
-        <p>Try clearing a filter or widening your price range.</p>
-      </div>`;
-    return list;
-  }
-
-  grid.innerHTML = list
-    .map((c) => {
-      const wfBadges = c.waterfront
-        .map((w) => {
-          const cls = w === 'Gulf-front' ? 'wf-gulf' : w === 'Bay-front' ? 'wf-bay' : '';
-          return `<span class="amenity-chip ${cls}">${escapeHtml(w)}</span>`;
-        })
-        .join('');
-      const ageTag = c.is55plus ? `<span class="amenity-chip is-55">55+</span>` : '';
-      const topAmenities = c.amenities
-        .slice(0, 4)
-        .map((a) => `<span class="amenity-chip">${escapeHtml(a)}</span>`)
-        .join('');
-      return `
-      <div class="card" role="listitem" data-name="${escapeHtml(c.name)}">
-        <div class="card-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
-          <img src="${escapeHtml(communityPhotoUrl(c))}" alt="" loading="lazy" />
-        </div>
-        <div class="card-top">
-          <div class="card-name">${escapeHtml(c.name)}</div>
-          <span class="card-type-tag ${c.type === 'condo' ? 'tag-condo' : 'tag-nbhd'}">
-            ${c.type === 'condo' ? 'Condo' : 'Neighborhood'}
-          </span>
-        </div>
-        <div class="card-sub">${escapeHtml(c.subtitle || '')}</div>
-        <div class="card-price">${escapeHtml(c.priceRange || '—')}</div>
-        <div class="card-meta">
-          <span class="meta"><span class="meta-label">Location</span><span class="meta-val">${escapeHtml(locationLabel(c.location))}</span></span>
-          ${c.bedrooms ? `<span class="meta"><span class="meta-label">Beds</span><span class="meta-val">${escapeHtml(c.bedrooms)}</span></span>` : ''}
-          ${c.sqft ? `<span class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(c.sqft)}</span></span>` : ''}
-        </div>
-        <div class="card-amenities">${wfBadges}${ageTag}${topAmenities}</div>
-      </div>`;
+  const wfBadges = (community.waterfront || [])
+    .map((w) => {
+      const cls = w === 'Gulf-front' ? 'wf-gulf' : w === 'Bay-front' ? 'wf-bay' : '';
+      return `<span class="amenity-chip ${cls}">${escapeHtml(w)}</span>`;
     })
     .join('');
+  const ageTag = community.is55plus ? `<span class="amenity-chip is-55">55+</span>` : '';
+  const amenities = (community.amenities || [])
+    .map((a) => `<span class="amenity-chip">${escapeHtml(a)}</span>`)
+    .join('');
 
-  // Wire card hover + click events
-  grid.querySelectorAll('.card').forEach((card) => {
-    const name = card.dataset.name;
-    card.addEventListener('mouseenter', () => callbacks.onHighlight(name, { scroll: false }));
-    card.addEventListener('mouseleave', () => callbacks.onHighlight(null, { scroll: false }));
-    card.addEventListener('click', () => {
-      const c = communities.find((x) => x.name === name);
-      if (c) callbacks.onCardClick(c);
-    });
-  });
+  el.innerHTML = `
+    <div class="detail-photo ${community.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
+      <img src="${escapeHtml(communityPhotoUrl(community))}" alt="" />
+    </div>
+    <div class="detail-body">
+      <div class="detail-type-tag ${community.type === 'condo' ? 'tag-condo' : 'tag-nbhd'}">
+        ${community.type === 'condo' ? 'Condo' : 'Neighborhood'} · ${escapeHtml(locationLabel(community.location))}
+      </div>
+      <h2 class="detail-name">${escapeHtml(community.name)}</h2>
+      ${community.subtitle ? `<div class="detail-sub">${escapeHtml(community.subtitle)}</div>` : ''}
+      <div class="detail-price">${escapeHtml(community.priceRange || '—')}</div>
+      <div class="detail-meta">
+        ${community.bedrooms ? `<div class="meta"><span class="meta-label">Bedrooms</span><span class="meta-val">${escapeHtml(community.bedrooms)}</span></div>` : ''}
+        ${community.sqft ? `<div class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(community.sqft)}</span></div>` : ''}
+      </div>
+      ${community.shortDescription ? `<p class="detail-desc">${escapeHtml(community.shortDescription)}</p>` : ''}
+      <div class="detail-chips">${wfBadges}${ageTag}${amenities}</div>
+      <a class="detail-link" href="https://www.lifeinlongboatkey.com${escapeHtml(community.pageUrl || '')}" target="_blank" rel="noopener">
+        View community page →
+      </a>
+    </div>`;
 
-  return list;
+  const content = document.getElementById('content');
+  const panel = document.querySelector('.detail-panel');
+  if (content) content.className = 'content layout-detail';
+  if (panel) panel.setAttribute('aria-hidden', 'false');
+  state.layout = 'detail';
+}
+
+/** Close the detail panel and return the map to full-width. */
+export function hideDetail() {
+  state.selectedCommunity = null;
+  const content = document.getElementById('content');
+  const panel = document.querySelector('.detail-panel');
+  if (content) content.className = 'content layout-map';
+  if (panel) panel.setAttribute('aria-hidden', 'true');
+  state.layout = 'map';
 }
 
 /**
- * Toggle the .highlighted class on a single card by name.
- * Pin highlighting is handled by map.js on its own marker elements.
+ * Kept as a no-op shim — callers (main.js) still call this after filter
+ * changes. Nothing to render in the panel since we no longer show a list.
  */
-export function setHighlightedCard(name) {
-  document.querySelectorAll('.card').forEach((card) => {
-    card.classList.toggle('highlighted', card.dataset.name === name);
-  });
+export function renderList() {
+  // intentionally empty
+  return [];
+}
+
+/** No-op — retained for call-site compatibility with the old list module. */
+export function setHighlightedCard() {
+  // intentionally empty
 }

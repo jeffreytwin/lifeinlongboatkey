@@ -21,6 +21,32 @@ export const WATERFRONT_OPTIONS = [
   'Bay-front',
 ];
 
+/**
+ * Amenities hidden from the filter panel entirely. Records may still carry
+ * these values in their `amenities` array — we just don't offer them as
+ * filter options. Hiding is a UI concern only; matching logic is untouched.
+ */
+const AMENITIES_HIDDEN = new Set([
+  'Private Beach (Deeded)',
+  'Beach-Club Access',
+  'Beach Club Access', // also filter out the without-hyphen variant
+]);
+
+/**
+ * Custom ordering for the Amenities filter. Amenities appear in the listed
+ * order first; anything else falls through to a frequency sort after them.
+ */
+const AMENITIES_PRIORITY = [
+  'Gated',
+  'Beach Access',
+  'Private Beach',
+  'Marina Access',
+  'Personal Boat Slips',
+  'Tennis',
+  'Pickleball',
+  'Golf',
+];
+
 export const PRICE_TIERS = [
   'Under $500K',
   '$500K–$1M',
@@ -145,13 +171,20 @@ export function renderFilters(communities, onChange) {
   const priceTierCounts = countsBy(communities, 'priceTiers', true);
   const bedCounts = countsBy(communities, 'bedTags', true);
 
-  // Amenities — sort by frequency (most common first), per CLAUDE.md.
   const homeTypeOptions = Object.keys(homeTypeCounts).sort((a, b) =>
     a.localeCompare(b)
   );
-  const amenityOptions = Object.keys(amenityCounts).sort(
-    (a, b) => (amenityCounts[b] || 0) - (amenityCounts[a] || 0)
-  );
+  // Amenities: user-defined priority order first, then frequency for the
+  // remainder. Hidden amenities are dropped from the filter list entirely.
+  const priorityIndex = new Map(AMENITIES_PRIORITY.map((a, i) => [a, i]));
+  const amenityOptions = Object.keys(amenityCounts)
+    .filter((a) => !AMENITIES_HIDDEN.has(a))
+    .sort((a, b) => {
+      const ai = priorityIndex.has(a) ? priorityIndex.get(a) : Infinity;
+      const bi = priorityIndex.has(b) ? priorityIndex.get(b) : Infinity;
+      if (ai !== bi) return ai - bi;
+      return (amenityCounts[b] || 0) - (amenityCounts[a] || 0);
+    });
 
   renderChecklist('locationList', LOCATION_OPTIONS, locationCounts, state.locations, onChange);
   renderChecklist('waterfrontList', WATERFRONT_OPTIONS, waterfrontCounts, state.waterfronts, onChange);
@@ -204,19 +237,16 @@ export function setupStaticControls(communities, { apply, setLayout }) {
     apply();
   });
 
-  // Sort
+  // Sort control lived in the old list header (now the details panel);
+  // its <select> is gone. Ignore missing element silently.
   document.getElementById('sortSelect')?.addEventListener('change', (e) => {
     state.sort = e.target.value;
     apply();
   });
 
-  // Layout toggle
-  document.querySelectorAll('.view-toggle button').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.view-toggle button').forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.layout = btn.dataset.layout;
-      setLayout(state.layout);
-    });
-  });
+  // Layout toggle removed — layout is now controlled programmatically
+  // (map by default, detail when a community is selected, back to map
+  // via the panel's close button). setLayout is retained as a no-op
+  // invalidate for back-compat.
+  void setLayout;
 }
