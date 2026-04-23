@@ -173,6 +173,7 @@ function wireNeighborhoodPolygonInteractions(communities) {
   });
   map.on('mouseleave', NBHD_FILL_LAYER_ID, () => {
     map.getCanvas().style.cursor = '';
+    hideHoverCard();
     if (hoveredPolygonName) {
       map.setFeatureState(
         { source: NBHD_SOURCE_ID, id: hoveredPolygonName },
@@ -184,6 +185,7 @@ function wireNeighborhoodPolygonInteractions(communities) {
   map.on('mousemove', NBHD_FILL_LAYER_ID, (e) => {
     if (!e.features?.length) return;
     const name = e.features[0].properties.name;
+    moveHoverCard(e.originalEvent);
     if (hoveredPolygonName === name) return;
     if (hoveredPolygonName) {
       map.setFeatureState(
@@ -192,6 +194,8 @@ function wireNeighborhoodPolygonInteractions(communities) {
       );
     }
     hoveredPolygonName = name;
+    const c = communities.find((x) => x.name === name);
+    if (c) showHoverCard(c, e.originalEvent);
     map.setFeatureState(
       { source: NBHD_SOURCE_ID, id: name },
       { hover: true },
@@ -202,6 +206,7 @@ function wireNeighborhoodPolygonInteractions(communities) {
     const name = e.features[0].properties.name;
     const c = communities.find((x) => x.name === name);
     if (!c) return;
+    hideHoverCard();
     onSelect(c);
   });
 }
@@ -382,12 +387,71 @@ function buildMarker(c) {
   el.innerHTML = `<div class="pin-inner">${c.type === 'condo' ? 'C' : 'N'}</div>`;
   el.addEventListener('click', (e) => {
     e.stopPropagation();
+    hideHoverCard();
     onSelect(c);
   });
+  el.addEventListener('mouseenter', (e) => showHoverCard(c, e));
+  el.addEventListener('mousemove', (e) => moveHoverCard(e));
+  el.addEventListener('mouseleave', hideHoverCard);
   // Condos (teardrop) anchor to their pointed bottom; neighborhoods
   // (outlined circles) anchor to their center since they read as an area.
   const anchor = c.type === 'condo' ? 'bottom' : 'center';
   return new mapboxgl.Marker({ element: el, anchor }).setLngLat([c.lng, c.lat]);
+}
+
+// ---------------------------------------------------------------------------
+// Hover card — a small floating preview that follows the cursor when the
+// user is over a pin or a neighborhood polygon. Contains photo + name +
+// price range; hides on mouseleave.
+// ---------------------------------------------------------------------------
+
+function showHoverCard(c, evt) {
+  const card = document.getElementById('hoverCard');
+  if (!card) return;
+  card.innerHTML = `
+    <div class="hover-card-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
+      <img src="${escapeHtml(communityPhotoUrl(c))}" alt="" />
+    </div>
+    <div class="hover-card-body">
+      <div class="hover-card-name">${escapeHtml(c.name)}</div>
+      <div class="hover-card-meta">
+        ${c.type === 'condo' ? 'Condo' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}
+      </div>
+      <div class="hover-card-price">${escapeHtml(c.priceRange || '—')}</div>
+    </div>`;
+  card.setAttribute('aria-hidden', 'false');
+  card.classList.add('is-visible');
+  if (evt) moveHoverCard(evt);
+}
+
+function moveHoverCard(evt) {
+  const card = document.getElementById('hoverCard');
+  const wrap = card?.parentElement;
+  if (!card || !wrap || !card.classList.contains('is-visible')) return;
+  const rect = wrap.getBoundingClientRect();
+  // Cursor position relative to the map-wrap (card's positioning context).
+  const cx = evt.clientX - rect.left;
+  const cy = evt.clientY - rect.top;
+  const cardW = card.offsetWidth || 240;
+  const cardH = card.offsetHeight || 180;
+  // Offset to keep the card out from under the cursor; flip sides if the
+  // cursor is near the right/bottom edges of the map area.
+  const PAD = 16;
+  let x = cx + PAD;
+  let y = cy + PAD;
+  if (x + cardW + PAD > rect.width) x = cx - cardW - PAD;
+  if (y + cardH + PAD > rect.height) y = cy - cardH - PAD;
+  if (x < PAD) x = PAD;
+  if (y < PAD) y = PAD;
+  card.style.left = `${x}px`;
+  card.style.top = `${y}px`;
+}
+
+function hideHoverCard() {
+  const card = document.getElementById('hoverCard');
+  if (!card) return;
+  card.classList.remove('is-visible');
+  card.setAttribute('aria-hidden', 'true');
 }
 
 function openPopupFor(c) {

@@ -66,26 +66,6 @@ export function youtubeEmbedUrl(url) {
   return id ? `https://www.youtube.com/embed/${id}` : null;
 }
 
-/**
- * Hero-mode embed URL: autoplay, muted, no controls, minimal YouTube
- * chrome. Plays once — does not loop. playsinline keeps iOS from
- * taking the video fullscreen on autoplay.
- */
-export function youtubeHeroEmbedUrl(url) {
-  const id = youtubeVideoId(url);
-  if (!id) return null;
-  const params = new URLSearchParams({
-    autoplay: '1',
-    mute: '1',
-    controls: '0',
-    rel: '0',
-    modestbranding: '1',
-    playsinline: '1',
-    disablekb: '1',
-  });
-  return `https://www.youtube.com/embed/${id}?${params.toString()}`;
-}
-
 function youtubeVideoId(url) {
   if (!url || typeof url !== 'string') return null;
   const m = url.match(

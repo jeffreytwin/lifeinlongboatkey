@@ -7,8 +7,9 @@
  * and closes via the X button in the panel header.
  */
 
-import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl, youtubeHeroEmbedUrl } from './utils.js';
+import { locationLabel, escapeHtml, youtubeEmbedUrl } from './utils.js';
 import { AMENITY_ICONS, filteredAmenities, homesForSaleUrl } from './amenityIcons.js';
+import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
 
 /**
@@ -49,22 +50,8 @@ export function showDetail(community) {
   const homes = homesForSaleUrl(page);
   const baseHost = 'https://www.lifeinlongboatkey.com';
 
-  const heroVideo = youtubeHeroEmbedUrl(community.heroVideoUrl);
-  const heroHtml = heroVideo
-    ? `<div class="detail-hero-video">
-         <iframe src="${escapeHtml(heroVideo)}"
-                 title="${escapeHtml(community.name)} video tour"
-                 loading="eager"
-                 frameborder="0"
-                 allow="autoplay; encrypted-media; picture-in-picture"
-                 allowfullscreen></iframe>
-       </div>`
-    : `<div class="detail-photo ${community.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
-         <img src="${escapeHtml(communityPhotoUrl(community))}" alt="" />
-       </div>`;
-
   el.innerHTML = `
-    ${heroHtml}
+    ${galleryHtml(community)}
     <div class="detail-body">
       <div class="detail-type-tag ${community.type === 'condo' ? 'tag-condo' : 'tag-nbhd'}">
         ${community.type === 'condo' ? 'Condo' : 'Neighborhood'} · ${escapeHtml(locationLabel(community.location))}
@@ -99,6 +86,8 @@ export function showDetail(community) {
       ${community.shortDescription ? `<p class="detail-desc">${escapeHtml(community.shortDescription)}</p>` : ''}
       ${classChips ? `<div class="detail-chips">${classChips}</div>` : ''}
     </div>`;
+
+  wireGallery(el);
 
   const content = document.getElementById('content');
   const panel = document.querySelector('.detail-panel');

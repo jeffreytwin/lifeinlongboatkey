@@ -157,3 +157,64 @@
 }
 .legend-condo { background: var(--teal); }
 .legend-nbhd { background: var(--coral); }
+
+/* Hover card — small preview that follows the cursor over pins/polygons */
+.hover-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 240px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.12s ease-out, transform 0.12s ease-out;
+  z-index: 2;
+  font-family: 'Manrope', sans-serif;
+}
+.hover-card.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.hover-card-photo {
+  position: relative;
+  height: 110px;
+  background: var(--teal);
+  overflow: hidden;
+}
+.hover-card-photo.photo-nbhd { background: var(--coral); }
+.hover-card-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hover-card-body {
+  padding: 10px 12px 12px;
+}
+.hover-card-name {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.hover-card-meta {
+  font-size: 10px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.hover-card-price {
+  font-family: 'Fraunces', serif;
+  font-size: 14px;
+  color: var(--teal);
+  font-weight: 500;
+}
