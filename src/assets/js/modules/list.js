@@ -7,7 +7,7 @@
  * and closes via the X button in the panel header.
  */
 
-import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl, youtubeHeroEmbedUrl } from './utils.js';
+import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl, youtubeHeroEmbedUrl, youtubeThumbnailUrl } from './utils.js';
 import { AMENITY_ICONS, filteredAmenities, homesForSaleUrl } from './amenityIcons.js';
 import { state } from './state.js';
 
@@ -50,6 +50,14 @@ export function showDetail(community) {
   const baseHost = 'https://www.lifeinlongboatkey.com';
 
   const heroVideo = youtubeHeroEmbedUrl(community.heroVideoUrl);
+  // Full maxres URL (may 404 on older videos); pull the video ID once so
+  // the onerror fallback can swap to hqdefault (always exists) without
+  // re-parsing the URL in markup.
+  const heroThumb = youtubeThumbnailUrl(community.heroVideoUrl);
+  const heroVideoIdMatch = heroThumb && heroThumb.match(/\/vi\/([A-Za-z0-9_-]{11})\//);
+  const heroFallbackThumb = heroVideoIdMatch
+    ? `https://img.youtube.com/vi/${heroVideoIdMatch[1]}/hqdefault.jpg`
+    : '';
   const heroHtml = heroVideo
     ? `<div class="detail-hero-video">
          <iframe src="${escapeHtml(heroVideo)}"
@@ -58,6 +66,10 @@ export function showDetail(community) {
                  frameborder="0"
                  allow="autoplay; encrypted-media; picture-in-picture"
                  allowfullscreen></iframe>
+         <div class="hero-video-cover" aria-hidden="true">
+           <img src="${escapeHtml(heroThumb)}" alt=""
+                onerror="this.onerror=null;this.src='${escapeHtml(heroFallbackThumb)}'" />
+         </div>
        </div>`
     : `<div class="detail-photo ${community.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
          <img src="${escapeHtml(communityPhotoUrl(community))}" alt="" />

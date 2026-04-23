@@ -93,3 +93,13 @@ function youtubeVideoId(url) {
   );
   return m ? m[1] : null;
 }
+
+/**
+ * Best-effort thumbnail URL for a YouTube video — returns maxresdefault
+ * (1280x720). maxresdefault isn't generated for every video; if it 404s,
+ * swap to `/hqdefault.jpg` (always exists, 480x360) on error.
+ */
+export function youtubeThumbnailUrl(url) {
+  const id = youtubeVideoId(url);
+  return id ? `https://img.youtube.com/vi/${id}/maxresdefault.jpg` : null;
+}

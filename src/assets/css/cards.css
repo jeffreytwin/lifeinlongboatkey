@@ -70,6 +70,29 @@
   border: 0;
 }
 
+/* Poster overlay that hides YouTube's title chrome on initial load.
+   Fades out after the title has dismissed (~2s playback). pointer-events:
+   none so the video still receives its autoplay lifecycle underneath. */
+.hero-video-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: #000;
+  opacity: 1;
+  animation: heroCoverFadeOut 0.8s ease-out 2s forwards;
+}
+.hero-video-cover img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@keyframes heroCoverFadeOut {
+  to { opacity: 0; }
+}
+
 .detail-body {
   padding: 18px 24px 8px;
 }
