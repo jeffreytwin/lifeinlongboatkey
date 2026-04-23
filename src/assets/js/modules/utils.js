@@ -62,10 +62,37 @@ export function escapeHtml(str) {
  * Handles watch, short (youtu.be), embed, and Shorts URLs.
  */
 export function youtubeEmbedUrl(url) {
+  const id = youtubeVideoId(url);
+  return id ? `https://www.youtube.com/embed/${id}` : null;
+}
+
+/**
+ * Hero-mode embed URL: autoplay, muted, looping, no controls, minimal
+ * YouTube chrome. Uses the `playlist=ID` trick so that loop=1 works on
+ * a single-video embed (YouTube quirk). playsinline keeps iOS from
+ * taking the video fullscreen on autoplay.
+ */
+export function youtubeHeroEmbedUrl(url) {
+  const id = youtubeVideoId(url);
+  if (!id) return null;
+  const params = new URLSearchParams({
+    autoplay: '1',
+    mute: '1',
+    loop: '1',
+    playlist: id,
+    controls: '0',
+    rel: '0',
+    modestbranding: '1',
+    playsinline: '1',
+    disablekb: '1',
+  });
+  return `https://www.youtube.com/embed/${id}?${params.toString()}`;
+}
+
+function youtubeVideoId(url) {
   if (!url || typeof url !== 'string') return null;
   const m = url.match(
     /(?:youtube\.com\/(?:watch\?(?:[^&]+&)*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
   );
-  if (!m) return null;
-  return `https://www.youtube.com/embed/${m[1]}`;
+  return m ? m[1] : null;
 }
