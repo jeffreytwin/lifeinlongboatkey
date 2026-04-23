@@ -97,6 +97,12 @@
 
         <!-- Content area: map + list -->
         <section id="content" class="content layout-map">
+          <!-- Mobile-only segmented toggle between map and list view. -->
+          <div class="view-switch" role="tablist" aria-label="View mode">
+            <button id="viewMapBtn" type="button" class="view-switch-btn is-active" data-view="map" role="tab" aria-selected="true">Map</button>
+            <button id="viewListBtn" type="button" class="view-switch-btn" data-view="list" role="tab" aria-selected="false">List</button>
+          </div>
+
           <div class="map-wrap">
             <div id="map" class="map"></div>
             <div class="map-legend" aria-hidden="true">
@@ -104,6 +110,10 @@
               <span class="legend-item"><span class="legend-dot legend-nbhd"></span>Neighborhood</span>
             </div>
             <div id="hoverCard" class="hover-card" aria-hidden="true"></div>
+          </div>
+
+          <div class="list-view" aria-label="Community list">
+            <ul id="listView" class="list-view-items"></ul>
           </div>
 
           <aside class="detail-panel" aria-label="Community details" aria-hidden="true">

@@ -95,6 +95,8 @@ button {
 /* Mobile-only controls; hidden on desktop. */
 .filters-toggle-btn { display: none; }
 .filters-save-btn { display: none; }
+.view-switch { display: none; }
+.list-view { display: none; }
 
 /* Main grid */
 .main {

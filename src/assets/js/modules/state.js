@@ -29,6 +29,12 @@ export const state = {
    * 'detail': panel open showing the selected community's details.
    */
   layout: 'map',
+  /**
+   * Mobile-only. 'map' shows the interactive map; 'list' replaces it
+   * with a scrollable list of community cards. Toggled via the Map/List
+   * segmented control on mobile. Desktop ignores this.
+   */
+  view: 'map',
   /** @type {"default"|"name"|"price-asc"|"price-desc"} */
   sort: 'default',
   /** @type {string|null} */

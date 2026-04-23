@@ -10,7 +10,7 @@ import { getCommunities, getNeighborhoodPolygons } from './modules/data.js';
 import { state } from './modules/state.js';
 import { renderFilters, setupStaticControls } from './modules/filters.js';
 import { getFiltered } from './modules/matches.js';
-import { showDetail, hideDetail } from './modules/list.js';
+import { showDetail, hideDetail, renderMobileList, setListItemClickHandler } from './modules/list.js';
 import {
   initMap,
   renderMap,
@@ -50,12 +50,27 @@ function apply() {
   const resultCount = document.getElementById('resultCount');
   if (resultCount) resultCount.textContent = String(filtered.length);
   renderMap(filtered);
+  renderMobileList(filtered);
   // If the currently-selected community is no longer in the filtered set,
   // close the detail panel to avoid showing a community that's been
   // filtered out.
   if (state.selectedCommunity && !filtered.some((c) => c.name === state.selectedCommunity.name)) {
     closeDetail();
   }
+}
+
+/** Switch between map and list view on mobile. */
+function setView(view) {
+  state.view = view;
+  document.body.classList.toggle('view-list', view === 'list');
+  document.querySelectorAll('.view-switch-btn').forEach((btn) => {
+    const isActive = btn.dataset.view === view;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+  // When switching back to map, the map may have been hidden and its
+  // container resized; tell Mapbox to re-measure.
+  if (view === 'map') invalidateSize();
 }
 
 // No layout toggle anymore; setLayout is only called internally by
@@ -77,6 +92,11 @@ document.getElementById('filtersToggle')?.addEventListener('click', () => {
 document.getElementById('filtersSave')?.addEventListener('click', () => {
   document.body.classList.remove('filters-open');
 });
+
+// Mobile view toggle (Map | List).
+document.getElementById('viewMapBtn')?.addEventListener('click', () => setView('map'));
+document.getElementById('viewListBtn')?.addEventListener('click', () => setView('list'));
+setListItemClickHandler(openDetail);
 
 initMap(communities, {
   onSelect: openDetail,

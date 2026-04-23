@@ -7,10 +7,50 @@
  * and closes via the X button in the panel header.
  */
 
-import { locationLabel, escapeHtml, youtubeEmbedUrl } from './utils.js';
+import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl } from './utils.js';
 import { AMENITY_ICONS, filteredAmenities, homesForSaleUrl } from './amenityIcons.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
+
+/** Callback passed from main.js for list-item clicks. */
+let onListItemClick = () => {};
+export function setListItemClickHandler(fn) { onListItemClick = fn; }
+
+/**
+ * Render the mobile list-view items for a filtered community set.
+ * Safe to call even when the user isn't currently in list view — keeps
+ * the DOM in sync so switching views is instant.
+ */
+export function renderMobileList(list) {
+  const el = document.getElementById('listView');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = `<li class="list-view-empty">No communities match your filters.</li>`;
+    return;
+  }
+  el.innerHTML = list
+    .map((c) => `
+      <li class="list-view-item" data-name="${escapeHtml(c.name)}">
+        <div class="list-view-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
+          <img src="${escapeHtml(communityPhotoUrl(c))}" alt="" loading="lazy" />
+        </div>
+        <div class="list-view-body">
+          <div class="list-view-meta">
+            ${c.type === 'condo' ? 'Condominiums' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}
+          </div>
+          <div class="list-view-name">${escapeHtml(c.name)}</div>
+          <div class="list-view-price">${escapeHtml(c.priceRange || '—')}</div>
+        </div>
+      </li>`)
+    .join('');
+  el.querySelectorAll('.list-view-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const name = item.dataset.name;
+      const c = list.find((x) => x.name === name);
+      if (c) onListItemClick(c);
+    });
+  });
+}
 
 /**
  * Render the selected community into the detail panel and open it.
