@@ -186,12 +186,56 @@ export function renderFilters(communities, onChange) {
       return (amenityCounts[b] || 0) - (amenityCounts[a] || 0);
     });
 
-  renderChecklist('locationList', LOCATION_OPTIONS, locationCounts, state.locations, onChange);
-  renderChecklist('waterfrontList', WATERFRONT_OPTIONS, waterfrontCounts, state.waterfronts, onChange);
+  // Location on Island — bundles the zone options (north/mid/south) and
+  // waterfront options (Gulf-front/Bay-front) into a single checklist. Each
+  // option internally toggles its matching state Set.
+  renderLocationFilter(locationCounts, waterfrontCounts, onChange);
   renderChecklist('homeTypeList', homeTypeOptions, homeTypeCounts, state.homeTypes, onChange);
   renderChecklist('amenityList', amenityOptions, amenityCounts, state.amenities, onChange);
   renderPriceChips(priceTierCounts, onChange);
   renderChips('bedroomList', BEDROOM_OPTIONS, bedCounts, state.bedrooms, onChange);
+}
+
+function renderLocationFilter(locationCounts, waterfrontCounts, onChange) {
+  const el = document.getElementById('locationList');
+  if (!el) return;
+  el.innerHTML = '';
+  const items = [
+    ...LOCATION_OPTIONS.map((opt) => ({
+      key: opt.key,
+      label: opt.label,
+      count: locationCounts[opt.key] || 0,
+      set: state.locations,
+    })),
+    {
+      key: 'Gulf-front',
+      label: 'Gulf-front',
+      count: waterfrontCounts['Gulf-front'] || 0,
+      set: state.waterfronts,
+    },
+    {
+      key: 'Bay-front',
+      label: 'Bay-front',
+      count: waterfrontCounts['Bay-front'] || 0,
+      set: state.waterfronts,
+    },
+  ];
+  items.forEach(({ key, label, count, set }) => {
+    const item = document.createElement('label');
+    item.className = 'checklist-item' + (count === 0 ? ' is-zero' : '');
+    item.innerHTML = `
+      <input type="checkbox" ${set.has(key) ? 'checked' : ''} />
+      <span class="label">${escapeHtml(label)}</span>
+      <span class="count">${count}</span>
+    `;
+    const input = item.querySelector('input');
+    input.addEventListener('change', () => {
+      if (input.checked) set.add(key);
+      else set.delete(key);
+      onChange();
+    });
+    el.appendChild(item);
+  });
 }
 
 /**
