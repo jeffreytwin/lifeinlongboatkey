@@ -71,13 +71,6 @@ export function showDetail(community) {
                   allowfullscreen></iframe>
         </div>`;
       })()}
-      <div class="detail-meta">
-        ${community.bedrooms ? `<div class="meta"><span class="meta-label">Bedrooms</span><span class="meta-val">${escapeHtml(community.bedrooms)}</span></div>` : ''}
-        ${community.sqft ? `<div class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(community.sqft)}</span></div>` : ''}
-      </div>
-      ${community.shortDescription ? `<p class="detail-desc">${escapeHtml(community.shortDescription)}</p>` : ''}
-      ${classChips ? `<div class="detail-chips">${classChips}</div>` : ''}
-      ${amenitiesHtml ? `<div class="detail-amenities">${amenitiesHtml}</div>` : ''}
       <div class="detail-actions">
         <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + homes)}" target="_blank" rel="noopener">
           View Homes for Sale
@@ -86,6 +79,13 @@ export function showDetail(community) {
           View Community Page
         </a>
       </div>
+      <div class="detail-meta">
+        ${community.bedrooms ? `<div class="meta"><span class="meta-label">Bedrooms</span><span class="meta-val">${escapeHtml(community.bedrooms)}</span></div>` : ''}
+        ${community.sqft ? `<div class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(community.sqft)}</span></div>` : ''}
+      </div>
+      ${amenitiesHtml ? `<div class="detail-amenities">${amenitiesHtml}</div>` : ''}
+      ${community.shortDescription ? `<p class="detail-desc">${escapeHtml(community.shortDescription)}</p>` : ''}
+      ${classChips ? `<div class="detail-chips">${classChips}</div>` : ''}
     </div>`;
 
   const content = document.getElementById('content');
