@@ -85,11 +85,11 @@
 .type-pill.active .count { color: white; }
 .type-pill:hover:not(.active) { border-color: var(--teal); }
 
-/* Checklist (checkbox filters) */
+/* Checklist (checkbox filters). The amenities list used to be capped
+   to 220px with an inner scrollbar; that's been removed so all
+   amenities render in full alongside the other filter sections. The
+   parent .filters aside handles overflow if the sidebar runs long. */
 .checklist { display: flex; flex-direction: column; gap: 6px; }
-.checklist-scroll { max-height: 220px; overflow-y: auto; padding-right: 4px; }
-.checklist-scroll::-webkit-scrollbar { width: 6px; }
-.checklist-scroll::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
 
 .checklist-item {
   display: flex;
