@@ -82,6 +82,10 @@ export function youtubeHeroEmbedUrl(url) {
     modestbranding: '1',
     playsinline: '1',
     disablekb: '1',
+    // enablejsapi lets us observe the playback state via the IFrame
+    // Player API so the poster cover can fade exactly when PLAYING
+    // starts (rather than on a blind timer).
+    enablejsapi: '1',
   });
   return `https://www.youtube.com/embed/${id}?${params.toString()}`;
 }
