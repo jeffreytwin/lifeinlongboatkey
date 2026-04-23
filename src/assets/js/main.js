@@ -91,6 +91,10 @@ document.getElementById('filtersToggle')?.addEventListener('click', () => {
 });
 document.getElementById('filtersSave')?.addEventListener('click', () => {
   document.body.classList.remove('filters-open');
+  // After narrowing down, jump straight to the list so results are
+  // immediately scannable. (setView is mobile-only in effect; on
+  // desktop body.view-list toggles nothing visible.)
+  setView('list');
 });
 
 // Mobile view toggle (Map | List).

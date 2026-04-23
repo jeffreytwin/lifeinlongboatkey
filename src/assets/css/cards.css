@@ -266,6 +266,31 @@
   color: white;
 }
 
+/* Reference map at the bottom of the details panel — a static Mapbox
+   image centered on the community so the user can see where it sits
+   on Longboat Key. Falls through silently if no access token is set. */
+.detail-map {
+  margin-top: 22px;
+  border-top: 1px solid var(--rule);
+  padding-top: 16px;
+}
+.detail-map-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 8px;
+}
+.detail-map img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  background: var(--rule-soft);
+}
+
 /* Shared chip styles used by both the details panel and popup */
 .amenity-chip {
   font-size: 10px;

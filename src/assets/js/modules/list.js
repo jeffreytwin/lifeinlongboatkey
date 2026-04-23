@@ -7,7 +7,7 @@
  * and closes via the X button in the panel header.
  */
 
-import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl } from './utils.js';
+import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl, staticMapUrl } from './utils.js';
 import { AMENITY_ICONS, filteredAmenities, homesForSaleUrl } from './amenityIcons.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
@@ -125,6 +125,14 @@ export function showDetail(community) {
       ${amenitiesHtml ? `<div class="detail-amenities">${amenitiesHtml}</div>` : ''}
       ${community.shortDescription ? `<p class="detail-desc">${escapeHtml(community.shortDescription)}</p>` : ''}
       ${classChips ? `<div class="detail-chips">${classChips}</div>` : ''}
+      ${(() => {
+        const mapSrc = staticMapUrl(community);
+        if (!mapSrc) return '';
+        return `<div class="detail-map" aria-label="Map showing location">
+          <div class="detail-map-label">Location on Longboat Key</div>
+          <img src="${escapeHtml(mapSrc)}" alt="Map of ${escapeHtml(community.name)}" loading="lazy" />
+        </div>`;
+      })()}
     </div>`;
 
   wireGallery(el);

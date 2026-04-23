@@ -73,3 +73,23 @@ function youtubeVideoId(url) {
   );
   return m ? m[1] : null;
 }
+
+/**
+ * Mapbox Static Images URL for a small reference map showing where a
+ * community sits. Returns null if the public token isn't configured or
+ * the community has no coordinate — callers should omit the map block
+ * in that case.
+ */
+export function staticMapUrl(community, { width = 400, height = 200, zoom = 14 } = {}) {
+  const token = typeof window !== 'undefined' ? window.config?.mapboxAccessToken : null;
+  if (!token || token === 'pk.dummy' || token === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE') return null;
+  if (typeof community?.lat !== 'number' || typeof community?.lng !== 'number') return null;
+  // URL-encoded color works without the hash.
+  const color = community.type === 'condo' ? '0E5254' : 'E47A5C';
+  const { lng, lat } = community;
+  return (
+    `https://api.mapbox.com/styles/v1/mapbox/light-v11/static/` +
+    `pin-l+${color}(${lng},${lat})/${lng},${lat},${zoom}/${width}x${height}@2x` +
+    `?access_token=${encodeURIComponent(token)}`
+  );
+}
