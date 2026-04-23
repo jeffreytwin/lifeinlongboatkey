@@ -7,7 +7,7 @@
  * and closes via the X button in the panel header.
  */
 
-import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl, youtubeHeroEmbedUrl, youtubeThumbnailUrl } from './utils.js';
+import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl, youtubeHeroEmbedUrl } from './utils.js';
 import { AMENITY_ICONS, filteredAmenities, homesForSaleUrl } from './amenityIcons.js';
 import { state } from './state.js';
 
@@ -50,14 +50,6 @@ export function showDetail(community) {
   const baseHost = 'https://www.lifeinlongboatkey.com';
 
   const heroVideo = youtubeHeroEmbedUrl(community.heroVideoUrl);
-  // Full maxres URL (may 404 on older videos); pull the video ID once so
-  // the onerror fallback can swap to hqdefault (always exists) without
-  // re-parsing the URL in markup.
-  const heroThumb = youtubeThumbnailUrl(community.heroVideoUrl);
-  const heroVideoIdMatch = heroThumb && heroThumb.match(/\/vi\/([A-Za-z0-9_-]{11})\//);
-  const heroFallbackThumb = heroVideoIdMatch
-    ? `https://img.youtube.com/vi/${heroVideoIdMatch[1]}/hqdefault.jpg`
-    : '';
   const heroHtml = heroVideo
     ? `<div class="detail-hero-video">
          <iframe src="${escapeHtml(heroVideo)}"
@@ -66,10 +58,6 @@ export function showDetail(community) {
                  frameborder="0"
                  allow="autoplay; encrypted-media; picture-in-picture"
                  allowfullscreen></iframe>
-         <div class="hero-video-cover" aria-hidden="true">
-           <img src="${escapeHtml(heroThumb)}" alt=""
-                onerror="this.onerror=null;this.src='${escapeHtml(heroFallbackThumb)}'" />
-         </div>
        </div>`
     : `<div class="detail-photo ${community.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
          <img src="${escapeHtml(communityPhotoUrl(community))}" alt="" />
@@ -117,8 +105,6 @@ export function showDetail(community) {
   if (content) content.className = 'content layout-detail';
   if (panel) panel.setAttribute('aria-hidden', 'false');
   state.layout = 'detail';
-
-  if (heroVideo) wireHeroVideoCover();
 }
 
 /** Close the detail panel and return the map to full-width. */
@@ -129,88 +115,6 @@ export function hideDetail() {
   if (content) content.className = 'content layout-map';
   if (panel) panel.setAttribute('aria-hidden', 'true');
   state.layout = 'map';
-  if (currentHeroPlayer) {
-    try { currentHeroPlayer.destroy(); } catch {}
-    currentHeroPlayer = null;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// YouTube IFrame Player API wiring for the hero-video cover fade.
-// ---------------------------------------------------------------------------
-
-let currentHeroPlayer = null;
-let heroCoverFallbackTimeout = null;
-let ytApiLoadPromise = null;
-
-/** Lazy-load the YouTube IFrame API. Resolves once window.YT is ready. */
-function loadYouTubeApi() {
-  if (ytApiLoadPromise) return ytApiLoadPromise;
-  ytApiLoadPromise = new Promise((resolve) => {
-    if (window.YT && window.YT.Player) return resolve();
-    // Preserve any existing hook (defensive; nothing else sets it today).
-    const priorHook = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      if (typeof priorHook === 'function') priorHook();
-      resolve();
-    };
-    const tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    document.head.appendChild(tag);
-  });
-  return ytApiLoadPromise;
-}
-
-/**
- * Tie the hero-video cover fade to the actual iframe playback lifecycle.
- * Creates a YT.Player, listens for the PLAYING state, waits briefly for
- * the title overlay to dismiss, then fades the cover.
- *
- * Falls back to a 6-second hard timer if the API never fires PLAYING
- * (autoplay blocked, script blocked by an ad-blocker, etc.) so the
- * cover is never stuck on forever.
- */
-function wireHeroVideoCover() {
-  const iframe = document.querySelector('.detail-hero-video iframe');
-  const cover = document.querySelector('.hero-video-cover');
-  if (!iframe || !cover) return;
-
-  // Clear any previous state from an earlier selection.
-  if (currentHeroPlayer) {
-    try { currentHeroPlayer.destroy(); } catch {}
-    currentHeroPlayer = null;
-  }
-  if (heroCoverFallbackTimeout) {
-    clearTimeout(heroCoverFallbackTimeout);
-    heroCoverFallbackTimeout = null;
-  }
-
-  const revealCover = () => cover.classList.add('fade-out');
-
-  // Safety net: if the API never fires PLAYING for any reason, fade the
-  // cover after 6 seconds so the UI doesn't hang.
-  heroCoverFallbackTimeout = setTimeout(revealCover, 6000);
-
-  loadYouTubeApi().then(() => {
-    // If the panel was closed / another community selected while the
-    // API was loading, bail.
-    if (!document.body.contains(iframe)) return;
-    currentHeroPlayer = new window.YT.Player(iframe, {
-      events: {
-        onStateChange: (event) => {
-          if (event.data === window.YT.PlayerState.PLAYING) {
-            // Give YouTube's title overlay ~1.2s to dismiss after
-            // playback starts, then fade.
-            setTimeout(revealCover, 1200);
-            if (heroCoverFallbackTimeout) {
-              clearTimeout(heroCoverFallbackTimeout);
-              heroCoverFallbackTimeout = null;
-            }
-          }
-        },
-      },
-    });
-  });
 }
 
 /**

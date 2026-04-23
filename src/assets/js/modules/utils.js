@@ -82,10 +82,6 @@ export function youtubeHeroEmbedUrl(url) {
     modestbranding: '1',
     playsinline: '1',
     disablekb: '1',
-    // enablejsapi lets us observe the playback state via the IFrame
-    // Player API so the poster cover can fade exactly when PLAYING
-    // starts (rather than on a blind timer).
-    enablejsapi: '1',
   });
   return `https://www.youtube.com/embed/${id}?${params.toString()}`;
 }
@@ -96,14 +92,4 @@ function youtubeVideoId(url) {
     /(?:youtube\.com\/(?:watch\?(?:[^&]+&)*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
   );
   return m ? m[1] : null;
-}
-
-/**
- * Best-effort thumbnail URL for a YouTube video — returns maxresdefault
- * (1280x720). maxresdefault isn't generated for every video; if it 404s,
- * swap to `/hqdefault.jpg` (always exists, 480x360) on error.
- */
-export function youtubeThumbnailUrl(url) {
-  const id = youtubeVideoId(url);
-  return id ? `https://img.youtube.com/vi/${id}/maxresdefault.jpg` : null;
 }
