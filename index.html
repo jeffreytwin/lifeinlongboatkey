@@ -27,6 +27,9 @@
         <div class="result-count">
           Showing <strong><span id="resultCount">0</span></strong> of <span id="totalCount">0</span> communities
         </div>
+        <button id="filtersToggle" type="button" class="filters-toggle-btn" aria-label="Open filters">
+          Filters
+        </button>
       </header>
 
       <!-- Main layout -->
@@ -84,6 +87,12 @@
               <span class="toggle-track"><span class="toggle-thumb"></span></span>
             </button>
           </div>
+
+          <!-- Save / close button — only shown on mobile when the
+               filters panel is a full-screen overlay. -->
+          <button id="filtersSave" type="button" class="filters-save-btn">
+            Save
+          </button>
         </aside>
 
         <!-- Content area: map + list -->

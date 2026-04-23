@@ -70,6 +70,14 @@ setupStaticControls(communities, { apply, setLayout });
 // Close button for the details panel
 document.getElementById('detailClose')?.addEventListener('click', closeDetail);
 
+// Mobile filters: open the full-screen overlay, then close it via Save.
+document.getElementById('filtersToggle')?.addEventListener('click', () => {
+  document.body.classList.add('filters-open');
+});
+document.getElementById('filtersSave')?.addEventListener('click', () => {
+  document.body.classList.remove('filters-open');
+});
+
 initMap(communities, {
   onSelect: openDetail,
   neighborhoodPolygons: getNeighborhoodPolygons(),

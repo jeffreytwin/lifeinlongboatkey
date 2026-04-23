@@ -54,6 +54,13 @@ let neighborhoodPolygons = null; // FeatureCollection
 const polygonNames = new Set();
 let hoveredPolygonName = null;
 
+// Hover previews only make sense on real pointer devices. Touch devices
+// ("hover: none") would otherwise need a double-tap to fire click after
+// the hover state shows — one tap to "hover", another to click.
+const canHover = typeof window !== 'undefined'
+  && window.matchMedia
+  && window.matchMedia('(hover: hover)').matches;
+
 /**
  * Initialize the map. Must be called once at boot after index.html is in
  * the DOM. Returns true on success, false if we couldn't initialize (e.g.
@@ -168,6 +175,20 @@ function addNeighborhoodPolygons() {
 function wireNeighborhoodPolygonInteractions(communities) {
   if (!map || !neighborhoodPolygons) return;
 
+  // Click works on every device — opens the details panel in one tap.
+  map.on('click', NBHD_FILL_LAYER_ID, (e) => {
+    if (!e.features?.length) return;
+    const name = e.features[0].properties.name;
+    const c = communities.find((x) => x.name === name);
+    if (!c) return;
+    hideHoverCard();
+    onSelect(c);
+  });
+
+  // Hover previews are pointer-only (skipped on touch to avoid the
+  // tap-to-hover, tap-again-to-click pattern).
+  if (!canHover) return;
+
   map.on('mouseenter', NBHD_FILL_LAYER_ID, () => {
     map.getCanvas().style.cursor = 'pointer';
   });
@@ -200,14 +221,6 @@ function wireNeighborhoodPolygonInteractions(communities) {
       { source: NBHD_SOURCE_ID, id: name },
       { hover: true },
     );
-  });
-  map.on('click', NBHD_FILL_LAYER_ID, (e) => {
-    if (!e.features?.length) return;
-    const name = e.features[0].properties.name;
-    const c = communities.find((x) => x.name === name);
-    if (!c) return;
-    hideHoverCard();
-    onSelect(c);
   });
 }
 
@@ -390,9 +403,11 @@ function buildMarker(c) {
     hideHoverCard();
     onSelect(c);
   });
-  el.addEventListener('mouseenter', (e) => showHoverCard(c, e));
-  el.addEventListener('mousemove', (e) => moveHoverCard(e));
-  el.addEventListener('mouseleave', hideHoverCard);
+  if (canHover) {
+    el.addEventListener('mouseenter', (e) => showHoverCard(c, e));
+    el.addEventListener('mousemove', (e) => moveHoverCard(e));
+    el.addEventListener('mouseleave', hideHoverCard);
+  }
   // Condos (teardrop) anchor to their pointed bottom; neighborhoods
   // (outlined circles) anchor to their center since they read as an area.
   const anchor = c.type === 'condo' ? 'bottom' : 'center';

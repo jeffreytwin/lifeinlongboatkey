@@ -1,31 +1,90 @@
 /* Mobile layout.
-   On narrow screens the filter sidebar sits above the map; when a
-   community is selected the details panel covers the whole viewport
-   so users don't have to scroll past the map to see it. */
+   On narrow screens the filter sidebar is hidden and only opens as a
+   full-screen overlay when the Filters button in the header is tapped.
+   The details panel likewise overlays the whole viewport when a
+   community is selected, so users don't scroll past the map. */
 
 @media (max-width: 860px) {
   .app { height: auto; min-height: 100vh; }
 
   .header {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
     padding: 12px 16px;
   }
   .brand-sub { display: none; }
+  .result-count { display: none; }
+
+  /* Filters button in the header — opens the full-screen filter overlay. */
+  .filters-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    padding: 8px 18px;
+    background: var(--teal);
+    color: white;
+    border: none;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .filters-toggle-btn:hover { background: var(--teal-hover); }
 
   .main {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: 1fr;
     overflow: visible;
   }
+
+  /* Hide the filter sidebar by default on mobile. When body gets the
+     .filters-open class (toggled by the Filters button), the sidebar
+     mounts as a full-screen overlay. */
   .filters {
-    max-height: 50vh;
-    border-right: none;
-    border-bottom: 1px solid var(--rule);
+    display: none;
+  }
+  body.filters-open {
+    overflow: hidden;
+  }
+  body.filters-open .filters {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    max-height: none;
+    border: none;
+    padding: 16px 18px 0;
+    overflow-y: auto;
+    background: var(--bg);
   }
 
+  /* Save button — sticky bottom bar inside the filter overlay. */
+  .filters-save-btn {
+    display: block;
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: 16px -18px 0;
+    padding: 18px;
+    background: var(--teal);
+    color: white;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+  }
+  .filters-save-btn:hover { background: var(--teal-hover); }
+
   .content { grid-template-columns: 1fr !important; }
-  .map-wrap { height: 70vh; min-height: 360px; }
+  .map-wrap { height: calc(100vh - 60px); min-height: 360px; }
 
   /* Fullscreen detail panel overlay when a community is selected. */
   .content.layout-detail .detail-panel {

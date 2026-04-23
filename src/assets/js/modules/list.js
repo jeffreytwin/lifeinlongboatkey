@@ -72,10 +72,10 @@ export function showDetail(community) {
       })()}
       <div class="detail-actions">
         <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + homes)}" target="_blank" rel="noopener">
-          View Homes for Sale
+          View<br>Homes for Sale
         </a>
         <a class="detail-link detail-link-secondary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
-          View Community Page
+          View<br>Community Page
         </a>
       </div>
       <div class="detail-meta">

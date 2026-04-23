@@ -83,6 +83,10 @@ button { font-family: inherit; cursor: pointer; }
 }
 .result-count strong { color: var(--teal); font-weight: 700; font-size: 13px; }
 
+/* Mobile-only controls; hidden on desktop. */
+.filters-toggle-btn { display: none; }
+.filters-save-btn { display: none; }
+
 /* Main grid */
 .main {
   display: grid;
