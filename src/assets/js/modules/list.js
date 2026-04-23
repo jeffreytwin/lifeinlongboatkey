@@ -8,6 +8,7 @@
  */
 
 import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl } from './utils.js';
+import { AMENITY_ICONS, filteredAmenities, homesForSaleUrl } from './amenityIcons.js';
 import { state } from './state.js';
 
 /**
@@ -20,16 +21,33 @@ export function showDetail(community) {
   const el = document.getElementById('detailContent');
   if (!el) return;
 
+  // Waterfront + 55+ are classification badges, rendered separately from
+  // amenities (which get the icon grid).
   const wfBadges = (community.waterfront || [])
+    .filter((w) => w === 'Gulf-front' || w === 'Bay-front')
     .map((w) => {
-      const cls = w === 'Gulf-front' ? 'wf-gulf' : w === 'Bay-front' ? 'wf-bay' : '';
+      const cls = w === 'Gulf-front' ? 'wf-gulf' : 'wf-bay';
       return `<span class="amenity-chip ${cls}">${escapeHtml(w)}</span>`;
     })
     .join('');
   const ageTag = community.is55plus ? `<span class="amenity-chip is-55">55+</span>` : '';
-  const amenities = (community.amenities || [])
-    .map((a) => `<span class="amenity-chip">${escapeHtml(a)}</span>`)
+  const classChips = wfBadges + ageTag;
+
+  // Amenities — filtered to the standard set and rendered as icon + label.
+  const amenityList = filteredAmenities(community.amenities);
+  const amenitiesHtml = amenityList
+    .map((a) => {
+      const icon = AMENITY_ICONS[a];
+      return `<div class="amenity-item">
+        <img class="amenity-icon" src="${escapeHtml(icon)}" alt="" loading="lazy" />
+        <span class="amenity-label">${escapeHtml(a)}</span>
+      </div>`;
+    })
     .join('');
+
+  const page = community.pageUrl || '';
+  const homes = homesForSaleUrl(page);
+  const baseHost = 'https://www.lifeinlongboatkey.com';
 
   el.innerHTML = `
     <div class="detail-photo ${community.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
@@ -58,10 +76,16 @@ export function showDetail(community) {
         ${community.sqft ? `<div class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(community.sqft)}</span></div>` : ''}
       </div>
       ${community.shortDescription ? `<p class="detail-desc">${escapeHtml(community.shortDescription)}</p>` : ''}
-      <div class="detail-chips">${wfBadges}${ageTag}${amenities}</div>
-      <a class="detail-link" href="https://www.lifeinlongboatkey.com${escapeHtml(community.pageUrl || '')}" target="_blank" rel="noopener">
-        View community page →
-      </a>
+      ${classChips ? `<div class="detail-chips">${classChips}</div>` : ''}
+      ${amenitiesHtml ? `<div class="detail-amenities">${amenitiesHtml}</div>` : ''}
+      <div class="detail-actions">
+        <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + homes)}" target="_blank" rel="noopener">
+          View Homes for Sale
+        </a>
+        <a class="detail-link detail-link-secondary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
+          View Community Page
+        </a>
+      </div>
     </div>`;
 
   const content = document.getElementById('content');

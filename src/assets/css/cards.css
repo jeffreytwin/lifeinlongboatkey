@@ -137,22 +137,69 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+  margin-bottom: 14px;
+}
+
+/* Amenity grid — icon + label pairs, rendered below the class badges */
+.detail-amenities {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 14px;
   margin-bottom: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+.amenity-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.amenity-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.amenity-label {
+  line-height: 1.2;
+}
+
+/* Two-button action row at the bottom of the detail panel */
+.detail-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .detail-link {
+  flex: 1 1 140px;
+  text-align: center;
   display: inline-block;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: white;
-  background: var(--teal);
-  padding: 10px 18px;
+  padding: 12px 16px;
   border-radius: 4px;
   text-decoration: none;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.detail-link:hover { background: var(--teal-hover); }
+.detail-link-primary {
+  color: white;
+  background: var(--teal);
+}
+.detail-link-primary:hover { background: var(--teal-hover); }
+.detail-link-secondary {
+  color: var(--teal);
+  background: transparent;
+  border: 1.5px solid var(--teal);
+  padding: 10.5px 14.5px;  /* compensate for border so heights match */
+}
+.detail-link-secondary:hover {
+  background: var(--teal);
+  color: white;
+}
 
 /* Shared chip styles used by both the details panel and popup */
 .amenity-chip {
