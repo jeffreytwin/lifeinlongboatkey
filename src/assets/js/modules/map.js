@@ -24,14 +24,6 @@ const UNCLUSTERED_LAYER_ID = 'unclustered-hit';
 const NBHD_SOURCE_ID = 'neighborhoods';
 const NBHD_FILL_LAYER_ID = 'neighborhoods-fill';
 const NBHD_LINE_LAYER_ID = 'neighborhoods-line';
-const CONDO_SOURCE_ID = 'condo-buildings';
-const CONDO_FILL_LAYER_ID = 'condos-fill';
-const CONDO_LINE_LAYER_ID = 'condos-line';
-
-// Zoom at which condo building footprints become legible. Below this,
-// only the teardrop pin shows; above, the footprint + outline layer
-// render underneath the pin.
-const CONDO_POLYGON_MIN_ZOOM = 15;
 
 // Longboat Key bounds: [west, south], [east, north]
 const LBK_BOUNDS = [
@@ -58,13 +50,9 @@ let currentPopup = null;
 let currentList = [];
 let onSelect = () => {};
 let neighborhoodPolygons = null; // FeatureCollection
-let condoBuildingPolygons = null; // FeatureCollection
 /** Names of neighborhoods that have a polygon — these skip the circle marker. */
 const polygonNames = new Set();
-/** Names of condos that have a building-footprint polygon. */
-const condoPolygonNames = new Set();
 let hoveredPolygonName = null;
-let hoveredCondoName = null;
 
 /**
  * Initialize the map. Must be called once at boot after index.html is in
@@ -74,12 +62,8 @@ let hoveredCondoName = null;
 export function initMap(communities, callbacks) {
   onSelect = callbacks.onSelect || (() => {});
   neighborhoodPolygons = callbacks.neighborhoodPolygons || null;
-  condoBuildingPolygons = callbacks.condoBuildingPolygons || null;
   if (neighborhoodPolygons) {
     for (const f of neighborhoodPolygons.features) polygonNames.add(f.properties.name);
-  }
-  if (condoBuildingPolygons) {
-    for (const f of condoBuildingPolygons.features) condoPolygonNames.add(f.properties.name);
   }
 
   const token = window.config?.mapboxAccessToken;
@@ -106,15 +90,12 @@ export function initMap(communities, callbacks) {
 
   map.on('load', () => {
     addNeighborhoodPolygons();
-    addCondoBuildingPolygons();
     setCommunityFeatures(communities);
     wireClusterInteractions();
     wireNeighborhoodPolygonInteractions(communities);
-    wireCondoBuildingInteractions(communities);
     syncMarkers(communities);
     syncZoneBubbles(communities);
     setNeighborhoodPolygonFilter(communities);
-    setCondoBuildingPolygonFilter(communities);
     updateZoomDependentVisibility();
     map.on('moveend', updateZoomDependentVisibility);
     map.on('sourcedata', (e) => {
@@ -126,7 +107,6 @@ export function initMap(communities, callbacks) {
   map.on('click', (e) => {
     const layers = [CLUSTER_LAYER_ID];
     if (map.getLayer(NBHD_FILL_LAYER_ID)) layers.push(NBHD_FILL_LAYER_ID);
-    if (map.getLayer(CONDO_FILL_LAYER_ID)) layers.push(CONDO_FILL_LAYER_ID);
     const hits = map.queryRenderedFeatures(e.point, { layers });
     if (!hits.length && currentPopup) {
       currentPopup.remove();
@@ -241,98 +221,6 @@ function setNeighborhoodPolygonFilter(list) {
     : ['==', ['get', 'name'], '__none__'];  // match nothing
   map.setFilter(NBHD_FILL_LAYER_ID, filter);
   map.setFilter(NBHD_LINE_LAYER_ID, filter);
-}
-
-function addCondoBuildingPolygons() {
-  if (!map || !condoBuildingPolygons) return;
-  map.addSource(CONDO_SOURCE_ID, {
-    type: 'geojson',
-    data: condoBuildingPolygons,
-    promoteId: 'name',
-  });
-  map.addLayer({
-    id: CONDO_FILL_LAYER_ID,
-    type: 'fill',
-    source: CONDO_SOURCE_ID,
-    minzoom: CONDO_POLYGON_MIN_ZOOM,
-    paint: {
-      'fill-color': '#0E5254',  // teal, matches condo pins
-      'fill-opacity': [
-        'case',
-        ['boolean', ['feature-state', 'hover'], false], 0.35,
-        0.18,
-      ],
-    },
-  });
-  map.addLayer({
-    id: CONDO_LINE_LAYER_ID,
-    type: 'line',
-    source: CONDO_SOURCE_ID,
-    minzoom: CONDO_POLYGON_MIN_ZOOM,
-    paint: {
-      'line-color': '#083638',
-      'line-width': [
-        'case',
-        ['boolean', ['feature-state', 'hover'], false], 2.5,
-        1.2,
-      ],
-    },
-  });
-}
-
-function wireCondoBuildingInteractions(communities) {
-  if (!map || !condoBuildingPolygons) return;
-
-  map.on('mouseenter', CONDO_FILL_LAYER_ID, () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-  map.on('mouseleave', CONDO_FILL_LAYER_ID, () => {
-    map.getCanvas().style.cursor = '';
-    if (hoveredCondoName) {
-      map.setFeatureState(
-        { source: CONDO_SOURCE_ID, id: hoveredCondoName },
-        { hover: false },
-      );
-      hoveredCondoName = null;
-    }
-  });
-  map.on('mousemove', CONDO_FILL_LAYER_ID, (e) => {
-    if (!e.features?.length) return;
-    const name = e.features[0].properties.name;
-    if (hoveredCondoName === name) return;
-    if (hoveredCondoName) {
-      map.setFeatureState(
-        { source: CONDO_SOURCE_ID, id: hoveredCondoName },
-        { hover: false },
-      );
-    }
-    hoveredCondoName = name;
-    map.setFeatureState(
-      { source: CONDO_SOURCE_ID, id: name },
-      { hover: true },
-    );
-  });
-  map.on('click', CONDO_FILL_LAYER_ID, (e) => {
-    if (!e.features?.length) return;
-    const name = e.features[0].properties.name;
-    const c = communities.find((x) => x.name === name);
-    if (!c) return;
-    openPopupFor(c);
-    onSelect(c);
-  });
-}
-
-function setCondoBuildingPolygonFilter(list) {
-  if (!map || !map.getLayer(CONDO_FILL_LAYER_ID)) return;
-  const visibleNames = new Set(
-    list.filter((c) => c.type === 'condo').map((c) => c.name),
-  );
-  const namesArr = [...visibleNames];
-  const filter = namesArr.length
-    ? ['in', ['get', 'name'], ['literal', namesArr]]
-    : ['==', ['get', 'name'], '__none__'];
-  map.setFilter(CONDO_FILL_LAYER_ID, filter);
-  map.setFilter(CONDO_LINE_LAYER_ID, filter);
 }
 
 function setCommunityFeatures(list) {
@@ -576,7 +464,6 @@ export function renderMap(list) {
       syncMarkers(list);
       syncZoneBubbles(list);
       setNeighborhoodPolygonFilter(list);
-      setCondoBuildingPolygonFilter(list);
       updateZoomDependentVisibility();
     });
     return;
@@ -585,7 +472,6 @@ export function renderMap(list) {
   syncMarkers(list);
   syncZoneBubbles(list);
   setNeighborhoodPolygonFilter(list);
-  setCondoBuildingPolygonFilter(list);
   updateZoomDependentVisibility();
 }
 

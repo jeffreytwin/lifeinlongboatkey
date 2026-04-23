@@ -9,7 +9,7 @@
  *   5. Render list + map for the initial (unfiltered) state
  */
 
-import { getCommunities, getNeighborhoodPolygons, getCondoBuildingPolygons } from './modules/data.js';
+import { getCommunities, getNeighborhoodPolygons } from './modules/data.js';
 import { state } from './modules/state.js';
 import { renderFilters, setupStaticControls } from './modules/filters.js';
 import { renderList, setHighlightedCard } from './modules/list.js';
@@ -66,7 +66,6 @@ setupStaticControls(communities, { apply, setLayout });
 initMap(communities, {
   onSelect: (c) => highlight(c.name),
   neighborhoodPolygons: getNeighborhoodPolygons(),
-  condoBuildingPolygons: getCondoBuildingPolygons(),
 });
 
 // First pass
