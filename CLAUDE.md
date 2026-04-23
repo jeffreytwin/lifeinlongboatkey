@@ -5,9 +5,9 @@
 Build a production interactive map for **lifeinlongboatkey.com** that lets prospective buyers filter and browse the 108 neighborhoods and condo communities on Longboat Key, FL. Replaces/augments the current static Neighborhoods page.
 
 This is a sibling to the existing Parrish implementation at **lifeatparrish.web.app**, adapted for LBK's unique characteristics:
-- ~3.5× the inventory (108 vs ~30)
+- ~3.5× the inventory (107 vs ~30)
 - Barrier island geography (north / mid / south positioning matters a lot)
-- Mixed inventory (77 condo communities + 31 single-family neighborhoods)
+- Mixed inventory (77 condo communities + 30 single-family neighborhoods)
 - Wider price range ($200K studios → $23M estates)
 
 ## Reference assets
@@ -20,7 +20,7 @@ Day-one reference material lives in `docs/`:
 | `docs/Neighborhoods & Condos.csv` | Source export from the live Wix "Neighborhoods & Condos" collection. Kept for the future Wix-sync script. |
 | `docs/KICKOFF_PROMPT.md` | Historical first-session prompt. Kept as a record. |
 
-The production data source is `src/data/communities.json` — 108 enriched records already shaped for the filter logic.
+The production data source is `src/data/communities.json` — 107 enriched records already shaped for the filter logic. Neighborhood polygon geometry lives in `src/data/neighborhoods.geojson` (one Feature per neighborhood, property `name` is the join key back to `communities.json`).
 
 ## Architecture decisions (locked)
 
@@ -32,6 +32,13 @@ The production data source is `src/data/communities.json` — 108 enriched recor
 - **Tile/basemap** — Mapbox style `mapbox://styles/mapbox/light-v11` by default. Style can be swapped without code changes.
 - **Firebase Hosting** — deploy target, `lifeinlongboatkey.web.app`. GitHub Actions (`.github/workflows/deploy.yml`) deploys on every push to `main`.
 - **Data** — static `src/data/communities.json` for MVP. Live `@wix/data` fetch (Parrish pattern) is a follow-up. CSV source is preserved in `docs/` so future sync work has a reference shape.
+
+### Map rendering model
+
+- **Zone bubbles at low zoom.** Below `ZONE_ZOOM_THRESHOLD` (13 in `map.js`), the map shows only three big "North End / Mid-Key / South End" bubbles with match counts — no individual pins, no polygons. Clicking a bubble flies to that zone. This is the primary orientation view.
+- **Individual markers at zoom ≥ 13.** Condos render as teal teardrop pins anchored at their bottom point. Neighborhoods with a polygon render as a coral fill + darker coral outline (hover = brighter fill, thicker stroke). Neighborhoods without a polygon fall back to an outlined coral circle.
+- **Filter sync.** The fill/line layers have a `setFilter(['in', ['get', 'name'], ['literal', names])]` call whenever the filtered list changes. Individual markers are synced by add/remove on the `markerByName` map. Points folded into a Mapbox cluster bubble at the current zoom are hidden via a `queryRenderedFeatures` check on each `moveend`.
+- **LBK ground-truth anchors** (used for zone centroids and zone-boundary latitudes): north `27.42696, -82.67443`, mid `27.38476, -82.63640`, south `27.33751, -82.59538`. Zone boundaries are the midpoints: N/M at `27.40586`, M/S at `27.36114`.
 
 ### File layout
 
@@ -50,7 +57,8 @@ lifeinlongboatkey/
 ├── public/
 └── src/
     ├── data/
-    │   └── communities.json
+    │   ├── communities.json
+    │   └── neighborhoods.geojson   (30 polygons; property.name joins to communities.json)
     └── assets/
         ├── css/  (main, sidebar, map, cards, details-panel, tablet, mobile)
         └── js/
@@ -66,16 +74,22 @@ lifeinlongboatkey/
                 └── details-panel.js  (stub; expands in a future plan)
 ```
 
-## Filter design (preserved from the mockup — do not reshape without a reason)
+## Filter design
+
+Current order in the sidebar (index.html):
 
 1. **Community Type** (pill buttons, front and center) — All / Neighborhoods / Condos
-2. **Location on Island** (checkboxes) — North End / Mid-Key / South End
-3. **Waterfront** (checkboxes) — Gulf-front / Bay-front / Beach Club Access / Walk to Beach / Off-water
-4. **Price** (chip buckets — deliberately NOT a slider) — Under $500K / $500K–$1M / $1M–$2M / $2M–$5M / $5M+
-5. **Home Type** (checkboxes) — Condominiums / Single Family Homes / Villas / Townhomes
+2. **Price** (chip buckets — deliberately NOT a slider) — Under $500K / $500K–$1M / $1M–$2M / $2M–$5M / $5M–$10M / $10M–$15M / $15M+
+3. **Home Type** (checkboxes) — Condominiums / Single Family Homes / Villas / Townhomes
+4. **Amenities** (checkboxes, sorted by frequency) — **AND semantics**: community must have every checked amenity
+5. **Location on Island** (checkboxes) — North End / Mid-Key / South End
 6. **Bedrooms** (chip selector) — 1 / 2 / 3 / 4 / 5
-7. **Amenities** (checkboxes, sorted by frequency)
-8. **55+ Community** (toggle)
+7. **55+ Community** (toggle)
+
+All multi-select filters are OR (any match) **except Amenities**, which is AND (all must match).
+
+**Removed filters** (state + matching logic still present in `state.js`/`matches.js` as inert no-ops — safe to leave unless asked):
+- **Waterfront** — Gulf-front / Bay-front shown initially; full set removed after data-QA showed the extended values (Beach Club Access / Walk to Beach / Off-water) were noisy.
 
 **Not used:** Garage (too many 0-car condo buildings make it noisy).
 
@@ -101,21 +115,28 @@ Each record in `src/data/communities.json` looks like:
   "is55plus": false,
   "lat": 27.346483,
   "lng": -82.603849,
+  "coordSource": "placed",
   "pageUrl": "/neighborhood/islander-club"
 }
 ```
 
+### `coordSource` values
+- `placed` — individual coordinate from the user-supplied table (all 77 condos).
+- `polygon` — centroid computed from a real polygon in `neighborhoods.geojson` (30 neighborhoods).
+- `clustered` — positioned near a named sibling (e.g. `(Longboat Key Club)` resort members when a specific coord wasn't available). Currently unused but supported by `scripts/place-condos.mjs`.
+- `centerline` — fallback algorithmic placement along the LBK centerline. Any value other than the three above means the coord is approximate.
+
 ### Derivation logic (for the future Wix sync)
 - **`type`** — CSV column `Condo Community?` (boolean)
-- **`location`** — hand-classified by community name. North / Mid / South. QA pass needed.
+- **`location`** — re-derived from `lat` against the zone boundary midpoints (see Architecture decisions). Hand-classifications that drifted are auto-corrected by `scripts/place-condos.mjs`.
 - **`waterfront`** — derived from CSV amenity yes/no columns:
   - `Private Beach` / `Private Beach (Deeded)` → `Gulf-front`
   - `Marina Access` / `Personal Boat Slips` → `Bay-front`
   - `Beach Club Access` (and none of the above) → `Beach Club Access`
   - `Beach Access` only → `Walk to Beach`
   - None → `Off-water`
-- **`priceTiers`** — mapped from CSV `Price Range Tags`
-- **`lat`/`lng`** — estimates for MVP. Real geocoding pass is a follow-up.
+- **`priceTiers`** — derived from `priceRange` by `scripts/` re-derivation. Range string is parsed (`$800s` = $800K, `$1M`/`$19M` = millions), then every bucket the range overlaps gets tagged. Buckets: see Filter design.
+- **`lat`/`lng`** — condos all have user-supplied real coords; neighborhoods with a polygon store the polygon centroid. The one historical fallback (LBK centerline) is only hit if a community is added without coord or polygon.
 
 ## Deployment
 
@@ -125,14 +146,19 @@ Each record in `src/data/communities.json` looks like:
   - `MAPBOX_ACCESS_TOKEN` — public token from mapbox.com
 - **Local development:** copy `config.example.js` → `config.js` (gitignored), paste a Mapbox public token, then `npm install && npm run dev`.
 
+## Resolved (moved out of Open decisions)
+
+- **Community photos** — two stand-in photos live at `public/images/placeholder-condo.jpg` and `public/images/placeholder-neighborhood.jpg`. `communityPhotoUrl()` in `utils.js` returns `c.imageUrl` if set, otherwise the type-appropriate placeholder — so dropping in per-community overrides later is a data-only change.
+- **Real geocoding (condos)** — all 77 have user-supplied real coords. `scripts/place-condos.mjs` holds the table as source-of-truth; re-run it to re-apply.
+- **Real geocoding (neighborhoods)** — 30 of 30 remaining neighborhoods have polygons. `scripts/import-neighborhood-polygons.mjs` normalizes a user-drawn GeoJSON (from geojson.io or similar), dedupes, maps feature names to `communities.json` canonical names, and stamps each match with the polygon centroid + `coordSource: "polygon"`.
+
 ## Open decisions (tracked; follow-up plans)
 
 1. **Mobile experience** — MVP has a minimal stack fallback. A real mobile drawer (filter drawer sliding up, map/list toggle, sticky summary) is a separate plan.
-2. **Community photos** — not in MVP. The CSV has `wix:image://v1/...` URLs that need resolution; Parrish's sync pattern is the reference.
-3. **Real geocoding** — estimated `lat`/`lng` are acceptable for MVP. A Google Places seed + manual QA pass is a follow-up.
-4. **Live Wix data fetch** — replace `src/assets/js/modules/data.js` with a `@wix/data` client call, matching Parrish's `api.js`.
-5. **Wix-iframe embed** — add `send-url-to-iframe.js` + postMessage listeners when we embed into `/neighborhoods` on the main site.
-6. **LBK outline polygon** — optional visual anchor. Can be a hand-drawn GeoJSON or pulled from OSM.
+2. **Live Wix data fetch** — replace `src/assets/js/modules/data.js` with a `@wix/data` client call, matching Parrish's `api.js`.
+3. **Wix-iframe embed** — add `send-url-to-iframe.js` + postMessage listeners when we embed into `/neighborhoods` on the main site.
+4. **LBK outline polygon** — optional island silhouette under the pins. Superseded for individual neighborhoods; a full-island polygon would still add context.
+5. **Per-community photos** — placeholder in place; real per-community images go in via `imageUrl` on each community record.
 
 ## Coding conventions
 
@@ -140,7 +166,13 @@ Each record in `src/data/communities.json` looks like:
 - Plain ES modules, no framework. Functional modules over classes.
 - Token lives in `config.js` (gitignored), loaded as `window.config` from a plain `<script>` tag before the app module.
 - CSS is token-driven — all colors in `main.css` `:root { ... }`. Match the mockup's palette unless the brand evolves.
-- Never invent data — if a required field is missing, flag it and ask.
+- Never invent data — if a required field is missing, flag it and ask. **Especially for LBK coordinates** — don't guess; ask the user to paste from Google Maps.
+
+## Git workflow
+
+- **Push directly to `main`.** The user merged PR #1 to turn on the initial deploy; from that point on everything goes straight to `main`. No PR gate unless explicitly requested.
+- Deploy workflow fires on every push to `main` and is the only deploy path.
+- **Bulk uploads land in the repo root** when the user drops them in via the GitHub web UI (e.g. `map (10).geojson`, `Condo Example.jpg`). Move them to the correct path in a follow-up commit.
 
 ## Working with this project
 
