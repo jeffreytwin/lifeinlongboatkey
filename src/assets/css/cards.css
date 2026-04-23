@@ -52,9 +52,10 @@
 }
 
 /* Hero-slot autoplay video — replaces .detail-photo when a community has
-   a heroVideoUrl. 16:9 aspect ratio (rather than .detail-photo's fixed
-   220px) because YouTube embeds are inherently 16:9 and would letterbox
-   inside a fixed-height box. */
+   a heroVideoUrl. The iframe is scaled ~1.3x and positioned to overflow
+   the container equally on all sides. The overflow: hidden crops the
+   title overlay (top) and YouTube logo (bottom-right) off the frame.
+   pointer-events: none prevents hover from re-showing the title. */
 .detail-hero-video {
   position: relative;
   width: 100%;
@@ -64,10 +65,12 @@
 }
 .detail-hero-video iframe {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: -15%;
+  left: -15%;
+  width: 130%;
+  height: 130%;
   border: 0;
+  pointer-events: none;
 }
 
 .detail-body {
