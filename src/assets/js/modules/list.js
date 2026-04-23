@@ -7,7 +7,7 @@
  * and closes via the X button in the panel header.
  */
 
-import { locationLabel, escapeHtml, communityPhotoUrl } from './utils.js';
+import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl } from './utils.js';
 import { state } from './state.js';
 
 /**
@@ -42,6 +42,17 @@ export function showDetail(community) {
       <h2 class="detail-name">${escapeHtml(community.name)}</h2>
       ${community.subtitle ? `<div class="detail-sub">${escapeHtml(community.subtitle)}</div>` : ''}
       <div class="detail-price">${escapeHtml(community.priceRange || '—')}</div>
+      ${(() => {
+        const embed = youtubeEmbedUrl(community.youtubeUrl);
+        if (!embed) return '';
+        return `<div class="detail-video">
+          <iframe src="${escapeHtml(embed)}"
+                  title="${escapeHtml(community.name)} video"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen></iframe>
+        </div>`;
+      })()}
       <div class="detail-meta">
         ${community.bedrooms ? `<div class="meta"><span class="meta-label">Bedrooms</span><span class="meta-val">${escapeHtml(community.bedrooms)}</span></div>` : ''}
         ${community.sqft ? `<div class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(community.sqft)}</span></div>` : ''}

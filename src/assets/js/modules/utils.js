@@ -55,3 +55,17 @@ export function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+/**
+ * Extract a YouTube video ID from any of the common URL forms and return
+ * an embed URL, or null if the input isn't a recognizable YouTube link.
+ * Handles watch, short (youtu.be), embed, and Shorts URLs.
+ */
+export function youtubeEmbedUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  const m = url.match(
+    /(?:youtube\.com\/(?:watch\?(?:[^&]+&)*v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+  );
+  if (!m) return null;
+  return `https://www.youtube.com/embed/${m[1]}`;
+}
