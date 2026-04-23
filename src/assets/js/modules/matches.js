@@ -11,7 +11,9 @@ const PRICE_ORDER = {
   '$500K–$1M': 1,
   '$1M–$2M': 2,
   '$2M–$5M': 3,
-  '$5M+': 4,
+  '$5M–$10M': 4,
+  '$10M–$15M': 5,
+  '$15M+': 6,
 };
 
 export function matches(c) {

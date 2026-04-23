@@ -26,7 +26,9 @@ export const PRICE_TIERS = [
   '$500K–$1M',
   '$1M–$2M',
   '$2M–$5M',
-  '$5M+',
+  '$5M–$10M',
+  '$10M–$15M',
+  '$15M+',
 ];
 
 export const BEDROOM_OPTIONS = ['1', '2', '3', '4', '5'];
