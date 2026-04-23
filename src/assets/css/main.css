@@ -31,7 +31,16 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, h4 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; margin: 0; }
-button { font-family: inherit; cursor: pointer; }
+button {
+  font-family: inherit;
+  cursor: pointer;
+  /* iOS Safari applies default button text color + gradient fills unless
+     appearance is reset. Without this, custom-colored buttons (chips,
+     toggle pills) can end up with an iOS system blue text that clashes
+     with our backgrounds. */
+  -webkit-appearance: none;
+  appearance: none;
+}
 
 /* App shell */
 .app {

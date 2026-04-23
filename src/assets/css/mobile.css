@@ -15,23 +15,53 @@
   .brand-sub { display: none; }
   .result-count { display: none; }
 
-  /* Filters button in the header — opens the full-screen filter overlay. */
+  /* Floating "Narrow it down" pill, bottom-center. Positioned fixed so
+     it stays in view as the user pans the map. Entrance animation
+     (slide up + pulse twice) draws attention on first load; both
+     animations are `both`-filled so the button settles at
+     translateX(-50%) with scale 1. */
   .filters-toggle-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-left: auto;
-    padding: 8px 18px;
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 14px 26px;
     background: var(--teal);
     color: white;
     border: none;
     border-radius: 999px;
     font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     cursor: pointer;
+    z-index: 60;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+    animation:
+      narrowItDownEntry 0.5s ease-out 0.3s both,
+      narrowItDownPulse 1.1s ease-in-out 1s 2 both;
   }
   .filters-toggle-btn:hover { background: var(--teal-hover); }
+
+  /* Hide the floating button while the filter overlay is open, and
+     while the details panel is open (so it doesn't sit on top of the
+     panel). :has() is supported in all evergreen browsers. */
+  body.filters-open .filters-toggle-btn,
+  body:has(.content.layout-detail) .filters-toggle-btn {
+    display: none;
+  }
+
+  @keyframes narrowItDownEntry {
+    from { transform: translateX(-50%) translateY(90%); opacity: 0; }
+    to   { transform: translateX(-50%) translateY(0);   opacity: 1; }
+  }
+  @keyframes narrowItDownPulse {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50%      { transform: translateX(-50%) scale(1.06); }
+  }
 
   .main {
     grid-template-columns: 1fr;
