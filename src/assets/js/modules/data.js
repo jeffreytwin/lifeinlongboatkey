@@ -7,8 +7,10 @@
 
 import communities from '../../../data/communities.json';
 import neighborhoods from '../../../data/neighborhoods.geojson?raw';
+import condoBuildings from '../../../data/condo-buildings.geojson?raw';
 
 const neighborhoodsGeoJson = JSON.parse(neighborhoods);
+const condoBuildingsGeoJson = JSON.parse(condoBuildings);
 
 /**
  * @typedef {Object} Community
@@ -39,4 +41,9 @@ export function getCommunities() {
 /** Returns the raw neighborhood polygon FeatureCollection. */
 export function getNeighborhoodPolygons() {
   return neighborhoodsGeoJson;
+}
+
+/** Returns the condo building-footprint FeatureCollection (one MultiPolygon per matched condo). */
+export function getCondoBuildingPolygons() {
+  return condoBuildingsGeoJson;
 }
