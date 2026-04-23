@@ -3,5 +3,5 @@
   .main { grid-template-columns: 280px 1fr; }
   .filters { padding: 16px 16px 24px; }
   .header { padding: 14px 20px; }
-  .content.layout-split { grid-template-columns: 1fr 1fr; }
+  .content.layout-detail { grid-template-columns: 1fr 380px; }
 }

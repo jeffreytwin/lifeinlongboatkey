@@ -67,9 +67,8 @@ export function youtubeEmbedUrl(url) {
 }
 
 /**
- * Hero-mode embed URL: autoplay, muted, looping, no controls, minimal
- * YouTube chrome. Uses the `playlist=ID` trick so that loop=1 works on
- * a single-video embed (YouTube quirk). playsinline keeps iOS from
+ * Hero-mode embed URL: autoplay, muted, no controls, minimal YouTube
+ * chrome. Plays once — does not loop. playsinline keeps iOS from
  * taking the video fullscreen on autoplay.
  */
 export function youtubeHeroEmbedUrl(url) {
@@ -78,8 +77,6 @@ export function youtubeHeroEmbedUrl(url) {
   const params = new URLSearchParams({
     autoplay: '1',
     mute: '1',
-    loop: '1',
-    playlist: id,
     controls: '0',
     rel: '0',
     modestbranding: '1',
