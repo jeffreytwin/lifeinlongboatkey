@@ -415,7 +415,7 @@ function showHoverCard(c, evt) {
     <div class="hover-card-body">
       <div class="hover-card-name">${escapeHtml(c.name)}</div>
       <div class="hover-card-meta">
-        ${c.type === 'condo' ? 'Condo' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}
+        ${c.type === 'condo' ? 'Condominiums' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}
       </div>
       <div class="hover-card-price">${escapeHtml(c.priceRange || '—')}</div>
     </div>`;
