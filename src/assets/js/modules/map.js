@@ -36,9 +36,9 @@ const ZONE_ZOOM_THRESHOLD = 13;
 
 // Zone anchor points — centroids where the big bubbles sit.
 const ZONES = [
-  { id: 'north', label: 'North End', lng: -82.683, lat: 27.418 },
-  { id: 'mid',   label: 'Mid-Key',   lng: -82.638, lat: 27.387 },
-  { id: 'south', label: 'South End', lng: -82.597, lat: 27.342 },
+  { id: 'north', label: 'North End', lng: -82.672, lat: 27.417 },
+  { id: 'mid',   label: 'Mid-Key',   lng: -82.636, lat: 27.387 },
+  { id: 'south', label: 'South End', lng: -82.595, lat: 27.342 },
 ];
 
 let map = null;
