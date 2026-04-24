@@ -152,13 +152,20 @@
   font-weight: 500;
   transition: all 0.12s;
   font-family: inherit;
+  /* iOS Safari uses -webkit-text-fill-color independently of color for
+     buttons; pinning it to currentColor ensures the chip's white text in
+     the active state actually renders white instead of inheriting an
+     iOS system fill that can match the green background. */
+  -webkit-text-fill-color: currentColor;
 }
 .chip:hover:not(.is-zero) { border-color: var(--teal); color: var(--teal); }
 .chip.active {
   background: var(--teal);
   color: white;
   border-color: var(--teal);
+  -webkit-text-fill-color: white;
 }
+.chip.active .count { color: white; -webkit-text-fill-color: white; }
 .chip .count { font-size: 10px; opacity: 0.8; margin-left: 4px; }
 .chip.is-zero { opacity: 0.4; cursor: not-allowed; }
 
