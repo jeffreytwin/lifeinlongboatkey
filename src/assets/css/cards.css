@@ -6,6 +6,9 @@
   border-left: 1px solid var(--rule);
   min-height: 0;
   position: relative;
+  /* Prevent scroll-chaining to the body when the panel reaches its top
+     or bottom edge — this is what causes the iOS rubber-band bounce. */
+  overscroll-behavior: contain;
 }
 .content.layout-map .detail-panel { display: none; }
 
@@ -44,6 +47,12 @@
   background: var(--teal);
   overflow: hidden;
   user-select: none;
+  /* Tell the browser this region only handles vertical pans natively
+     (i.e. scrolling the panel below). Horizontal gestures are reserved
+     for our JS swipe handler — without this, iOS interprets the
+     vertical component of a horizontal swipe as a scroll attempt and
+     rubber-bands the panel. */
+  touch-action: pan-y;
 }
 .detail-gallery.photo-nbhd { background: var(--coral); }
 
