@@ -95,8 +95,6 @@ button {
 /* Mobile-only controls; hidden on desktop. */
 .filters-toggle-btn { display: none; }
 .filters-save-btn { display: none; }
-.view-switch { display: none; }
-.list-view { display: none; }
 
 /* Main grid */
 .main {
@@ -109,6 +107,7 @@ button {
 .content {
   display: grid;
   overflow: hidden;
+  /* Anchor for the absolutely-positioned Map/List toggle. */
   position: relative;
 }
 /* Map fills the content area by default. When a community is selected the

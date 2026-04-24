@@ -300,6 +300,127 @@
   background: var(--rule-soft);
 }
 
+/* Map / List view toggle — floating segmented control at the top-center
+   of the content area, available on both desktop and mobile. Hidden
+   when the details panel is open since the user is focused there. */
+.view-switch {
+  display: inline-flex;
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 3px;
+  z-index: 55;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.content.layout-detail .view-switch { display: none; }
+.view-switch-btn {
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  padding: 6px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.view-switch-btn.is-active {
+  background: var(--teal);
+  color: white;
+  -webkit-text-fill-color: white;
+}
+
+/* List view — scrollable card stack. Hidden by default; shown when
+   body has the .view-list class (toggled by the Map/List switch). */
+.list-view {
+  display: none;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg);
+  padding: 64px 0 30px;  /* top clears the view-switch toggle */
+}
+body.view-list .list-view { display: block; }
+body.view-list .map-wrap { display: none; }
+
+.list-view-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.list-view-item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 22px;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+  background: var(--bg-card);
+  transition: background 0.12s;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.list-view-item:hover { background: var(--rule-soft); }
+.list-view-item:active { background: var(--rule-soft); }
+.list-view-photo {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--teal);
+  position: relative;
+}
+.list-view-photo.photo-nbhd { background: var(--coral); }
+.list-view-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.list-view-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  justify-content: center;
+}
+.list-view-meta {
+  font-size: 10px;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.list-view-name {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-view-price {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--teal);
+}
+.list-view-empty {
+  list-style: none;
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
 /* Shared chip styles used by both the details panel and popup */
 .amenity-chip {
   font-size: 10px;
