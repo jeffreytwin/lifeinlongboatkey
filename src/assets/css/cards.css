@@ -316,7 +316,13 @@
   z-index: 55;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
-.content.layout-detail .view-switch { display: none; }
+.content.layout-detail .view-switch {
+  /* When the details panel is open, the toggle stays visible but shifts
+     to re-center over the map/list column (420px of content width is
+     taken by the panel on the right). Mobile's full-screen overlay
+     covers the toggle via z-index, so no additional hide is needed. */
+  left: calc((100% - 420px) / 2);
+}
 .view-switch-btn {
   background: transparent;
   border: none;

@@ -4,4 +4,9 @@
   .filters { padding: 16px 16px 24px; }
   .header { padding: 14px 20px; }
   .content.layout-detail { grid-template-columns: 1fr 380px; }
+  /* Match the narrower 380px panel when re-centering the Map/List
+     toggle over the map column. */
+  .content.layout-detail .view-switch {
+    left: calc((100% - 380px) / 2);
+  }
 }
