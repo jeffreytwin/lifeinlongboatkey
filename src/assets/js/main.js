@@ -51,6 +51,20 @@ function apply() {
   if (resultCount) resultCount.textContent = String(filtered.length);
   renderMap(filtered);
   renderMobileList(filtered);
+
+  // Refresh filter counts — each option shows how many communities would
+  // remain if that option were toggled on top of the current state.
+  renderFilters(communities, apply);
+
+  // Update the mobile Save button with the running count so users can
+  // see how their narrowing is going without dismissing the panel.
+  const saveBtn = document.getElementById('filtersSave');
+  if (saveBtn) {
+    saveBtn.textContent = filtered.length === 1
+      ? 'Save · 1 result'
+      : `Save · ${filtered.length} results`;
+  }
+
   // If the currently-selected community is no longer in the filtered set,
   // close the detail panel to avoid showing a community that's been
   // filtered out.

@@ -103,4 +103,30 @@ export function wireGallery(root) {
       go(Number(dot.dataset.idx));
     }),
   );
+
+  // Touch swipe — horizontal drag ≥40px advances/rewinds one slide.
+  // Passive listeners so vertical scrolling on the panel isn't blocked.
+  const SWIPE_THRESHOLD = 40;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  gallery.addEventListener(
+    'touchstart',
+    (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    },
+    { passive: true },
+  );
+  gallery.addEventListener(
+    'touchend',
+    (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      // Only treat mostly-horizontal gestures as swipes.
+      if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
+      if (dx < 0) go(current + 1);
+      else go(current - 1);
+    },
+    { passive: true },
+  );
 }

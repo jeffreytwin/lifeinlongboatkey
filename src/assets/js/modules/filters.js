@@ -9,6 +9,7 @@
 
 import { state, resetFilters } from './state.js';
 import { countsBy, escapeHtml } from './utils.js';
+import { matches } from './matches.js';
 
 export const LOCATION_OPTIONS = [
   { key: 'north', label: 'North End' },
@@ -46,6 +47,42 @@ const AMENITIES_PRIORITY = [
   'Pickleball',
   'Golf',
 ];
+
+/**
+ * Cached option order for facets whose ordering depends on counts. Populated
+ * on the first renderFilters() call from the full dataset. Reusing the same
+ * order on subsequent renders keeps checkbox positions stable even though
+ * counts update dynamically with other filters.
+ */
+let cachedAmenityOrder = null;
+let cachedHomeTypeOrder = null;
+
+/**
+ * Compute a facet's option counts with the facet's own filter state
+ * temporarily cleared — this is the standard "cross-filter" count used in
+ * faceted search. Checking an option shows how many items would remain,
+ * not how many share that trait in a vacuum.
+ *
+ * @param {Array<object>} communities
+ * @param {string} stateKey  property name on state (e.g. 'locations')
+ * @param {(c: object) => any} getValue  returns the field, scalar or array
+ */
+function countsExcluding(communities, stateKey, getValue) {
+  const saved = state[stateKey];
+  state[stateKey] = stateKey === 'type' ? 'all' : (saved instanceof Set ? new Set() : saved);
+  const list = communities.filter(matches);
+  state[stateKey] = saved;
+  const counts = {};
+  for (const c of list) {
+    const val = getValue(c);
+    if (Array.isArray(val)) {
+      for (const v of val) if (v != null) counts[v] = (counts[v] || 0) + 1;
+    } else if (val != null) {
+      counts[val] = (counts[val] || 0) + 1;
+    }
+  }
+  return counts;
+}
 
 export const PRICE_TIERS = [
   'Under $500K',
@@ -164,27 +201,37 @@ function renderPriceChips(counts, onChange) {
  * @param {() => void} onChange
  */
 export function renderFilters(communities, onChange) {
-  const locationCounts = countsBy(communities, 'location');
-  const waterfrontCounts = countsBy(communities, 'waterfront', true);
-  const homeTypeCounts = countsBy(communities, 'homeTypes', true);
-  const amenityCounts = countsBy(communities, 'amenities', true);
-  const priceTierCounts = countsBy(communities, 'priceTiers', true);
-  const bedCounts = countsBy(communities, 'bedTags', true);
+  // Cross-filter counts: each facet computes what the count WOULD be if
+  // that option were added to the current filter state. Excludes the
+  // facet's own filter slot so checking one option doesn't zero out the
+  // others in the same group.
+  const locationCounts   = countsExcluding(communities, 'locations',  (c) => c.location);
+  const waterfrontCounts = countsExcluding(communities, 'waterfronts', (c) => c.waterfront);
+  const homeTypeCounts   = countsExcluding(communities, 'homeTypes',  (c) => c.homeTypes);
+  const amenityCounts    = countsExcluding(communities, 'amenities',  (c) => c.amenities);
+  const priceTierCounts  = countsExcluding(communities, 'priceTiers', (c) => c.priceTiers);
+  const bedCounts        = countsExcluding(communities, 'bedrooms',   (c) => c.bedTags);
 
-  const homeTypeOptions = Object.keys(homeTypeCounts).sort((a, b) =>
-    a.localeCompare(b)
-  );
-  // Amenities: user-defined priority order first, then frequency for the
-  // remainder. Hidden amenities are dropped from the filter list entirely.
-  const priorityIndex = new Map(AMENITIES_PRIORITY.map((a, i) => [a, i]));
-  const amenityOptions = Object.keys(amenityCounts)
-    .filter((a) => !AMENITIES_HIDDEN.has(a))
-    .sort((a, b) => {
-      const ai = priorityIndex.has(a) ? priorityIndex.get(a) : Infinity;
-      const bi = priorityIndex.has(b) ? priorityIndex.get(b) : Infinity;
-      if (ai !== bi) return ai - bi;
-      return (amenityCounts[b] || 0) - (amenityCounts[a] || 0);
-    });
+  // Option order is cached on first render (from the full dataset) so
+  // positions stay stable even as counts shift with filter state.
+  if (!cachedHomeTypeOrder) {
+    const full = countsBy(communities, 'homeTypes', true);
+    cachedHomeTypeOrder = Object.keys(full).sort((a, b) => a.localeCompare(b));
+  }
+  if (!cachedAmenityOrder) {
+    const full = countsBy(communities, 'amenities', true);
+    const priorityIndex = new Map(AMENITIES_PRIORITY.map((a, i) => [a, i]));
+    cachedAmenityOrder = Object.keys(full)
+      .filter((a) => !AMENITIES_HIDDEN.has(a))
+      .sort((a, b) => {
+        const ai = priorityIndex.has(a) ? priorityIndex.get(a) : Infinity;
+        const bi = priorityIndex.has(b) ? priorityIndex.get(b) : Infinity;
+        if (ai !== bi) return ai - bi;
+        return (full[b] || 0) - (full[a] || 0);
+      });
+  }
+  const homeTypeOptions = cachedHomeTypeOrder;
+  const amenityOptions = cachedAmenityOrder;
 
   // Location on Island — bundles the zone options (north/mid/south) and
   // waterfront options (Gulf-front/Bay-front) into a single checklist. Each
