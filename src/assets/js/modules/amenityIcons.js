@@ -60,12 +60,12 @@ export function filteredAmenities(amenities) {
 }
 
 /**
- * Convert a community pageUrl (e.g. "/neighborhood/islander-club") to
- * the matching homes-for-sale URL. Assumes the slug after /neighborhood/
- * is reused under /homes-for-sale/. Adjust the prefix if the live site
- * uses a different path.
+ * Convert a community pageUrl (e.g. "/neighborhood/aquarius-club") to
+ * the matching homes-for-sale URL on the live site
+ * ("/neighborhood-homes-for-sale/aquarius-club"). Same slug, different
+ * route prefix.
  */
 export function homesForSaleUrl(pageUrl) {
   if (!pageUrl) return '';
-  return pageUrl.replace(/^\/neighborhood\//, '/homes-for-sale/');
+  return pageUrl.replace(/^\/neighborhood\//, '/neighborhood-homes-for-sale/');
 }
