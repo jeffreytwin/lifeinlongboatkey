@@ -298,6 +298,15 @@
   border-radius: 6px;
   border: 1px solid var(--rule);
   background: var(--rule-soft);
+  transition: filter 0.15s, box-shadow 0.15s;
+}
+/* The click affordance is wired only on pointer devices (list.js adds
+   .is-clickable on desktop). Mobile taps do nothing — the reference
+   map there is informational only. */
+.detail-map.is-clickable { cursor: pointer; }
+.detail-map.is-clickable:hover img {
+  filter: brightness(0.97);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
 }
 
 /* Map / List view toggle — floating segmented control at the top-center

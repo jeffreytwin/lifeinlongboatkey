@@ -16,6 +16,17 @@ import { state } from './state.js';
 let onListItemClick = () => {};
 export function setListItemClickHandler(fn) { onListItemClick = fn; }
 
+/** Callback passed from main.js for clicking the reference map at the
+ *  bottom of the details panel (desktop only — mobile doesn't wire it). */
+let onLocateOnMap = () => {};
+export function setLocateOnMapHandler(fn) { onLocateOnMap = fn; }
+
+/** Only wire the reference-map click on real pointer devices. */
+const CAN_HOVER =
+  typeof window !== 'undefined' &&
+  window.matchMedia &&
+  window.matchMedia('(hover: hover)').matches;
+
 /**
  * Render the mobile list-view items for a filtered community set.
  * Safe to call even when the user isn't currently in list view — keeps
@@ -136,6 +147,16 @@ export function showDetail(community) {
     </div>`;
 
   wireGallery(el);
+
+  // Reference-map click (desktop only) — flies the main map to this
+  // community's location, switching to map view first if needed.
+  if (CAN_HOVER) {
+    const mapEl = el.querySelector('.detail-map');
+    if (mapEl) {
+      mapEl.classList.add('is-clickable');
+      mapEl.addEventListener('click', () => onLocateOnMap(community));
+    }
+  }
 
   const content = document.getElementById('content');
   const panel = document.querySelector('.detail-panel');

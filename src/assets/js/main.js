@@ -10,7 +10,13 @@ import { getCommunities, getNeighborhoodPolygons } from './modules/data.js';
 import { state } from './modules/state.js';
 import { renderFilters, setupStaticControls } from './modules/filters.js';
 import { getFiltered } from './modules/matches.js';
-import { showDetail, hideDetail, renderMobileList, setListItemClickHandler } from './modules/list.js';
+import {
+  showDetail,
+  hideDetail,
+  renderMobileList,
+  setListItemClickHandler,
+  setLocateOnMapHandler,
+} from './modules/list.js';
 import {
   initMap,
   renderMap,
@@ -115,6 +121,15 @@ document.getElementById('filtersSave')?.addEventListener('click', () => {
 document.getElementById('viewMapBtn')?.addEventListener('click', () => setView('map'));
 document.getElementById('viewListBtn')?.addEventListener('click', () => setView('list'));
 setListItemClickHandler(openDetail);
+
+// Clicking the reference map in the details panel (desktop only) flies
+// the big map to that community's coordinates. If the user is currently
+// in list view, also switch to map view so the flyTo is visible.
+setLocateOnMapHandler((community) => {
+  if (state.view !== 'map') setView('map');
+  // Let the map container remeasure from the view swap before flying.
+  setTimeout(() => focusCommunity(community), 140);
+});
 
 initMap(communities, {
   onSelect: openDetail,
