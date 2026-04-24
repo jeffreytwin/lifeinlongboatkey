@@ -128,7 +128,10 @@ setListItemClickHandler(openDetail);
 setLocateOnMapHandler((community) => {
   if (state.view !== 'map') setView('map');
   // Let the map container remeasure from the view swap before flying.
-  setTimeout(() => focusCommunity(community), 140);
+  // Zoom near the maximum (18) so the user lands almost-fully-zoomed
+  // on the community, and give the animation a slightly longer arc
+  // since we may be traveling a greater zoom distance.
+  setTimeout(() => focusCommunity(community, { zoom: 17, duration: 850 }), 140);
 });
 
 initMap(communities, {

@@ -559,12 +559,12 @@ export function setHighlightedPin(name) {
   });
 }
 
-export function focusCommunity(community) {
+export function focusCommunity(community, { zoom, duration = 650 } = {}) {
   if (!map) return;
   map.flyTo({
     center: [community.lng, community.lat],
-    zoom: Math.max(map.getZoom(), 14),
-    duration: 650,
+    zoom: zoom ?? Math.max(map.getZoom(), 14),
+    duration,
   });
 }
 
