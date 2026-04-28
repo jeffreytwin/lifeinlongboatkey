@@ -25,6 +25,14 @@ export const state = {
   /** @type {boolean} */
   age55: false,
   /**
+   * When true, hides communities with no homes/condos currently for sale.
+   * Defaults to ON so prospective buyers see only actionable inventory.
+   * Until the Wix CMS is wired up, every community is flagged
+   * `hasListings: true`, so this filter is a no-op — but the toggle is
+   * in place and will start doing real work the moment the sync lands.
+   */
+  hasListingsOnly: true,
+  /**
    * 'map' (default): panel closed, map fills the content area.
    * 'detail': panel open showing the selected community's details.
    */
@@ -52,4 +60,5 @@ export function resetFilters() {
   state.bedrooms.clear();
   state.amenities.clear();
   state.age55 = false;
+  state.hasListingsOnly = true;
 }

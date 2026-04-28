@@ -328,6 +328,14 @@ export function setupStaticControls(communities, { apply, setLayout }) {
     apply();
   });
 
+  // 'Currently for sale' toggle (defaults ON)
+  const forSale = document.getElementById('forSaleToggle');
+  forSale?.addEventListener('click', () => {
+    state.hasListingsOnly = !state.hasListingsOnly;
+    forSale.setAttribute('aria-pressed', state.hasListingsOnly ? 'true' : 'false');
+    apply();
+  });
+
   // Clear all
   document.getElementById('clearBtn')?.addEventListener('click', () => {
     resetFilters();
@@ -337,6 +345,7 @@ export function setupStaticControls(communities, { apply, setLayout }) {
       p.setAttribute('aria-checked', isAll ? 'true' : 'false');
     });
     age55?.setAttribute('aria-pressed', 'false');
+    forSale?.setAttribute('aria-pressed', 'true'); // resets to default ON
     renderFilters(communities, apply);
     apply();
   });

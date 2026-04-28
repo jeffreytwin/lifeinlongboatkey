@@ -31,6 +31,10 @@ export function matches(c) {
     for (const a of state.amenities) if (!c.amenities.includes(a)) return false;
   }
   if (state.age55 && !c.is55plus) return false;
+  // 'Currently for sale' filter — defaults on. Until the Wix sync lands,
+  // every community has hasListings:true, so this is a no-op that starts
+  // doing work as soon as listings data is populated.
+  if (state.hasListingsOnly && !c.hasListings) return false;
   return true;
 }
 
