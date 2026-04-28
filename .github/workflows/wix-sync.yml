@@ -1,0 +1,74 @@
+name: Wix Sync
+
+# Manually triggered from the Actions tab. Pulls the
+# Neighborhoods & Condos collection from Wix, maps fields onto our
+# communities.json schema, and (in 'sync' mode) commits + pushes
+# the diff so the live site picks up the change on the next deploy.
+#
+# Three secrets must exist on this repo:
+#   WIX_SITE_ID
+#   WIX_API_KEY
+#   WIX_COLLECTION_ID
+# Add them at: Settings -> Secrets and variables -> Actions -> New repository secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: sync
+        type: choice
+        options:
+          - inspect   # fetch one item, print its raw shape, exit without writing
+          - dry       # full run, print report, but don't write/commit anything
+          - sync      # write communities.json + commit + push if anything changed
+
+permissions:
+  contents: write  # workflow needs to push the data update back to main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run sync (${{ inputs.mode }})
+        env:
+          WIX_SITE_ID: ${{ secrets.WIX_SITE_ID }}
+          WIX_API_KEY: ${{ secrets.WIX_API_KEY }}
+          WIX_COLLECTION_ID: ${{ secrets.WIX_COLLECTION_ID }}
+        run: |
+          set -e
+          case "${{ inputs.mode }}" in
+            inspect) node scripts/sync-from-wix.mjs --inspect ;;
+            dry)     node scripts/sync-from-wix.mjs --dry ;;
+            sync)    node scripts/sync-from-wix.mjs ;;
+            *) echo "Unknown mode"; exit 1 ;;
+          esac
+
+      - name: Commit and push if changed
+        if: ${{ inputs.mode == 'sync' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/communities.json
+          if git diff --staged --quiet; then
+            echo "No changes from sync — nothing to commit."
+          else
+            git commit -m "Sync community data from Wix"
+            git push
+          fi
