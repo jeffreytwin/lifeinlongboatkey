@@ -58,20 +58,31 @@ let cachedAmenityOrder = null;
 let cachedHomeTypeOrder = null;
 
 /**
- * Compute a facet's option counts with the facet's own filter state
- * temporarily cleared — this is the standard "cross-filter" count used in
- * faceted search. Checking an option shows how many items would remain,
- * not how many share that trait in a vacuum.
+ * Compute a facet's option counts.
+ *
+ * For OR-semantic facets (location, waterfront, price, home type,
+ * bedrooms) the facet's own state is temporarily cleared before
+ * counting — each option's count then reads "how many would match if
+ * you toggled this on, given other filters." Standard cross-filter
+ * count for "what would I gain."
+ *
+ * For AND-semantic facets (amenities) the facet's state is NOT cleared
+ * — each option's count reads "of my currently-matching set, how many
+ * also have this trait." Proper "what would I lose" count for an AND
+ * narrowing filter. Pass clearOwn: false in that case.
  *
  * @param {Array<object>} communities
  * @param {string} stateKey  property name on state (e.g. 'locations')
  * @param {(c: object) => any} getValue  returns the field, scalar or array
+ * @param {boolean} [clearOwn=true]  whether to clear the facet's state for the count
  */
-function countsExcluding(communities, stateKey, getValue) {
+function countsExcluding(communities, stateKey, getValue, clearOwn = true) {
   const saved = state[stateKey];
-  state[stateKey] = stateKey === 'type' ? 'all' : (saved instanceof Set ? new Set() : saved);
+  if (clearOwn) {
+    state[stateKey] = stateKey === 'type' ? 'all' : (saved instanceof Set ? new Set() : saved);
+  }
   const list = communities.filter(matches);
-  state[stateKey] = saved;
+  if (clearOwn) state[stateKey] = saved;
   const counts = {};
   for (const c of list) {
     const val = getValue(c);
@@ -208,7 +219,9 @@ export function renderFilters(communities, onChange) {
   const locationCounts   = countsExcluding(communities, 'locations',  (c) => c.location);
   const waterfrontCounts = countsExcluding(communities, 'waterfronts', (c) => c.waterfront);
   const homeTypeCounts   = countsExcluding(communities, 'homeTypes',  (c) => c.homeTypes);
-  const amenityCounts    = countsExcluding(communities, 'amenities',  (c) => c.amenities);
+  // Amenities use AND, so leave state.amenities in effect — each count
+  // is "of my current matches, how many also have this amenity."
+  const amenityCounts    = countsExcluding(communities, 'amenities',  (c) => c.amenities, false);
   const priceTierCounts  = countsExcluding(communities, 'priceTiers', (c) => c.priceTiers);
   const bedCounts        = countsExcluding(communities, 'bedrooms',   (c) => c.bedTags);
 
