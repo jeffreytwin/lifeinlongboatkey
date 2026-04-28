@@ -120,7 +120,7 @@ function centerlineCoord(zone) {
 
 console.log('Fetching items from Wix collection', WIX_COLLECTION_ID, '...');
 const all = [];
-let page = await client.items.queryDataItems({ dataCollectionId: WIX_COLLECTION_ID }).limit(100).find();
+let page = await client.items.query(WIX_COLLECTION_ID).limit(100).find();
 all.push(...page.items);
 while (page.hasNext()) {
   page = await page.next();
