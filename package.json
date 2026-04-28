@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@wix/data": "^1.0.447",
+    "@wix/sdk": "^1.21.7",
+    "dotenv": "^17.4.2",
     "vite": "^7.1.7"
   },
   "dependencies": {
