@@ -33,6 +33,24 @@ import { items } from '@wix/data';
 const COMMUNITIES_PATH = 'src/data/communities.json';
 const DRY_RUN = process.argv.includes('--dry');
 
+/**
+ * When a Wix item's name doesn't match a local community by exact string,
+ * the sync would normally add it as a new entry. These overrides map a
+ * Wix-side name to the canonical local name we use after our renames.
+ */
+const WIX_NAME_OVERRIDES = {
+  'Sabal Cove':       'Sabal Cove (Bay Isles)',
+  'Queens Harbour':   'Queens Harbour (Bay Isles)',
+};
+
+/**
+ * Wix items with these names get ignored entirely. Use sparingly — for
+ * communities we've intentionally dropped from the local list.
+ */
+const WIX_SKIP_NAMES = new Set([
+  'Harris Bayou',
+]);
+
 const { WIX_SITE_ID, WIX_API_KEY, WIX_COLLECTION_ID } = process.env;
 for (const [k, v] of Object.entries({ WIX_SITE_ID, WIX_API_KEY, WIX_COLLECTION_ID })) {
   if (!v) {
@@ -150,8 +168,10 @@ for (const raw of all) {
   // already checks both.
   const item = raw.data ? { ...raw, ...raw.data } : raw;
 
-  const name = field(item, 'title', 'neighborhoodName', 'name', 'Neighborhood Name');
-  if (!name) { skipped++; continue; }
+  const wixName = field(item, 'title', 'neighborhoodName', 'name', 'Neighborhood Name');
+  if (!wixName) { skipped++; continue; }
+  if (WIX_SKIP_NAMES.has(wixName)) { skipped++; continue; }
+  const name = WIX_NAME_OVERRIDES[wixName] || wixName;
   seenNames.add(name);
 
   const isCondo = isYes(field(item, 'condoCommunity', 'condoCommunity_', 'Condo Community?'));
@@ -166,6 +186,10 @@ for (const raw of all) {
     bedrooms: field(item, 'bedrooms', 'Bedrooms'),
     youtubeUrl: field(item, 'youtubeVideo', 'youtubeUrl', 'YouTube Video') || undefined,
     pageUrl: field(item, 'link-houses-for-sale-dynamic-pages-title', 'pageUrl', 'slug') || undefined,
+    // is55plus: trust the Yes/No field if set; otherwise fall back to
+    // the '55+Communities' tag in the amenities multi-select. (Spanish
+    // Main Yacht Club had the YN field as 'No' but the tag set
+    // correctly, so the tag is the more reliable signal.)
     is55plus: isYes(field(item, '55Text-YesOrNo', 'is55plus', '55+ Text - Yes or No')),
   };
 
@@ -196,6 +220,12 @@ for (const raw of all) {
     }
   }
   updates.amenities = amenities;
+
+  // is55plus fallback — if the YN field was empty/unset but the
+  // amenity multi-select includes '55+Communities', treat it as 55+.
+  if (!updates.is55plus && amenities.includes('55+Communities')) {
+    updates.is55plus = true;
+  }
 
   // Home types — tag array OR comma-separated string.
   const homeTypes = field(item, 'homeTypeTags', 'homeTypes', 'Home Type Tags', 'Home Types');
