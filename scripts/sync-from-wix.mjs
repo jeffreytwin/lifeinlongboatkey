@@ -198,8 +198,8 @@ if (LISTINGS_COLLECTION) {
     // string or an object with _id/id/name. Listings might also store
     // the community by name, so we also try a string-name path.
     const candidates = [
-      field(item, 'neighborhood', 'Neighborhood', 'community', 'parentNeighborhood'),
-      field(item, 'neighborhoodName', 'communityName', 'Neighborhood Name'),
+      field(item, 'village', 'villageRef', 'neighborhood', 'Neighborhood', 'community', 'parentNeighborhood'),
+      field(item, 'villageNameForFiltering', 'villageName', 'neighborhoodName', 'communityName', 'Neighborhood Name'),
     ];
     for (const ref of candidates) {
       if (!ref) continue;
@@ -247,30 +247,42 @@ for (const raw of all) {
   // already checks both.
   const item = raw.data ? { ...raw, ...raw.data } : raw;
 
-  const wixName = field(item, 'title', 'neighborhoodName', 'name', 'Neighborhood Name');
+  const wixName = field(item, 'title', 'villageTitle', 'villageNameForFiltering', 'neighborhoodName', 'name', 'Neighborhood Name');
   if (!wixName) { skipped++; continue; }
   if (WIX_SKIP_NAMES.has(wixName)) { skipped++; continue; }
   const name = WIX_NAME_OVERRIDES[wixName] || wixName;
   seenNames.add(name);
 
-  const isCondo = isYes(field(item, 'condoCommunity', 'condoCommunity_', 'Condo Community?'));
+  // Home types — tag array preferred over the comma-separated string.
+  const rawHomeTypes = field(item, 'homeTypeTags', 'homeTypes', 'Home Type Tags', 'Home Types');
+  const homeTypes = Array.isArray(rawHomeTypes)
+    ? rawHomeTypes.filter(Boolean)
+    : (typeof rawHomeTypes === 'string'
+        ? rawHomeTypes.split(',').map((s) => s.trim()).filter(Boolean)
+        : []);
+
+  // Condo vs neighborhood — Wix collection no longer surfaces an explicit
+  // condoCommunity boolean for every record (Jewfish Key, a neighborhood,
+  // doesn't have the field at all). Fall back to homeTypeTags: anything
+  // tagged 'Condominiums' is a condo community.
+  const explicitCondo = field(item, 'condoCommunity', 'condoCommunity_', 'Condo Community?');
+  const isCondo = explicitCondo !== undefined
+    ? isYes(explicitCondo)
+    : homeTypes.includes('Condominiums');
 
   // Pull content fields with fallbacks.
   const updates = {
     type: isCondo ? 'condo' : 'neighborhood',
-    subtitle: field(item, 'neighborhoodSubtitle', 'subtitle', 'Neighborhood Subtitle'),
-    shortDescription: field(item, 'neighborhoodShortDescription', 'shortDescription', 'Neighborhood Short Description'),
+    subtitle: field(item, 'villageSubtitle', 'neighborhoodSubtitle', 'subtitle', 'Neighborhood Subtitle'),
+    shortDescription: field(item, 'villageShortDescription', 'neighborhoodShortDescription', 'shortDescription', 'Neighborhood Short Description'),
     priceRange: field(item, 'priceRange', 'Price Range'),
     sqft: field(item, 'squareFeet', 'sqft', 'Square Feet'),
-    bedrooms: field(item, 'bedrooms', 'Bedrooms'),
+    bedrooms: field(item, 'bedroomRange', 'bedrooms', 'Bedrooms'),
     youtubeUrl: field(item, 'youtubeVideo', 'youtubeUrl', 'YouTube Video') || undefined,
-    pageUrl: field(item, 'link-houses-for-sale-dynamic-pages-title', 'pageUrl', 'slug') || undefined,
-    imageUrl: resolveWixImage(field(item, 'mainImage', 'main_image', 'image', 'Main Image')) || undefined,
-    // is55plus: trust the Yes/No field if set; otherwise fall back to
-    // the '55+Communities' tag in the amenities multi-select. (Spanish
-    // Main Yacht Club had the YN field as 'No' but the tag set
-    // correctly, so the tag is the more reliable signal.)
-    is55plus: isYes(field(item, '55Text-YesOrNo', 'is55plus', '55+ Text - Yes or No')),
+    pageUrl: field(item, 'link-villages-title', 'link-houses-for-sale-dynamic-pages-title', 'pageUrl', 'slug') || undefined,
+    imageUrl: resolveWixImage(field(item, 'aboutNeighborhoodImage', 'mainImage', 'main_image', 'image', 'Main Image')) || undefined,
+    is55plus: isYes(field(item, '55Text-YesOrNo', 'ageRestrictedTextYesOrNo', 'is55plus', '55+ Text - Yes or No')),
+    homeTypes,
   };
 
   // Amenities — try a multi-select tag field first, then fall back to
@@ -307,15 +319,13 @@ for (const raw of all) {
     updates.is55plus = true;
   }
 
-  // Home types — tag array OR comma-separated string.
-  const homeTypes = field(item, 'homeTypeTags', 'homeTypes', 'Home Type Tags', 'Home Types');
-  if (Array.isArray(homeTypes)) updates.homeTypes = homeTypes.filter(Boolean);
-  else if (typeof homeTypes === 'string') updates.homeTypes = homeTypes.split(',').map((s) => s.trim()).filter(Boolean);
-  else updates.homeTypes = [];
+  // Home types — tag array OR comma-separated string. Already computed
+  // above (we needed it for the condo/neighborhood heuristic); the
+  // updates.homeTypes was set when the updates object was built.
 
-  // Bedroom tags — derive from "bedrooms" string like "2 - 3" if no tag field.
-  const bedTags = field(item, 'bedTags', 'Bedroom Tags');
-  if (Array.isArray(bedTags)) updates.bedTags = bedTags.map(String);
+  // Bedroom tags — Wix exposes bedroomTags as the canonical multi-select.
+  const bedTagsRaw = field(item, 'bedroomTags', 'bedTags', 'Bedroom Tags');
+  if (Array.isArray(bedTagsRaw)) updates.bedTags = bedTagsRaw.map(String);
   else if (typeof updates.bedrooms === 'string') {
     const m = updates.bedrooms.match(/(\d+)/g);
     if (m) {
