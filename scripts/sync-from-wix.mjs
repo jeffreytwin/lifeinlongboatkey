@@ -86,6 +86,24 @@ function isYes(v) {
   return false;
 }
 
+/** Resolve a Wix image reference to a public CDN URL.
+ *  Handles wix:image://v1/HASH~mv2.ext/filename strings and the SDK's
+ *  object form { url: 'https://...' }. Returns undefined for anything
+ *  unrecognizable. */
+function resolveWixImage(ref) {
+  if (!ref) return undefined;
+  if (typeof ref === 'object') {
+    if (ref.url && typeof ref.url === 'string') return ref.url;
+    if (ref.src && typeof ref.src === 'string') return ref.src;
+    return undefined;
+  }
+  if (typeof ref !== 'string') return undefined;
+  if (ref.startsWith('http')) return ref;
+  const m = ref.match(/^wix:image:\/\/v1\/([^/]+)/);
+  if (m) return `https://static.wixstatic.com/media/${m[1]}`;
+  return undefined;
+}
+
 const ZONE_N_M = 27.40586;
 const ZONE_M_S = 27.36114;
 function zoneFromLat(lat) {
@@ -136,15 +154,76 @@ function centerlineCoord(zone) {
 
 // -------- fetch --------
 
-console.log('Fetching items from Wix collection', WIX_COLLECTION_ID, '...');
-const all = [];
-let page = await client.items.query(WIX_COLLECTION_ID).limit(100).find();
-all.push(...page.items);
-while (page.hasNext()) {
-  page = await page.next();
-  all.push(...page.items);
+async function fetchAll(collectionId) {
+  let page = await client.items.query(collectionId).limit(100).find();
+  const out = [...page.items];
+  while (page.hasNext()) {
+    page = await page.next();
+    out.push(...page.items);
+  }
+  return out;
 }
+
+console.log('Fetching items from Wix collection', WIX_COLLECTION_ID, '...');
+const all = await fetchAll(WIX_COLLECTION_ID);
 console.log('Fetched', all.length, 'items.');
+
+// --- listings join (optional) ---
+//
+// If WIX_LISTINGS_COLLECTION_ID is set, query that collection and build
+// a set of community names that have at least one active listing.
+// Communities not in the set get hasListings:false; the 'Currently for
+// sale' filter then actually does work.
+const LISTINGS_COLLECTION = process.env.WIX_LISTINGS_COLLECTION_ID;
+const communitiesWithListings = new Set();
+if (LISTINGS_COLLECTION) {
+  console.log(`Fetching listings from ${LISTINGS_COLLECTION} ...`);
+  const listings = await fetchAll(LISTINGS_COLLECTION);
+  console.log('Fetched', listings.length, 'listings.');
+
+  // Build a Wix item ID -> canonical community name map first so we can
+  // resolve reference fields on listings.
+  const idToName = new Map();
+  for (const item of all) {
+    const wixName = field(item, 'title', 'neighborhoodName', 'name', 'Neighborhood Name');
+    if (!wixName) continue;
+    if (WIX_SKIP_NAMES.has(wixName)) continue;
+    const name = WIX_NAME_OVERRIDES[wixName] || wixName;
+    if (item._id) idToName.set(item._id, name);
+  }
+
+  for (const listing of listings) {
+    const item = listing.data ? { ...listing, ...listing.data } : listing;
+    // Try several candidate field names; reference can be a plain ID
+    // string or an object with _id/id/name. Listings might also store
+    // the community by name, so we also try a string-name path.
+    const candidates = [
+      field(item, 'neighborhood', 'Neighborhood', 'community', 'parentNeighborhood'),
+      field(item, 'neighborhoodName', 'communityName', 'Neighborhood Name'),
+    ];
+    for (const ref of candidates) {
+      if (!ref) continue;
+      if (typeof ref === 'object') {
+        const name = idToName.get(ref._id || ref.id);
+        if (name) { communitiesWithListings.add(name); break; }
+        if (ref.name && idToName.has(ref._id)) {
+          communitiesWithListings.add(ref.name); break;
+        }
+      } else if (typeof ref === 'string') {
+        // Either a Wix ID or the name itself.
+        if (idToName.has(ref)) {
+          communitiesWithListings.add(idToName.get(ref)); break;
+        }
+        // Try as name (also try the override map in reverse).
+        const reverseOverride = Object.entries(WIX_NAME_OVERRIDES).find(([wix]) => wix === ref);
+        const localName = reverseOverride ? reverseOverride[1] : ref;
+        communitiesWithListings.add(localName);
+        break;
+      }
+    }
+  }
+  console.log(communitiesWithListings.size, 'communities have at least one active listing.');
+}
 
 // First-run diagnostic — print one item so we can confirm field names match.
 if (all.length > 0 && process.argv.includes('--inspect')) {
@@ -186,6 +265,7 @@ for (const raw of all) {
     bedrooms: field(item, 'bedrooms', 'Bedrooms'),
     youtubeUrl: field(item, 'youtubeVideo', 'youtubeUrl', 'YouTube Video') || undefined,
     pageUrl: field(item, 'link-houses-for-sale-dynamic-pages-title', 'pageUrl', 'slug') || undefined,
+    imageUrl: resolveWixImage(field(item, 'mainImage', 'main_image', 'image', 'Main Image')) || undefined,
     // is55plus: trust the Yes/No field if set; otherwise fall back to
     // the '55+Communities' tag in the amenities multi-select. (Spanish
     // Main Yacht Club had the YN field as 'No' but the tag set
@@ -278,6 +358,10 @@ for (const raw of all) {
   // Re-derive zone from current lat — Wix doesn't own coords, but lat
   // could be stale if a previous run wrote one.
   c.location = zoneFromLat(c.lat) || c.location;
+  // Listings join — only run when the listings collection is configured.
+  if (LISTINGS_COLLECTION) {
+    c.hasListings = communitiesWithListings.has(name);
+  }
   const after = JSON.stringify(c);
   if (before !== after) {
     updated++;

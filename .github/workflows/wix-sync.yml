@@ -23,9 +23,19 @@ on:
           - inspect   # fetch one item, print its raw shape, exit without writing
           - dry       # full run, print report, but don't write/commit anything
           - sync      # write communities.json + commit + push if anything changed
+  schedule:
+    # Every 30 minutes. Scheduled runs always use 'sync' mode (inputs
+    # are unset on schedule triggers, so the case-default kicks in).
+    - cron: "*/30 * * * *"
 
 permissions:
   contents: write  # workflow needs to push the data update back to main
+
+# Don't let two syncs trample each other if a manual click overlaps a
+# scheduled run.
+concurrency:
+  group: wix-sync
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -46,22 +56,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run sync (${{ inputs.mode }})
+      - name: Run sync (${{ inputs.mode || 'sync' }})
         env:
           WIX_SITE_ID: ${{ secrets.WIX_SITE_ID }}
           WIX_API_KEY: ${{ secrets.WIX_API_KEY }}
           WIX_COLLECTION_ID: ${{ secrets.WIX_COLLECTION_ID }}
+          # Optional. Set this in repo secrets to enable the
+          # 'Currently for sale' filter to actually filter.
+          WIX_LISTINGS_COLLECTION_ID: ${{ secrets.WIX_LISTINGS_COLLECTION_ID }}
         run: |
           set -e
-          case "${{ inputs.mode }}" in
+          mode="${{ inputs.mode || 'sync' }}"
+          case "$mode" in
             inspect) node scripts/sync-from-wix.mjs --inspect ;;
             dry)     node scripts/sync-from-wix.mjs --dry ;;
             sync)    node scripts/sync-from-wix.mjs ;;
-            *) echo "Unknown mode"; exit 1 ;;
+            *) echo "Unknown mode: $mode"; exit 1 ;;
           esac
 
       - name: Commit and push if changed
-        if: ${{ inputs.mode == 'sync' }}
+        if: ${{ (inputs.mode || 'sync') == 'sync' }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
