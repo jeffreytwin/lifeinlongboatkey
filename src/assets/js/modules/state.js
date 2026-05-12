@@ -44,7 +44,7 @@ export const state = {
    */
   view: 'map',
   /** @type {"default"|"name"|"price-asc"|"price-desc"} */
-  sort: 'default',
+  sort: 'name',
   /** @type {string|null} */
   highlightedName: null,
   /** @type {object|null} — the community currently shown in the details panel */
