@@ -16,8 +16,13 @@
 //   WIX_COLLECTION_ID
 //
 // Merge strategy:
-//   - Sync all CONTENT fields (subtitle, description, price, amenities,
-//     YouTube URL, home types, etc.) from Wix into communities.json.
+//   - Match each Wix item to a local record by Wix `_id` first (stored
+//     on the local record as `id`), falling back to `name` on first run
+//     after this change. The id is then back-filled so subsequent
+//     syncs are stable across Wix renames.
+//   - Sync all CONTENT fields (name, subtitle, description, price,
+//     amenities, YouTube URL, home types, etc.) from Wix into
+//     communities.json.
 //   - PRESERVE locally-curated geometry (lat, lng, coordSource, images,
 //     priceTiers) — those came from hand placement and the polygon import.
 //   - Communities only in Wix: appended with a centerline-fallback coord.
@@ -34,9 +39,13 @@ const COMMUNITIES_PATH = 'src/data/communities.json';
 const DRY_RUN = process.argv.includes('--dry');
 
 /**
- * When a Wix item's name doesn't match a local community by exact string,
- * the sync would normally add it as a new entry. These overrides map a
- * Wix-side name to the canonical local name we use after our renames.
+ * Force a different local display name than what Wix has. The map is
+ * applied AFTER id-based matching, so an entry here doesn't affect
+ * which local record gets updated — it only renames the display name
+ * after the update. Use this when we want the LBK map to disambiguate
+ * a community that Wix names ambiguously (e.g. "Sabal Cove" vs the
+ * other Sabal Cove of-which-there-is-only-one — kept as "Sabal Cove
+ * (Bay Isles)" for clarity in the sidebar).
  */
 const WIX_NAME_OVERRIDES = {
   'Sabal Cove':       'Sabal Cove (Bay Isles)',
@@ -236,6 +245,8 @@ if (all.length > 0 && process.argv.includes('--inspect')) {
 
 const existing = JSON.parse(readFileSync(COMMUNITIES_PATH, 'utf8'));
 const byName = new Map(existing.map((c) => [c.name, c]));
+const byId = new Map(existing.filter((c) => c.id).map((c) => [c.id, c]));
+const seenIds = new Set();
 const seenNames = new Set();
 
 let updated = 0, added = 0, skipped = 0;
@@ -246,12 +257,14 @@ for (const raw of all) {
   // `data` for some endpoints and at the top level for others. `field()`
   // already checks both.
   const item = raw.data ? { ...raw, ...raw.data } : raw;
+  const wixId = raw._id || item._id;
 
   const wixName = field(item, 'title', 'villageTitle', 'villageNameForFiltering', 'neighborhoodName', 'name', 'Neighborhood Name');
   if (!wixName) { skipped++; continue; }
   if (WIX_SKIP_NAMES.has(wixName)) { skipped++; continue; }
   const name = WIX_NAME_OVERRIDES[wixName] || wixName;
   seenNames.add(name);
+  if (wixId) seenIds.add(wixId);
 
   // Home types — tag array preferred over the comma-separated string.
   const rawHomeTypes = field(item, 'homeTypeTags', 'homeTypes', 'Home Type Tags', 'Home Types');
@@ -343,13 +356,18 @@ for (const raw of all) {
   // Strip undefined values so we don't blow away existing fields with `undefined`.
   for (const k of Object.keys(updates)) if (updates[k] === undefined) delete updates[k];
 
-  let c = byName.get(name);
+  // Match by Wix id first (stable across renames), then by name (for
+  // records that haven't been seen yet — first sync after id-matching
+  // was introduced, or anything pre-existing without an id).
+  let c = wixId ? byId.get(wixId) : undefined;
+  if (!c) c = byName.get(name);
   if (!c) {
     // New community — make a stub. Coords default to centerline; user
     // can hand-place later via scripts/place-condos.mjs.
-    const coord = centerlineCoord(updates.is55plus ? 'mid' : 'mid');
+    const coord = centerlineCoord('mid');
     c = {
       name,
+      ...(wixId ? { id: wixId } : {}),
       lat: coord.lat,
       lng: coord.lng,
       coordSource: 'centerline',
@@ -359,11 +377,22 @@ for (const raw of all) {
     };
     existing.push(c);
     byName.set(name, c);
+    if (wixId) byId.set(wixId, c);
     added++;
   }
 
+  // Back-fill id on records that were matched by name.
+  if (wixId && c.id !== wixId) c.id = wixId;
+
   // Track what changes for the report.
   const before = JSON.stringify(c);
+  // Update the local name to match Wix. If it changed, refresh the
+  // byName index so the same-sync name lookups don't go stale.
+  if (c.name !== name) {
+    byName.delete(c.name);
+    byName.set(name, c);
+    c.name = name;
+  }
   Object.assign(c, updates);
   // Re-derive zone from current lat — Wix doesn't own coords, but lat
   // could be stale if a previous run wrote one.
@@ -379,8 +408,12 @@ for (const raw of all) {
   }
 }
 
-// Communities present locally but not in Wix — flag them.
-const orphaned = existing.filter((c) => !seenNames.has(c.name)).map((c) => c.name);
+// Communities present locally but not in Wix — flag them. Prefer the
+// id check (stable across renames); fall back to name for records that
+// don't have an id stored yet.
+const orphaned = existing
+  .filter((c) => (c.id ? !seenIds.has(c.id) : !seenNames.has(c.name)))
+  .map((c) => c.name);
 
 // -------- write --------
 
