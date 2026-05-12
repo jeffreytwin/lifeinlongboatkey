@@ -122,12 +122,18 @@ export function showDetail(community) {
         </div>`;
       })()}
       <div class="detail-actions">
-        <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + homes)}" target="_blank" rel="noopener">
-          View<br>Homes for Sale
-        </a>
-        <a class="detail-link detail-link-secondary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
-          View<br>Community Page
-        </a>
+        ${community.hasListings ? `
+          <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + homes)}" target="_blank" rel="noopener">
+            View<br>Homes for Sale
+          </a>
+          <a class="detail-link detail-link-secondary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
+            View<br>Community Page
+          </a>
+        ` : `
+          <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
+            View<br>Community Page
+          </a>
+        `}
       </div>
       <div class="detail-meta">
         ${community.bedrooms ? `<div class="meta"><span class="meta-label">Bedrooms</span><span class="meta-val">${escapeHtml(community.bedrooms)}</span></div>` : ''}
