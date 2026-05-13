@@ -24,12 +24,14 @@ on:
           - dry       # full run, print report, but don't write/commit anything
           - sync      # write communities.json + commit + push if anything changed
   schedule:
-    # Every 30 minutes. Scheduled runs always use 'sync' mode (inputs
-    # are unset on schedule triggers, so the case-default kicks in).
-    - cron: "*/30 * * * *"
+    # Every hour on the hour. Scheduled runs always use 'sync' mode
+    # (inputs are unset on schedule triggers, so the case-default kicks
+    # in).
+    - cron: "0 * * * *"
 
 permissions:
   contents: write  # workflow needs to push the data update back to main
+  actions: write   # needed to dispatch the deploy workflow on data change
 
 # Don't let two syncs trample each other if a manual click overlaps a
 # scheduled run.
@@ -75,6 +77,7 @@ jobs:
           esac
 
       - name: Commit and push if changed
+        id: commit
         if: ${{ (inputs.mode || 'sync') == 'sync' }}
         run: |
           git config user.name  "github-actions[bot]"
@@ -82,7 +85,18 @@ jobs:
           git add src/data/communities.json
           if git diff --staged --quiet; then
             echo "No changes from sync — nothing to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             git commit -m "Sync community data from Wix"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # Pushes made with the default GITHUB_TOKEN don't trigger other
+      # workflows, so deploy.yml wouldn't run on its own. Dispatch it
+      # explicitly when the data actually changed.
+      - name: Trigger deploy
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy.yml --ref main
