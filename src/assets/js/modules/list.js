@@ -40,7 +40,9 @@ export function renderMobileList(list) {
     return;
   }
   el.innerHTML = list
-    .map((c) => `
+    .map((c) => {
+      const priceRange = c.activeListings?.priceRange || c.priceRange || '—';
+      return `
       <li class="list-view-item" data-name="${escapeHtml(c.name)}">
         <div class="list-view-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
           <img src="${escapeHtml(communityPhotoUrl(c))}" alt="" loading="lazy" />
@@ -50,9 +52,10 @@ export function renderMobileList(list) {
             ${c.type === 'condo' ? 'Condominiums' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}
           </div>
           <div class="list-view-name">${escapeHtml(c.name)}</div>
-          <div class="list-view-price">${escapeHtml(c.priceRange || '—')}</div>
+          <div class="list-view-price">${escapeHtml(priceRange)}</div>
         </div>
-      </li>`)
+      </li>`;
+    })
     .join('');
   el.querySelectorAll('.list-view-item').forEach((item) => {
     item.addEventListener('click', () => {
@@ -101,6 +104,17 @@ export function showDetail(community) {
   const homes = homesForSaleUrl(page);
   const baseHost = 'https://www.lifeinlongboatkey.com';
 
+  // Prefer live for-sale ranges when active listings exist; fall back to
+  // the static Wix-curated priceRange/bedrooms/sqft otherwise.
+  const active = community.activeListings;
+  const priceRange = active?.priceRange || community.priceRange;
+  const bedrooms   = active?.bedrooms   || community.bedrooms;
+  const sqft       = active?.sqft       || community.sqft;
+  const listingsCount = active?.count || 0;
+  const homesCta = listingsCount === 1
+    ? 'View (1) Home for Sale'
+    : `View (${listingsCount}) Homes for Sale`;
+
   el.innerHTML = `
     ${galleryHtml(community)}
     <div class="detail-body">
@@ -109,7 +123,7 @@ export function showDetail(community) {
       </div>
       <h2 class="detail-name">${escapeHtml(community.name)}</h2>
       ${community.subtitle ? `<div class="detail-sub">${escapeHtml(community.subtitle)}</div>` : ''}
-      <div class="detail-price">${escapeHtml(community.priceRange || '—')}</div>
+      <div class="detail-price">${escapeHtml(priceRange || '—')}</div>
       ${(() => {
         const embed = youtubeEmbedUrl(community.youtubeUrl);
         if (!embed) return '';
@@ -124,7 +138,7 @@ export function showDetail(community) {
       <div class="detail-actions">
         ${community.hasListings ? `
           <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + homes)}" target="_blank" rel="noopener">
-            View<br>Homes for Sale
+            ${escapeHtml(homesCta)}
           </a>
           <a class="detail-link detail-link-secondary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
             View<br>Community Page
@@ -136,8 +150,8 @@ export function showDetail(community) {
         `}
       </div>
       <div class="detail-meta">
-        ${community.bedrooms ? `<div class="meta"><span class="meta-label">Bedrooms</span><span class="meta-val">${escapeHtml(community.bedrooms)}</span></div>` : ''}
-        ${community.sqft ? `<div class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(community.sqft)}</span></div>` : ''}
+        ${bedrooms ? `<div class="meta"><span class="meta-label">Bedrooms</span><span class="meta-val">${escapeHtml(bedrooms)}</span></div>` : ''}
+        ${sqft ? `<div class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(sqft)}</span></div>` : ''}
       </div>
       ${amenitiesHtml ? `<div class="detail-amenities">${amenitiesHtml}</div>` : ''}
       ${community.shortDescription ? `<p class="detail-desc">${escapeHtml(community.shortDescription)}</p>` : ''}
