@@ -218,3 +218,30 @@
   color: var(--teal);
   font-weight: 500;
 }
+
+/* Map / Satellite basemap toggle (top-right Mapbox control) */
+.style-toggle {
+  display: flex;
+  padding: 2px;
+  background: #FFFFFF;
+}
+.style-toggle-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  padding: 6px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.style-toggle-btn:hover { color: var(--ink); }
+.style-toggle-btn.is-active {
+  background: var(--teal);
+  color: #FFFFFF;
+}
+.style-toggle-btn.is-active:hover { color: #FFFFFF; }
