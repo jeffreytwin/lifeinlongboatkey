@@ -196,12 +196,17 @@ console.log('Fetched', all.length, 'items.');
 
 // --- listings join (optional) ---
 //
-// If WIX_LISTINGS_COLLECTION_ID is set, query that collection and build
-// a set of community names that have at least one active listing.
-// Communities not in the set get hasListings:false; the 'Currently for
-// sale' filter then actually does work.
+// If WIX_LISTINGS_COLLECTION_ID is set, query that collection and
+// aggregate per-community active-listing stats (count + price/bed/sqft
+// range). The result is written to each community as
+//   activeListings: { count, priceRange, bedrooms, sqft }
+// with strings pre-formatted to match the existing static fields ("$400s
+// - $2M", "2 - 4", "1,200 - 2,400"). The UI prefers this block when
+// count > 0 and falls back to the static priceRange/bedrooms/sqft
+// otherwise.
 const LISTINGS_COLLECTION = process.env.WIX_LISTINGS_COLLECTION_ID;
-const communitiesWithListings = new Set();
+/** @type {Map<string, Array<{ price: number|null, beds: number|null, sqft: number|null }>>} */
+const listingsByCommunity = new Map();
 if (LISTINGS_COLLECTION) {
   console.log(`Fetching listings from ${LISTINGS_COLLECTION} ...`);
   const listings = await fetchAll(LISTINGS_COLLECTION);
@@ -223,32 +228,105 @@ if (LISTINGS_COLLECTION) {
     // Try several candidate field names; reference can be a plain ID
     // string or an object with _id/id/name. Listings might also store
     // the community by name, so we also try a string-name path.
+    // village1 is the current canonical field on HousesforSale; the
+    // others are kept for backwards compatibility with older syncs.
     const candidates = [
-      field(item, 'village', 'villageRef', 'neighborhood', 'Neighborhood', 'community', 'parentNeighborhood'),
+      field(item, 'village1', 'village', 'villageRef', 'neighborhood', 'Neighborhood', 'community', 'parentNeighborhood'),
       field(item, 'villageNameForFiltering', 'villageName', 'neighborhoodName', 'communityName', 'Neighborhood Name'),
     ];
+    let matchedName = null;
     for (const ref of candidates) {
       if (!ref) continue;
       if (typeof ref === 'object') {
         const name = idToName.get(ref._id || ref.id);
-        if (name) { communitiesWithListings.add(name); break; }
+        if (name) { matchedName = name; break; }
         if (ref.name && idToName.has(ref._id)) {
-          communitiesWithListings.add(ref.name); break;
+          matchedName = ref.name; break;
         }
       } else if (typeof ref === 'string') {
-        // Either a Wix ID or the name itself.
-        if (idToName.has(ref)) {
-          communitiesWithListings.add(idToName.get(ref)); break;
-        }
-        // Try as name (also try the override map in reverse).
+        if (idToName.has(ref)) { matchedName = idToName.get(ref); break; }
         const reverseOverride = Object.entries(WIX_NAME_OVERRIDES).find(([wix]) => wix === ref);
-        const localName = reverseOverride ? reverseOverride[1] : ref;
-        communitiesWithListings.add(localName);
+        matchedName = reverseOverride ? reverseOverride[1] : ref;
         break;
       }
     }
+    if (!matchedName) continue;
+
+    const price = parseListingPrice(field(item, 'listingPrice', 'listPrice', 'price', 'Listing Price'));
+    const bedsRaw = field(item, 'bedrooms', 'beds', 'Bedrooms');
+    const beds = typeof bedsRaw === 'number' && Number.isFinite(bedsRaw) ? bedsRaw : null;
+    const sqft = parseSqft(field(item, 'squareFeet', 'sqft', 'livingArea', 'Square Feet'));
+
+    if (!listingsByCommunity.has(matchedName)) listingsByCommunity.set(matchedName, []);
+    listingsByCommunity.get(matchedName).push({ price, beds, sqft });
   }
-  console.log(communitiesWithListings.size, 'communities have at least one active listing.');
+  console.log(listingsByCommunity.size, 'communities have at least one active listing.');
+}
+
+/** Parse a Wix text price like "$1,250,000" or "1250000" to a number. */
+function parseListingPrice(raw) {
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+  const n = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** Parse a Wix text sqft like "1,500" or "1500" to a number. */
+function parseSqft(raw) {
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+  const n = parseFloat(String(raw).replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Format a single price using the project's bucketed convention:
+ *   < $1M  → floor to nearest $100K, e.g. $452,000 → "$400s"
+ *   >= $1M → floor to nearest $1M,   e.g. $2,375,000 → "$2M"
+ */
+function formatPrice(n) {
+  if (!Number.isFinite(n) || n <= 0) return null;
+  if (n >= 1_000_000) return `$${Math.floor(n / 1_000_000)}M`;
+  return `$${Math.floor(n / 100_000) * 100}s`;
+}
+
+/** Format a price range; collapses to a single value when both ends round equal. */
+function formatPriceRange(lo, hi) {
+  const a = formatPrice(lo);
+  const b = formatPrice(hi);
+  if (!a && !b) return null;
+  if (!a) return b;
+  if (!b) return a;
+  return a === b ? a : `${a} - ${b}`;
+}
+
+/** Format a bed range; collapses to a single value when min === max. */
+function formatBedRange(lo, hi) {
+  if (lo == null && hi == null) return null;
+  if (lo == null) return String(hi);
+  if (hi == null) return String(lo);
+  return lo === hi ? String(lo) : `${lo} - ${hi}`;
+}
+
+/** Format a sqft range with thousands commas, matching "1,200 - 2,400". */
+function formatSqftRange(lo, hi) {
+  if (lo == null && hi == null) return null;
+  const fmt = (n) => n.toLocaleString('en-US');
+  if (lo == null) return fmt(hi);
+  if (hi == null) return fmt(lo);
+  return lo === hi ? fmt(lo) : `${fmt(lo)} - ${fmt(hi)}`;
+}
+
+/** Aggregate one community's active listings into pre-formatted range strings. */
+function summarizeListings(rows) {
+  const prices = rows.map((r) => r.price).filter((n) => n != null);
+  const beds   = rows.map((r) => r.beds  ).filter((n) => n != null);
+  const sqfts  = rows.map((r) => r.sqft  ).filter((n) => n != null);
+  const out = { count: rows.length };
+  if (prices.length) out.priceRange = formatPriceRange(Math.min(...prices), Math.max(...prices));
+  if (beds.length)   out.bedrooms   = formatBedRange(Math.min(...beds), Math.max(...beds));
+  if (sqfts.length)  out.sqft       = formatSqftRange(Math.min(...sqfts), Math.max(...sqfts));
+  return out;
 }
 
 // First-run diagnostic — print one item so we can confirm field names match.
@@ -430,8 +508,18 @@ for (const raw of all) {
   // could be stale if a previous run wrote one.
   c.location = zoneFromLat(c.lat) || c.location;
   // Listings join — only run when the listings collection is configured.
+  // Sets hasListings + an activeListings block with pre-formatted range
+  // strings. Communities with zero listings get the block cleared so
+  // the UI cleanly falls back to the static Wix priceRange/bedrooms/sqft.
   if (LISTINGS_COLLECTION) {
-    c.hasListings = communitiesWithListings.has(name);
+    const rows = listingsByCommunity.get(name);
+    if (rows && rows.length) {
+      c.hasListings = true;
+      c.activeListings = summarizeListings(rows);
+    } else {
+      c.hasListings = false;
+      delete c.activeListings;
+    }
   }
   const after = JSON.stringify(c);
   if (before !== after) {
