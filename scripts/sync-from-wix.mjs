@@ -293,7 +293,7 @@ for (const raw of all) {
     bedrooms: field(item, 'bedroomRange', 'bedrooms', 'Bedrooms'),
     youtubeUrl: field(item, 'youtubeVideo', 'youtubeUrl', 'YouTube Video') || undefined,
     pageUrl: field(item, 'link-villages-title', 'link-houses-for-sale-dynamic-pages-title', 'pageUrl', 'slug') || undefined,
-    imageUrl: resolveWixImage(field(item, 'aboutNeighborhoodImage', 'mainImage', 'main_image', 'image', 'Main Image')) || undefined,
+    imageUrl: resolveWixImage(field(item, 'mainImage', 'main_image', 'image', 'Main Image')) || undefined,
     is55plus: isYes(field(item, '55Text-YesOrNo', 'ageRestrictedTextYesOrNo', 'is55plus', '55+ Text - Yes or No')),
     homeTypes,
   };
