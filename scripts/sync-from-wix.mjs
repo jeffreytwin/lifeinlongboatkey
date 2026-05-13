@@ -103,7 +103,10 @@ function resolveWixImage(ref) {
   if (!ref) return undefined;
   if (typeof ref === 'object') {
     if (ref.url && typeof ref.url === 'string') return ref.url;
-    if (ref.src && typeof ref.src === 'string') return ref.src;
+    if (ref.src && typeof ref.src === 'string') {
+      // src may itself be a wix:image:// reference — recurse.
+      return resolveWixImage(ref.src);
+    }
     return undefined;
   }
   if (typeof ref !== 'string') return undefined;
@@ -111,6 +114,20 @@ function resolveWixImage(ref) {
   const m = ref.match(/^wix:image:\/\/v1\/([^/]+)/);
   if (m) return `https://static.wixstatic.com/media/${m[1]}`;
   return undefined;
+}
+
+/** Resolve a Wix media-gallery field value (array of media objects) to
+ *  an ordered list of public CDN URLs. Tolerant of {src}, {url}, plain
+ *  wix:image:// strings, and mixed shapes. Returns [] for anything
+ *  empty/unrecognizable. */
+function resolveWixGallery(ref) {
+  if (!Array.isArray(ref) || ref.length === 0) return [];
+  const out = [];
+  for (const entry of ref) {
+    const url = resolveWixImage(entry);
+    if (url) out.push(url);
+  }
+  return out;
 }
 
 const ZONE_N_M = 27.40586;
@@ -293,7 +310,9 @@ for (const raw of all) {
     bedrooms: field(item, 'bedroomRange', 'bedrooms', 'Bedrooms'),
     youtubeUrl: field(item, 'youtubeVideo', 'youtubeUrl', 'YouTube Video') || undefined,
     pageUrl: field(item, 'link-villages-title', 'link-houses-for-sale-dynamic-pages-title', 'pageUrl', 'slug') || undefined,
-    imageUrl: resolveWixImage(field(item, 'mainImage', 'main_image', 'image', 'Main Image')) || undefined,
+    // images / imageUrl resolved below from visualTourGallery →
+    // topBackgroundImage. Assigned outside `updates` so empty results
+    // can explicitly clear stale values from older syncs.
     is55plus: isYes(field(item, '55Text-YesOrNo', 'ageRestrictedTextYesOrNo', 'is55plus', '55+ Text - Yes or No')),
     homeTypes,
   };
@@ -352,6 +371,19 @@ for (const raw of all) {
 
   // Re-derive priceTiers from priceRange.
   if (updates.priceRange) updates.priceTiers = priceTiersFor(updates.priceRange);
+
+  // Top-image policy: visualTourGallery drives the slideshow when set;
+  // topBackgroundImage is the single-image fallback. Both empty → no
+  // image (gallery falls back to the type-appropriate placeholder).
+  // Always assigned so stale values from older syncs get cleared.
+  const galleryUrls = resolveWixGallery(field(item, 'visualTourGallery', 'Visual Tour Gallery'));
+  let images = galleryUrls;
+  if (images.length === 0) {
+    const bg = resolveWixImage(field(item, 'topBackgroundImage', 'Top Background Image'));
+    if (bg) images = [bg];
+  }
+  updates.images = images;
+  updates.imageUrl = images[0] || null;
 
   // Strip undefined values so we don't blow away existing fields with `undefined`.
   for (const k of Object.keys(updates)) if (updates[k] === undefined) delete updates[k];
