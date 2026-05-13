@@ -25,6 +25,15 @@ const NBHD_SOURCE_ID = 'neighborhoods';
 const NBHD_FILL_LAYER_ID = 'neighborhoods-fill';
 const NBHD_LINE_LAYER_ID = 'neighborhoods-line';
 
+// Basemap styles offered by the in-map toggle. satellite-streets keeps
+// road + place labels on top of the imagery, which a label-less
+// satellite-v9 would lose — important for a barrier island.
+const MAP_STYLES = {
+  map: 'mapbox://styles/mapbox/light-v11',
+  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+};
+let currentStyleKey = 'map';
+
 // Longboat Key bounds: [west, south], [east, north]
 const LBK_BOUNDS = [
   [-82.76, 27.26],
@@ -85,7 +94,7 @@ export function initMap(communities, callbacks) {
 
   map = new mapboxgl.Map({
     container,
-    style: 'mapbox://styles/mapbox/light-v11',
+    style: MAP_STYLES[currentStyleKey],
     center: [-82.635, 27.385],
     zoom: 11.5,
     minZoom: 10,
@@ -94,6 +103,7 @@ export function initMap(communities, callbacks) {
   });
 
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
+  map.addControl(new StyleToggleControl(communities), 'top-right');
 
   map.on('load', () => {
     addNeighborhoodPolygons();
@@ -134,6 +144,59 @@ function renderMapTokenNotice() {
         <p style="font-size:13px;margin:0">Set a Mapbox access token in <code>config.js</code> to enable the map. The filter panel and list view work without it.</p>
       </div>
     </div>`;
+}
+
+/**
+ * Two-button Map / Satellite toggle, rendered as a standard Mapbox
+ * control group in the top-right. Swapping the style wipes every
+ * custom source + layer, so the swap handler re-adds them and
+ * re-wires the layer-level event handlers. HTML markers (pins,
+ * zone bubbles) live outside the canvas and survive the swap.
+ */
+class StyleToggleControl {
+  constructor(communities) {
+    this.communities = communities;
+  }
+  onAdd(mapInstance) {
+    this._map = mapInstance;
+    const el = document.createElement('div');
+    el.className = 'mapboxgl-ctrl mapboxgl-ctrl-group style-toggle';
+    el.innerHTML = `
+      <button type="button" class="style-toggle-btn ${currentStyleKey === 'map' ? 'is-active' : ''}" data-style-key="map">Map</button>
+      <button type="button" class="style-toggle-btn ${currentStyleKey === 'satellite' ? 'is-active' : ''}" data-style-key="satellite">Satellite</button>
+    `;
+    el.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-style-key]');
+      if (!btn) return;
+      const key = btn.dataset.styleKey;
+      if (key === currentStyleKey || !MAP_STYLES[key]) return;
+      currentStyleKey = key;
+      el.querySelectorAll('.style-toggle-btn').forEach((b) => {
+        b.classList.toggle('is-active', b.dataset.styleKey === key);
+      });
+      swapStyle(key, this.communities);
+    });
+    this._container = el;
+    return el;
+  }
+  onRemove() {
+    this._container?.parentNode?.removeChild(this._container);
+    this._map = null;
+  }
+}
+
+function swapStyle(key, communities) {
+  if (!map) return;
+  map.setStyle(MAP_STYLES[key]);
+  map.once('style.load', () => {
+    const list = currentList.length ? currentList : communities;
+    if (neighborhoodPolygons) addNeighborhoodPolygons();
+    setCommunityFeatures(list);
+    wireClusterInteractions();
+    wireNeighborhoodPolygonInteractions(list);
+    setNeighborhoodPolygonFilter(list);
+    updateZoomDependentVisibility();
+  });
 }
 
 function addNeighborhoodPolygons() {
