@@ -953,7 +953,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Corey's Landing"
+        "name": "Corey's Landing (Bay Isles)"
       },
       "geometry": {
         "coordinates": [
@@ -4935,7 +4935,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "Regent Court (Longboat Key Club)"
+        "name": "Regent Court"
       },
       "geometry": {
         "coordinates": [
