@@ -29,8 +29,7 @@ export const WATERFRONT_OPTIONS = [
  */
 const AMENITIES_HIDDEN = new Set([
   'Private Beach (Deeded)',
-  'Beach-Club Access',
-  'Beach Club Access', // also filter out the without-hyphen variant
+  'Beach-Club Access',  // deprecated hyphenated variant
 ]);
 
 /**
@@ -41,11 +40,12 @@ const AMENITIES_PRIORITY = [
   'Gated',
   'Beach Access',
   'Private Beach',
-  'Marina Access',
-  'Personal Boat Slips',
+  'Beach Club Access',
+  'Marina Nearby',
+  'Boat Slips',
   'Tennis',
   'Pickleball',
-  'Golf',
+  'Golf Nearby',
 ];
 
 /**

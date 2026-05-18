@@ -93,8 +93,11 @@ export function showDetail(community) {
   const amenitiesHtml = amenityList
     .map((a) => {
       const icon = AMENITY_ICONS[a];
+      const iconHtml = icon
+        ? `<img class="amenity-icon" src="${escapeHtml(icon)}" alt="" loading="lazy" />`
+        : '<span class="amenity-icon amenity-icon-empty" aria-hidden="true"></span>';
       return `<div class="amenity-item">
-        <img class="amenity-icon" src="${escapeHtml(icon)}" alt="" loading="lazy" />
+        ${iconHtml}
         <span class="amenity-label">${escapeHtml(a)}</span>
       </div>`;
     })
