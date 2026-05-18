@@ -402,20 +402,26 @@ for (const raw of all) {
   if (Array.isArray(amenityTags)) {
     amenities = amenityTags.filter(Boolean);
   } else {
+    // Labels here must match the Wix amenitiesTags multi-select values
+    // exactly (see src/assets/js/modules/amenityIcons.js STANDARD_AMENITIES)
+    // so the per-amenity YN fallback produces the same data shape as
+    // the preferred amenitiesTags path.
     const PAIRS = [
       ['Gated', ['gatedTextYesOrNo', 'gated']],
       ['Beach Access', ['beachAccessYesOrNo', 'beachAccess']],
       ['Private Beach', ['privateBeachYesOrNo', 'privateBeach']],
-      ['Marina Access', ['marinaAccessYesOrNo', 'marinaAccess']],
-      ['Personal Boat Slips', ['personalBoatSlipsYesOrNo', 'personalBoatSlips']],
+      ['Beach Club Access', ['beachClubAccessYesOrNo', 'beachClubAccess']],
+      ['Marina Nearby', ['marinaAccessYesOrNo', 'marinaAccess']],
+      ['Boat Slips', ['personalBoatSlipsYesOrNo', 'personalBoatSlips']],
       ['Tennis', ['tennisTextYesOrNo', 'tennis']],
       ['Pickleball', ['pickleballTextYesOrNo', 'pickleball']],
-      ['Golf', ['golfTextYesOrNo', 'golf']],
+      ['Golf Nearby', ['golfTextYesOrNo', 'golf']],
       ['Community Pool', ['poolTextYesOrNo', 'pool']],
       ['Fitness Center', ['fitnessCenterTextYesOrNo', 'fitnessCenter']],
       ['Clubhouse', ['clubhouseTextYesOrNo', 'clubhouse']],
       ['Walking Paths', ['walkingPathsTextYesOrNo', 'walkingPaths']],
-      ['Free Maintenance', ['maintenanceIncludedTextYesOrNo', 'maintenanceIncluded']],
+      ['Lifestyle Activities', ['lifestyleActivitiesTextYesOrNo', 'lifestyleActivities']],
+      ['Lawn Maintenance Included', ['maintenanceIncludedTextYesOrNo', 'maintenanceIncluded']],
     ];
     for (const [label, keys] of PAIRS) {
       if (isYes(field(item, ...keys))) amenities.push(label);
