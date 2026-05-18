@@ -1,0 +1,242 @@
+# Life in Longboat Key — design tokens
+
+A portable reference for the visual system used on the LBK interactive
+map. Drop these tokens into any new surface (microsite, marketing page,
+embed) and it should sit cleanly alongside the existing UI.
+
+---
+
+## Fonts
+
+Two families, loaded together from Google Fonts. One serif for
+display + price, one sans for everything else.
+
+| Role | Family | Weights used | Notes |
+|---|---|---|---|
+| Display / numerals / accents | **Fraunces** | 300, 400, 500, 600, 700 + italic 400 | Used for headings, the brand wordmark, prices, the result count, hover-card community name, detail-panel title. Italic is used only on the brand mark. |
+| UI / body | **Manrope** | 300, 400, 500, 600, 700 | Body copy, sidebar labels, chips, buttons, meta text, map control labels. |
+
+Google Fonts URL (copy verbatim):
+
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+```
+
+Default stack on `<body>`:
+
+```css
+font-family: 'Manrope', system-ui, sans-serif;
+font-size: 14px;
+line-height: 1.5;
+-webkit-font-smoothing: antialiased;
+```
+
+All `<h1>`–`<h4>` get:
+
+```css
+font-family: 'Fraunces', Georgia, serif;
+font-weight: 500;
+letter-spacing: -0.01em;
+```
+
+---
+
+## Color palette
+
+CSS variables live on `:root`. Hex values:
+
+### Surfaces
+
+| Token | Hex | Role |
+|---|---|---|
+| `--bg` | `#F5F1E8` | App background. Warm cream. |
+| `--bg-card` | `#FFFFFF` | Cards, popovers, the details panel, sidebar surfaces that sit on the bg. |
+| `--sand` | `#E8DFC9` | Secondary fill (rare; mostly used to back the "55+" pill). |
+
+### Rules + muted strokes
+
+| Token | Hex | Role |
+|---|---|---|
+| `--rule` | `#E3DBCC` | 1 px dividers between sections, card outlines. |
+| `--rule-soft` | `#EFE8D9` | Softer dividers inside cards. |
+
+### Type
+
+| Token | Hex | Role |
+|---|---|---|
+| `--ink` | `#1A2628` | Primary text. Near-black with a green-grey cast. |
+| `--ink-soft` | `#4A5A5E` | Secondary text, sidebar copy, labels. |
+| `--ink-muted` | `#8A9599` | Tertiary text, meta lines, counts. |
+
+### Brand — teal (primary)
+
+| Token | Hex | Role |
+|---|---|---|
+| `--teal` | `#0E5254` | Primary brand color. Wordmark, condo pin, active filter pill, CTA button, links. |
+| `--teal-deep` | `#083638` | Darkest variant — used for the active filter pill and high-contrast badges. |
+| `--teal-hover` | `#0A4345` | Hover state for teal surfaces. |
+
+### Brand — coral (accent)
+
+| Token | Hex | Role |
+|---|---|---|
+| `--coral` | `#D97757` | Neighborhood polygon fill + outline, brand-mark dot, hover-card neighborhood accent. |
+| `--coral-soft` | `#F4E4DB` | Soft coral background for the chip variant that signals a neighborhood. |
+
+### Supporting palette
+
+| Token | Hex | Role |
+|---|---|---|
+| `--gulf` | `#2B7A78` | Gulf-front waterfront tag. |
+| `--bay` | `#3A6EA5` | Bay-front waterfront tag. |
+| `--ok` | `#4A7C59` | Success / "Yes" state in amenity rows. |
+
+### Drop-in `:root` block
+
+```css
+:root {
+  --bg: #F5F1E8;
+  --bg-card: #FFFFFF;
+  --ink: #1A2628;
+  --ink-soft: #4A5A5E;
+  --ink-muted: #8A9599;
+  --rule: #E3DBCC;
+  --rule-soft: #EFE8D9;
+  --teal: #0E5254;
+  --teal-deep: #083638;
+  --teal-hover: #0A4345;
+  --coral: #D97757;
+  --coral-soft: #F4E4DB;
+  --sand: #E8DFC9;
+  --gulf: #2B7A78;
+  --bay: #3A6EA5;
+  --ok: #4A7C59;
+}
+```
+
+---
+
+## Type scale
+
+Sizes are absolute pixels. The base body size is **14 px**. The scale
+is hand-tuned rather than mathematical — sizes shown are the ones
+actually in use.
+
+### Display / serif (Fraunces)
+
+| Size | Weight | Where it's used |
+|---|---|---|
+| 26 px | 500 | Card price (`.card-price`) — the headline number on a community card |
+| 22 px | 500 italic | Brand wordmark in the app header (`.brand-mark`) |
+| 20 px | 500 | Detail panel title (`.detail-name`) at desktop |
+| 18 px | 500 | Section subheads, hover-card community name |
+| 16 px | 500 | Card community name (`.card-name`) on the list grid |
+| 15 px | 500 | Hover-card community name (compact) |
+| 14 px | 500 | Hover-card price, inline accent numbers |
+| 13 px | 500 | Detail-panel price, secondary serif accents |
+
+### UI / sans (Manrope)
+
+| Size | Weight | Where it's used |
+|---|---|---|
+| 14 px | 400 | Base body copy |
+| 14 px | 600 | "View N homes for sale" CTA |
+| 13 px | 400–500 | Sidebar checklist labels, toggle rows, descriptions |
+| 12 px | 600 | Map style toggle pills, chip-style filter buttons |
+| 12 px | 700 | Header result count strong text |
+| 11 px | 700 | Sidebar section titles, ALL-CAPS labels |
+| 10 px | 700 | Chip counts, micro labels |
+| 9 px | 700 | Map pin labels (ultra-compact) |
+
+### Letter-spacing conventions
+
+- Headings (Fraunces): `letter-spacing: -0.01em` (slight negative — tighter for the serif's natural width)
+- ALL-CAPS micro-labels (11 px, 10 px): `letter-spacing: 0.08em` to `0.15em` (positive, opens them up)
+- Brand wordmark: `letter-spacing: -0.02em` (Fraunces italic, tighter)
+
+---
+
+## Pairings + recipes
+
+### Brand mark
+
+```html
+<span class="brand-mark">Life in Longboat Key</span>
+<span class="brand-sub">Neighborhoods &amp; Condos</span>
+```
+
+```css
+.brand-mark {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--teal);
+  letter-spacing: -0.02em;
+}
+.brand-mark::before {
+  content: "◐";
+  font-style: normal;
+  color: var(--coral);
+  margin-right: 8px;
+  font-size: 18px;
+}
+.brand-sub {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-muted);
+}
+```
+
+### Price headline on a card
+
+```css
+.card-price {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--teal);
+}
+```
+
+### Section-header micro-label
+
+```css
+.section-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+}
+```
+
+### Primary CTA
+
+```css
+.cta {
+  background: var(--teal);
+  color: #FFFFFF;
+  font-family: 'Manrope', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 4px;
+}
+.cta:hover { background: var(--teal-hover); }
+```
+
+---
+
+## Notes for downstream work
+
+- **Contrast.** `--teal` on `--bg` passes WCAG AA for body text. `--ink-muted` on `--bg` does NOT — keep it for ≥ 11 px ALL-CAPS or for non-critical meta.
+- **Coral is an accent only.** It signals "neighborhood" (vs condo teal) and decorates the brand mark. Don't use it for primary CTAs.
+- **The serif does the emotional work.** Reach for Fraunces on prices, names, headlines. Manrope handles every utilitarian surface.
+- **The negative letter-spacing on Fraunces is doing more work than it looks.** Skip it and the wordmark feels loose.
+- **Background `#F5F1E8` is warm cream, not white.** Pairing white cards (`--bg-card: #FFFFFF`) directly on this background gives the "elevated" feeling without needing a shadow.
