@@ -56,7 +56,6 @@ const PLACED = {
   'Longboat Beach House':                  [27.391696103418095, -82.64339588181818],
   'Longboat Harbour':                      [27.396691864224483, -82.64519444377837],
   'Longboat Harbour Towers':               [27.393289980211613, -82.64477757618737],
-  'Longboat Key Club':                     [27.330658235561664, -82.5910490084704],
   'Longboat Key Towers (Longboat Key Club)': [27.337651696588296, -82.59829198094283],
   'Longboat Landing':                      [27.410422979523098, -82.65514479737053],
   'Longboat Terrace':                      [27.410266227081692, -82.65775695302648],
