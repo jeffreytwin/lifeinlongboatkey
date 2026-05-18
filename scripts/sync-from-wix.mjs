@@ -34,6 +34,10 @@ import 'dotenv/config';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createClient, ApiKeyStrategy } from '@wix/sdk';
 import { items } from '@wix/data';
+import {
+  STANDARD_AMENITIES,
+  KNOWN_NON_RENDERED_AMENITIES,
+} from '../src/assets/js/modules/amenityIcons.js';
 
 const COMMUNITIES_PATH = 'src/data/communities.json';
 const DRY_RUN = process.argv.includes('--dry');
@@ -561,4 +565,27 @@ if (added > 0) {
   console.log(`\n${added} new communities were appended. They got centerline-fallback`);
   console.log('coordinates — re-run scripts/place-condos.mjs or supply hand-placed');
   console.log('coords if you want pin-accurate placement.');
+}
+
+// Amenity drift check — every amenity tag value the data carries must
+// also be in STANDARD_AMENITIES (rendered) or KNOWN_NON_RENDERED_AMENITIES
+// (deliberately suppressed). Anything else means Wix added a tag that
+// the UI's canonical list doesn't know about; the detail panel will
+// silently drop it until amenityIcons.js is updated.
+const STANDARD_SET = new Set(STANDARD_AMENITIES);
+const amenityCounts = new Map();
+for (const c of existing) {
+  for (const a of c.amenities || []) {
+    amenityCounts.set(a, (amenityCounts.get(a) || 0) + 1);
+  }
+}
+const driftRows = [...amenityCounts.entries()]
+  .filter(([a]) => !STANDARD_SET.has(a) && !KNOWN_NON_RENDERED_AMENITIES.has(a))
+  .sort((a, b) => b[1] - a[1]);
+if (driftRows.length) {
+  console.log(`\nWARNING: ${driftRows.length} amenity tag(s) in the data are NOT in`);
+  console.log('src/assets/js/modules/amenityIcons.js STANDARD_AMENITIES. The detail');
+  console.log('panel will silently drop these. Add them (with icon URLs) or mark them');
+  console.log('as KNOWN_NON_RENDERED_AMENITIES.');
+  for (const [a, n] of driftRows) console.log(`  ${JSON.stringify(a).padEnd(36)} ${n} record(s)`);
 }

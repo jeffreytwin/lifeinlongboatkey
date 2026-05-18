@@ -46,6 +46,21 @@ export const AMENITY_ICONS = {
   'Lawn Maintenance Included': 'https://static.wixstatic.com/media/d0be81_8ac323e2678f458e8a3a38bea253c260~mv2.png',
 };
 
+/**
+ * Amenity tag values we know about and deliberately don't render as a
+ * chip in the detail panel — '55+ Community' is surfaced via the
+ * dedicated is55plus flag, and the other two are deprecated taxonomy
+ * variants kept here only so the sync's drift check doesn't flag them
+ * on legacy records. Anything else not in STANDARD_AMENITIES will be
+ * flagged by the sync as drift.
+ */
+export const KNOWN_NON_RENDERED_AMENITIES = new Set([
+  '55+ Community',
+  '55+Communities',
+  'Private Beach (Deeded)',
+  'Beach-Club Access',
+]);
+
 const STANDARD_SET = new Set(STANDARD_AMENITIES);
 const ORDER = new Map(STANDARD_AMENITIES.map((a, i) => [a, i]));
 
