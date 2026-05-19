@@ -22,7 +22,20 @@ export function matches(c) {
   if (state.waterfronts.size && !c.waterfront.some((w) => state.waterfronts.has(w))) return false;
   if (state.priceTiers.size && !c.priceTiers.some((t) => state.priceTiers.has(t))) return false;
   if (state.homeTypes.size && !c.homeTypes.some((t) => state.homeTypes.has(t))) return false;
-  if (state.bedrooms.size && !c.bedTags.some((t) => state.bedrooms.has(t))) return false;
+  // Bedrooms — when 'Currently for sale' is on AND we have per-listing
+  // detail, match against the actual active listings' bedroom counts
+  // rather than the community's broader bedroomRange. Otherwise the
+  // filter says "match this community because some 4-bed home exists
+  // here" but the panel only shows a 3-bed listing.
+  if (state.bedrooms.size) {
+    const items = c.activeListings?.items;
+    if (state.hasListingsOnly && Array.isArray(items) && items.length) {
+      const ok = items.some((it) => it.beds != null && state.bedrooms.has(String(it.beds)));
+      if (!ok) return false;
+    } else if (!c.bedTags.some((t) => state.bedrooms.has(t))) {
+      return false;
+    }
+  }
   // Amenities use AND: a community must have every checked amenity.
   // All other multi-select filters are OR (a property can only be in one
   // zone, but can legitimately match any of several selected price tiers,

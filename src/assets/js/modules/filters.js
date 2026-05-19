@@ -95,6 +95,22 @@ function countsExcluding(communities, stateKey, getValue, clearOwn = true) {
   return counts;
 }
 
+/** Accessor used by countsExcluding for the Bedrooms chip row. Mirrors
+ *  the matches.js logic: when 'Currently for sale' is on AND per-listing
+ *  data is available, returns the deduped bed counts from active
+ *  listings; otherwise returns the community's broader bedTags. Keeps
+ *  the chip "(N)" counts in step with what the filter will actually
+ *  let through. */
+function bedTagsForCounting(c) {
+  const items = c.activeListings?.items;
+  if (state.hasListingsOnly && Array.isArray(items) && items.length) {
+    const out = new Set();
+    for (const it of items) if (it.beds != null) out.add(String(it.beds));
+    return [...out];
+  }
+  return c.bedTags;
+}
+
 export const PRICE_TIERS = [
   'Under $500K',
   '$500K–$1M',
@@ -223,7 +239,7 @@ export function renderFilters(communities, onChange) {
   // is "of my current matches, how many also have this amenity."
   const amenityCounts    = countsExcluding(communities, 'amenities',  (c) => c.amenities, false);
   const priceTierCounts  = countsExcluding(communities, 'priceTiers', (c) => c.priceTiers);
-  const bedCounts        = countsExcluding(communities, 'bedrooms',   (c) => c.bedTags);
+  const bedCounts        = countsExcluding(communities, 'bedrooms',   bedTagsForCounting);
 
   // Option order is cached on first render (from the full dataset) so
   // positions stay stable even as counts shift with filter state.
