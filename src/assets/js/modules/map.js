@@ -149,7 +149,6 @@ function renderMapTokenNotice() {
     </div>`;
 }
 
-/**
 function addNeighborhoodPolygons() {
   if (!map || !neighborhoodPolygons) return;
   // Each feature gets a state-backed 'hover' flag used for the hover style.
