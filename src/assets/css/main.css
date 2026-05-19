@@ -75,7 +75,10 @@ button {
 .brand-logo {
   display: block;
   height: 44px;
-  width: auto;
+  /* Reserve the rendered width up-front so the header doesn't reflow
+     (and trigger a map resize) when the PNG finishes loading. The
+     intrinsic aspect ratio is 1500/285 → ~231 px wide at 44 px tall. */
+  width: 232px;
 }
 
 .site-nav {

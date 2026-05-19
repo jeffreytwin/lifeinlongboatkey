@@ -115,6 +115,11 @@ export function initMap(communities, callbacks) {
     map.on('sourcedata', (e) => {
       if (e.sourceId === SOURCE_ID && e.isSourceLoaded) updateZoomDependentVisibility();
     });
+    // Mapbox's 'load' can fire while sprites/glyphs are still loading,
+    // so queryRenderedFeatures inside updateZoomDependentVisibility can
+    // come back empty on the first pass. 'idle' fires once everything
+    // has settled — gate one final visibility pass on it.
+    map.once('idle', updateZoomDependentVisibility);
   });
 
   // Close popup / dismiss the touch preview when tapping empty map
@@ -564,7 +569,11 @@ function openPopupFor(c) {
  *     render on top of clusters and the map becomes unreadable).
  */
 function updateZoomDependentVisibility() {
-  if (!map || !map.isStyleLoaded()) return;
+  // Inner code is defensive (every layer access is guarded), so don't
+  // bail on isStyleLoaded() here — Mapbox's 'load' event can fire before
+  // isStyleLoaded() flips to true, leaving the initial visibility pass
+  // a no-op and the map stuck with default-visible markers + bubbles.
+  if (!map) return;
   const zoomedOut = map.getZoom() < ZONE_ZOOM_THRESHOLD;
 
   // Zone bubbles
