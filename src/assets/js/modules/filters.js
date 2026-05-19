@@ -320,14 +320,6 @@ export function setupStaticControls(communities, { apply, setLayout }) {
     });
   });
 
-  // 55+ toggle
-  const age55 = document.getElementById('age55Toggle');
-  age55?.addEventListener('click', () => {
-    state.age55 = !state.age55;
-    age55.setAttribute('aria-pressed', state.age55 ? 'true' : 'false');
-    apply();
-  });
-
   // 'Currently for sale' toggle (defaults ON)
   const forSale = document.getElementById('forSaleToggle');
   forSale?.addEventListener('click', () => {
@@ -344,7 +336,6 @@ export function setupStaticControls(communities, { apply, setLayout }) {
       p.classList.toggle('active', isAll);
       p.setAttribute('aria-checked', isAll ? 'true' : 'false');
     });
-    age55?.setAttribute('aria-pressed', 'false');
     forSale?.setAttribute('aria-pressed', 'true'); // resets to default ON
     renderFilters(communities, apply);
     apply();

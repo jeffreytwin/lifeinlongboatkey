@@ -43,12 +43,12 @@
   /* Area-style marker: translucent fill + solid outline + no shadow,
      so it reads as a zone rather than a point. */
   width: 46px; height: 46px;
-  background: rgba(230, 160, 57, 0.18);
-  border: 2px solid var(--coral);
+  background: rgba(224, 122, 26, 0.32);
+  border: 2px solid #E07A1A;
   border-radius: 50%;
 }
 .pin-nbhd .pin-inner {
-  color: var(--coral);
+  color: #A05816;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -60,8 +60,8 @@
 }
 .pin-nbhd.highlighted {
   transform: scale(1.15);
-  background: rgba(230, 160, 57, 0.32);
-  border-color: var(--coral-deep);
+  background: rgba(224, 122, 26, 0.50);
+  border-color: #A05816;
   z-index: 1000 !important;
 }
 
@@ -180,6 +180,14 @@
   opacity: 1;
   transform: translateY(0);
 }
+/* Tappable preview on touch: a tap on the card opens the detail panel.
+   Pointer devices won't reach the card (mouseleave on the marker hides
+   it first), so enabling pointer-events on the visible-only state is
+   safe for desktop. */
+.hover-card.is-visible.is-tappable {
+  pointer-events: auto;
+  cursor: pointer;
+}
 .hover-card-photo {
   position: relative;
   height: 110px;
@@ -219,29 +227,3 @@
   font-weight: 500;
 }
 
-/* Map / Satellite basemap toggle (top-right Mapbox control) */
-.style-toggle {
-  display: flex;
-  padding: 2px;
-  background: #FFFFFF;
-}
-.style-toggle-btn {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  font-family: 'Manrope', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--ink-soft);
-  padding: 6px 12px;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-.style-toggle-btn:hover { color: var(--ink); }
-.style-toggle-btn.is-active {
-  background: var(--teal);
-  color: #FFFFFF;
-}
-.style-toggle-btn.is-active:hover { color: #FFFFFF; }
