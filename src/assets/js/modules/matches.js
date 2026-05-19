@@ -16,12 +16,76 @@ const PRICE_ORDER = {
   '$15M+': 6,
 };
 
+/** Map a numeric listing price to one of the chip-row price tiers. */
+export function priceToTier(p) {
+  if (p == null || !Number.isFinite(p)) return null;
+  if (p < 500_000)    return 'Under $500K';
+  if (p < 1_000_000)  return '$500K–$1M';
+  if (p < 2_000_000)  return '$1M–$2M';
+  if (p < 5_000_000)  return '$2M–$5M';
+  if (p < 10_000_000) return '$5M–$10M';
+  if (p < 15_000_000) return '$10M–$15M';
+  return '$15M+';
+}
+
+/** Normalize a home-type label for comparison (case + plural-s). */
+function normHomeType(t) {
+  return t ? String(t).toLowerCase().replace(/s\b/g, '').trim() : '';
+}
+
+/** Given a listing's homeType and the community's homeTypes array,
+ *  return the community-level label that matches (or null). Used so the
+ *  filter and chip counts share a consistent vocabulary even when the
+ *  listing field uses singular / different-casing values
+ *  (e.g. listing "Condominium" maps to community "Condominiums"). */
+export function mapListingHomeType(listingType, communityTypes) {
+  const lt = normHomeType(listingType);
+  if (!lt || !Array.isArray(communityTypes)) return null;
+  for (const ct of communityTypes) {
+    if (normHomeType(ct) === lt) return ct;
+  }
+  // Fall back to a loose substring match for slight wording drift.
+  for (const ct of communityTypes) {
+    const ctn = normHomeType(ct);
+    if (ctn && (ctn.startsWith(lt) || lt.startsWith(ctn))) return ct;
+  }
+  return null;
+}
+
 export function matches(c) {
   if (state.type !== 'all' && c.type !== state.type) return false;
   if (state.locations.size && !state.locations.has(c.location)) return false;
   if (state.waterfronts.size && !c.waterfront.some((w) => state.waterfronts.has(w))) return false;
-  if (state.priceTiers.size && !c.priceTiers.some((t) => state.priceTiers.has(t))) return false;
-  if (state.homeTypes.size && !c.homeTypes.some((t) => state.homeTypes.has(t))) return false;
+  // Price tiers — when 'Currently for sale' is on AND we have per-listing
+  // detail, bucket each listing's numeric price into a tier and match.
+  // Falls back to the community's broader priceTiers otherwise.
+  if (state.priceTiers.size) {
+    const items = c.activeListings?.items;
+    if (state.hasListingsOnly && Array.isArray(items) && items.length) {
+      const ok = items.some((it) => {
+        const tier = priceToTier(it.price);
+        return tier && state.priceTiers.has(tier);
+      });
+      if (!ok) return false;
+    } else if (!c.priceTiers.some((t) => state.priceTiers.has(t))) {
+      return false;
+    }
+  }
+  // Home types — same listings-aware pattern. Listings' homeType field
+  // tends to be singular ("Condominium") where the community is plural
+  // ("Condominiums"); mapListingHomeType bridges the two vocabularies.
+  if (state.homeTypes.size) {
+    const items = c.activeListings?.items;
+    if (state.hasListingsOnly && Array.isArray(items) && items.length) {
+      const ok = items.some((it) => {
+        const mapped = mapListingHomeType(it.homeType, c.homeTypes);
+        return mapped && state.homeTypes.has(mapped);
+      });
+      if (!ok) return false;
+    } else if (!c.homeTypes.some((t) => state.homeTypes.has(t))) {
+      return false;
+    }
+  }
   // Bedrooms — when 'Currently for sale' is on AND we have per-listing
   // detail, match against the actual active listings' bedroom counts
   // rather than the community's broader bedroomRange. Otherwise the

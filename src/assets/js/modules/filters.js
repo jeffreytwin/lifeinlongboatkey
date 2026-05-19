@@ -9,7 +9,7 @@
 
 import { state, resetFilters } from './state.js';
 import { countsBy, escapeHtml } from './utils.js';
-import { matches } from './matches.js';
+import { matches, priceToTier, mapListingHomeType } from './matches.js';
 
 export const LOCATION_OPTIONS = [
   { key: 'north', label: 'North End' },
@@ -95,12 +95,12 @@ function countsExcluding(communities, stateKey, getValue, clearOwn = true) {
   return counts;
 }
 
-/** Accessor used by countsExcluding for the Bedrooms chip row. Mirrors
- *  the matches.js logic: when 'Currently for sale' is on AND per-listing
- *  data is available, returns the deduped bed counts from active
- *  listings; otherwise returns the community's broader bedTags. Keeps
- *  the chip "(N)" counts in step with what the filter will actually
- *  let through. */
+/* Accessors for countsExcluding — when 'Currently for sale' is on AND
+   per-listing data is available, project active listings into the
+   chip-row vocabulary so the "(N)" counts stay in step with what
+   matches.js will actually let through. Each one falls back to the
+   community-wide field when listings data isn't available yet. */
+
 function bedTagsForCounting(c) {
   const items = c.activeListings?.items;
   if (state.hasListingsOnly && Array.isArray(items) && items.length) {
@@ -109,6 +109,32 @@ function bedTagsForCounting(c) {
     return [...out];
   }
   return c.bedTags;
+}
+
+function priceTiersForCounting(c) {
+  const items = c.activeListings?.items;
+  if (state.hasListingsOnly && Array.isArray(items) && items.length) {
+    const out = new Set();
+    for (const it of items) {
+      const tier = priceToTier(it.price);
+      if (tier) out.add(tier);
+    }
+    return [...out];
+  }
+  return c.priceTiers;
+}
+
+function homeTypesForCounting(c) {
+  const items = c.activeListings?.items;
+  if (state.hasListingsOnly && Array.isArray(items) && items.length) {
+    const out = new Set();
+    for (const it of items) {
+      const mapped = mapListingHomeType(it.homeType, c.homeTypes);
+      if (mapped) out.add(mapped);
+    }
+    return [...out];
+  }
+  return c.homeTypes;
 }
 
 export const PRICE_TIERS = [
@@ -234,11 +260,11 @@ export function renderFilters(communities, onChange) {
   // others in the same group.
   const locationCounts   = countsExcluding(communities, 'locations',  (c) => c.location);
   const waterfrontCounts = countsExcluding(communities, 'waterfronts', (c) => c.waterfront);
-  const homeTypeCounts   = countsExcluding(communities, 'homeTypes',  (c) => c.homeTypes);
+  const homeTypeCounts   = countsExcluding(communities, 'homeTypes',  homeTypesForCounting);
   // Amenities use AND, so leave state.amenities in effect — each count
   // is "of my current matches, how many also have this amenity."
   const amenityCounts    = countsExcluding(communities, 'amenities',  (c) => c.amenities, false);
-  const priceTierCounts  = countsExcluding(communities, 'priceTiers', (c) => c.priceTiers);
+  const priceTierCounts  = countsExcluding(communities, 'priceTiers', priceTiersForCounting);
   const bedCounts        = countsExcluding(communities, 'bedrooms',   bedTagsForCounting);
 
   // Option order is cached on first render (from the full dataset) so
