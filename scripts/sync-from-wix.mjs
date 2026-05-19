@@ -361,7 +361,10 @@ function summarizeListings(rows) {
   const items = rows
     .filter((r) => r.card && (r.card.address || r.card.priceText))
     .sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity))
-    .map((r) => r.card);
+    // Keep the numeric `price` alongside the display priceText so the
+    // filter layer can bucket each listing into a price tier without
+    // re-parsing the human-formatted string.
+    .map((r) => ({ ...r.card, price: r.price ?? null }));
   if (items.length) out.items = items;
   return out;
 }
