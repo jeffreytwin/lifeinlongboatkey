@@ -87,11 +87,12 @@ button {
      aspect ratio. The PNG has internal whitespace, so 93 ≈ strip's
      94 px height reads as nearly flush. */
   height: 93px;
-  /* Nudge the visible logo content down inside the strip — the PNG
-     itself has transparent padding at the bottom that absorbs the
-     overflow, so the visible artwork lands lower without clipping. */
+  /* Nudge the visible logo content down inside the strip and a touch
+     left — the PNG has transparent padding that absorbs the offset, so
+     the visible artwork shifts without clipping. */
   position: relative;
   top: 7px;
+  left: -7px;
 }
 
 .site-nav {
@@ -99,6 +100,8 @@ button {
   align-items: center;
   gap: 42px;
   flex-wrap: nowrap;
+  position: relative;
+  left: -4px;
 }
 .site-nav-link {
   font-family: 'Manrope', sans-serif;
