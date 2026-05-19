@@ -8,18 +8,18 @@
   .app { height: auto; min-height: 100vh; }
 
   .header {
-    /* 54 px strip with a 40 px logo offset 13 px from the top and
+    /* 108 px strip with a 80 px logo offset 13 px from the top and
        9 px from the left. Only the logo renders inside the header on
        mobile (nav, count, and the filters pill are hidden /
        floating), so header padding sets the logo's exact offsets. */
-    height: 54px;
+    height: 108px;
     flex-wrap: nowrap;
     gap: 10px;
     padding: 13px 16px 0 9px;
     justify-content: flex-start;
     align-items: flex-start;
   }
-  .brand-logo { height: 40px; width: 177px; top: 0; left: 0; }
+  .brand-logo { height: 80px; width: 315px; top: 0; left: 0; }
   /* Mobile drops the full nav and the count to keep the header compact;
      the floating "Narrow it down" pill handles primary mobile interaction. */
   .site-nav { display: none; }
