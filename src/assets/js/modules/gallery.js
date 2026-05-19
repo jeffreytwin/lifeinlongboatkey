@@ -9,9 +9,18 @@
  *
  * When there's only one image the arrows and dots hide themselves so the
  * rendered output looks identical to a plain hero photo.
+ *
+ * On pointer devices (desktop), clicking the gallery opens a fullscreen
+ * lightbox showing the same images with arrow/keyboard navigation. The
+ * lightbox is skipped when there's only one image and on touch devices.
  */
 
 import { escapeHtml, communityPhotoUrl } from './utils.js';
+
+const CAN_HOVER =
+  typeof window !== 'undefined' &&
+  window.matchMedia &&
+  window.matchMedia('(hover: hover)').matches;
 
 /**
  * Produce the ordered list of image URLs to display for a community.
@@ -129,4 +138,82 @@ export function wireGallery(root) {
     },
     { passive: true },
   );
+
+  // Desktop-only fullscreen lightbox. Touch devices already get the
+  // swipe carousel inline; tapping to open a separate viewer would
+  // collide with that gesture and feels redundant on a small screen.
+  if (CAN_HOVER) {
+    gallery.classList.add('is-zoomable');
+    gallery.addEventListener('click', (e) => {
+      // Arrows and dots already stopPropagation, so this click only
+      // fires on the slide area itself.
+      if (e.target.closest('.gallery-arrow, .gallery-dot')) return;
+      const images = [...gallery.querySelectorAll('.gallery-slide img')]
+        .map((img) => img.getAttribute('src'))
+        .filter(Boolean);
+      openLightbox(images, current);
+    });
+  }
+}
+
+/**
+ * Open a fullscreen lightbox over the current page showing `images`
+ * starting at `startIndex`. Closes on backdrop click, the × button, or
+ * Escape; navigates with arrow buttons or ←/→ keys.
+ */
+function openLightbox(images, startIndex) {
+  if (!images.length) return;
+
+  let idx = ((startIndex % images.length) + images.length) % images.length;
+  const multi = images.length > 1;
+
+  const box = document.createElement('div');
+  box.className = 'lightbox';
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  box.innerHTML = `
+    <button type="button" class="lightbox-close" aria-label="Close">×</button>
+    ${multi ? `<button type="button" class="lightbox-arrow lightbox-arrow-prev" aria-label="Previous image">‹</button>` : ''}
+    <img class="lightbox-img" src="${escapeHtml(images[idx])}" alt="" />
+    ${multi ? `<button type="button" class="lightbox-arrow lightbox-arrow-next" aria-label="Next image">›</button>` : ''}
+    ${multi ? `<div class="lightbox-count" aria-live="polite">${idx + 1} / ${images.length}</div>` : ''}
+  `;
+  document.body.appendChild(box);
+  document.body.classList.add('lightbox-open');
+
+  const img = box.querySelector('.lightbox-img');
+  const counter = box.querySelector('.lightbox-count');
+
+  const update = (i) => {
+    idx = ((i % images.length) + images.length) % images.length;
+    img.src = images[idx];
+    if (counter) counter.textContent = `${idx + 1} / ${images.length}`;
+  };
+
+  const close = () => {
+    box.remove();
+    document.body.classList.remove('lightbox-open');
+    document.removeEventListener('keydown', onKey);
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'Escape') close();
+    else if (multi && e.key === 'ArrowLeft') update(idx - 1);
+    else if (multi && e.key === 'ArrowRight') update(idx + 1);
+  };
+
+  box.querySelector('.lightbox-close').addEventListener('click', close);
+  box.querySelector('.lightbox-arrow-prev')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    update(idx - 1);
+  });
+  box.querySelector('.lightbox-arrow-next')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    update(idx + 1);
+  });
+  box.addEventListener('click', (e) => {
+    // Click on the backdrop (not on the image / buttons) closes.
+    if (e.target === box) close();
+  });
+  document.addEventListener('keydown', onKey);
 }
