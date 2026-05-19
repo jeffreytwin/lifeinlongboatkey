@@ -21,10 +21,15 @@
     <div class="app">
       <!-- Header -->
       <header class="header">
-        <div class="brand">
-          <div class="brand-mark">Life in Longboat Key</div>
-          <div class="brand-sub">Neighborhoods &amp; Condos</div>
-        </div>
+        <a class="brand" href="https://www.lifeinlongboatkey.com" aria-label="Life in Longboat Key home">
+          <img class="brand-logo" src="/lbk-logo-long.png" alt="Life in Longboat Key — Your Guide to Longboat Key" />
+        </a>
+        <nav class="site-nav" aria-label="Primary">
+          <a class="site-nav-link" href="https://www.lifeinlongboatkey.com/homes-for-sale">Homes for Sale</a>
+          <a class="site-nav-link is-current" href="https://lifeinlongboatkey.web.app" aria-current="page">Compare Neighborhoods</a>
+          <a class="site-nav-link" href="https://www.lifeinlongboatkey.com/amenities">Amenities</a>
+          <a class="site-nav-link" href="https://www.lifeinlongboatkey.com/contact-us">Contact</a>
+        </nav>
         <div class="result-count">
           Showing <strong><span id="resultCount">0</span></strong> of <span id="totalCount">0</span> communities
         </div>
@@ -87,14 +92,6 @@
           <div class="filter-section">
             <h3 class="filter-label">Bedrooms</h3>
             <div id="bedroomList" class="chip-row"></div>
-          </div>
-
-          <!-- 55+ toggle -->
-          <div class="filter-section">
-            <button id="age55Toggle" type="button" class="toggle-row" aria-pressed="false">
-              <span>55+ Community</span>
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </button>
           </div>
 
           <!-- Save / close button — only shown on mobile when the

@@ -10,9 +10,12 @@
   .header {
     flex-wrap: wrap;
     gap: 10px;
-    padding: 12px 16px;
+    padding: 10px 16px;
   }
-  .brand-sub { display: none; }
+  .brand-logo { height: 32px; }
+  /* Mobile drops the full nav and the count to keep the header compact;
+     the floating "Narrow it down" pill handles primary mobile interaction. */
+  .site-nav { display: none; }
   .result-count { display: none; }
 
   /* Floating "Narrow it down" pill, bottom-center. Positioned fixed so

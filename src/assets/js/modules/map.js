@@ -25,14 +25,7 @@ const NBHD_SOURCE_ID = 'neighborhoods';
 const NBHD_FILL_LAYER_ID = 'neighborhoods-fill';
 const NBHD_LINE_LAYER_ID = 'neighborhoods-line';
 
-// Basemap styles offered by the in-map toggle. satellite-streets keeps
-// road + place labels on top of the imagery, which a label-less
-// satellite-v9 would lose — important for a barrier island.
-const MAP_STYLES = {
-  map: 'mapbox://styles/mapbox/light-v11',
-  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
-};
-let currentStyleKey = 'map';
+const MAP_STYLE = 'mapbox://styles/mapbox/light-v11';
 
 // Longboat Key bounds: [west, south], [east, north]
 const LBK_BOUNDS = [
@@ -61,6 +54,10 @@ let onSelect = () => {};
 let neighborhoodPolygons = null; // FeatureCollection
 /** Names of neighborhoods that have a polygon — these skip the circle marker. */
 const polygonNames = new Set();
+/** Touch two-tap state: name of the community whose preview card is currently
+ *  showing. A second tap on the same community opens the detail panel; a tap
+ *  elsewhere dismisses. Unused on hover-capable devices. */
+let previewedName = null;
 let hoveredPolygonName = null;
 
 // Hover previews only make sense on real pointer devices. Touch devices
@@ -94,7 +91,7 @@ export function initMap(communities, callbacks) {
 
   map = new mapboxgl.Map({
     container,
-    style: MAP_STYLES[currentStyleKey],
+    style: MAP_STYLE,
     center: [-82.635, 27.385],
     zoom: 11.5,
     minZoom: 10,
@@ -103,13 +100,13 @@ export function initMap(communities, callbacks) {
   });
 
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
-  map.addControl(new StyleToggleControl(communities), 'top-right');
 
   map.on('load', () => {
     addNeighborhoodPolygons();
     setCommunityFeatures(communities);
     wireClusterInteractions();
     wireNeighborhoodPolygonInteractions(communities);
+    wireHoverCardTap(communities);
     syncMarkers(communities);
     syncZoneBubbles(communities);
     setNeighborhoodPolygonFilter(communities);
@@ -120,14 +117,15 @@ export function initMap(communities, callbacks) {
     });
   });
 
-  // Close popup when clicking empty map (anywhere not a cluster or polygon).
+  // Close popup / dismiss the touch preview when tapping empty map
+  // (anywhere not a cluster or polygon).
   map.on('click', (e) => {
     const layers = [CLUSTER_LAYER_ID];
     if (map.getLayer(NBHD_FILL_LAYER_ID)) layers.push(NBHD_FILL_LAYER_ID);
     const hits = map.queryRenderedFeatures(e.point, { layers });
-    if (!hits.length && currentPopup) {
-      currentPopup.remove();
-      currentPopup = null;
+    if (!hits.length) {
+      if (currentPopup) { currentPopup.remove(); currentPopup = null; }
+      hidePreview();
     }
   });
 
@@ -147,58 +145,6 @@ function renderMapTokenNotice() {
 }
 
 /**
- * Two-button Map / Satellite toggle, rendered as a standard Mapbox
- * control group in the top-right. Swapping the style wipes every
- * custom source + layer, so the swap handler re-adds them and
- * re-wires the layer-level event handlers. HTML markers (pins,
- * zone bubbles) live outside the canvas and survive the swap.
- */
-class StyleToggleControl {
-  constructor(communities) {
-    this.communities = communities;
-  }
-  onAdd(mapInstance) {
-    this._map = mapInstance;
-    const el = document.createElement('div');
-    el.className = 'mapboxgl-ctrl mapboxgl-ctrl-group style-toggle';
-    el.innerHTML = `
-      <button type="button" class="style-toggle-btn ${currentStyleKey === 'map' ? 'is-active' : ''}" data-style-key="map">Map</button>
-      <button type="button" class="style-toggle-btn ${currentStyleKey === 'satellite' ? 'is-active' : ''}" data-style-key="satellite">Satellite</button>
-    `;
-    el.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-style-key]');
-      if (!btn) return;
-      const key = btn.dataset.styleKey;
-      if (key === currentStyleKey || !MAP_STYLES[key]) return;
-      currentStyleKey = key;
-      el.querySelectorAll('.style-toggle-btn').forEach((b) => {
-        b.classList.toggle('is-active', b.dataset.styleKey === key);
-      });
-      swapStyle(key, this.communities);
-    });
-    this._container = el;
-    return el;
-  }
-  onRemove() {
-    this._container?.parentNode?.removeChild(this._container);
-    this._map = null;
-  }
-}
-
-function swapStyle(key, communities) {
-  if (!map) return;
-  map.setStyle(MAP_STYLES[key]);
-  map.once('style.load', () => {
-    const list = currentList.length ? currentList : communities;
-    if (neighborhoodPolygons) addNeighborhoodPolygons();
-    setCommunityFeatures(list);
-    wireClusterInteractions();
-    wireNeighborhoodPolygonInteractions(list);
-    setNeighborhoodPolygonFilter(list);
-    updateZoomDependentVisibility();
-  });
-}
-
 function addNeighborhoodPolygons() {
   if (!map || !neighborhoodPolygons) return;
   // Each feature gets a state-backed 'hover' flag used for the hover style.
@@ -212,11 +158,13 @@ function addNeighborhoodPolygons() {
     type: 'fill',
     source: NBHD_SOURCE_ID,
     paint: {
-      'fill-color': '#E6A039',  // brand gold (the heron)
+      // Brighter orange (vs. the brand gold) so the fill reads as
+      // "orange" on the cream basemap instead of a yellow smudge.
+      'fill-color': '#E07A1A',
       'fill-opacity': [
         'case',
-        ['boolean', ['feature-state', 'hover'], false], 0.38,
-        0.18,
+        ['boolean', ['feature-state', 'hover'], false], 0.58,
+        0.40,
       ],
     },
   });
@@ -225,7 +173,7 @@ function addNeighborhoodPolygons() {
     type: 'line',
     source: NBHD_SOURCE_ID,
     paint: {
-      'line-color': '#A87A1A',  // brand gold deep
+      'line-color': '#A05816',  // darker orange to match the brighter fill
       'line-width': [
         'case',
         ['boolean', ['feature-state', 'hover'], false], 2.5,
@@ -238,14 +186,23 @@ function addNeighborhoodPolygons() {
 function wireNeighborhoodPolygonInteractions(communities) {
   if (!map || !neighborhoodPolygons) return;
 
-  // Click works on every device — opens the details panel in one tap.
+  // Click flow:
+  //   - Pointer devices: single tap opens the detail panel (hover has
+  //     already previewed it).
+  //   - Touch devices: first tap shows the preview card; a second tap on
+  //     the same polygon opens the detail panel (matches the mouse-over
+  //     experience on desktop).
   map.on('click', NBHD_FILL_LAYER_ID, (e) => {
     if (!e.features?.length) return;
     const name = e.features[0].properties.name;
     const c = communities.find((x) => x.name === name);
     if (!c) return;
-    hideHoverCard();
-    onSelect(c);
+    if (!canHover) {
+      handleTouchSelect(c, toClientXY(e.originalEvent));
+    } else {
+      hidePreview();
+      onSelect(c);
+    }
   });
 
   // Hover previews are pointer-only (skipped on touch to avoid the
@@ -463,8 +420,12 @@ function buildMarker(c) {
   el.innerHTML = `<div class="pin-inner">${c.type === 'condo' ? 'C' : 'N'}</div>`;
   el.addEventListener('click', (e) => {
     e.stopPropagation();
-    hideHoverCard();
-    onSelect(c);
+    if (!canHover) {
+      handleTouchSelect(c, { clientX: e.clientX, clientY: e.clientY });
+    } else {
+      hidePreview();
+      onSelect(c);
+    }
   });
   if (canHover) {
     el.addEventListener('mouseenter', (e) => showHoverCard(c, e));
@@ -529,7 +490,51 @@ function hideHoverCard() {
   const card = document.getElementById('hoverCard');
   if (!card) return;
   card.classList.remove('is-visible');
+  card.classList.remove('is-tappable');
   card.setAttribute('aria-hidden', 'true');
+}
+
+/** Touch two-tap dispatcher: first tap shows preview, second opens details. */
+function handleTouchSelect(c, xy) {
+  if (previewedName === c.name) {
+    hidePreview();
+    onSelect(c);
+    return;
+  }
+  previewedName = c.name;
+  showHoverCard(c, xy || undefined);
+  const card = document.getElementById('hoverCard');
+  card?.classList.add('is-tappable');
+}
+
+function hidePreview() {
+  previewedName = null;
+  hideHoverCard();
+}
+
+/** Normalize a DOM mouse or touch event into { clientX, clientY }. */
+function toClientXY(evt) {
+  if (!evt) return null;
+  if (typeof evt.clientX === 'number') {
+    return { clientX: evt.clientX, clientY: evt.clientY };
+  }
+  const t = evt.touches?.[0] || evt.changedTouches?.[0];
+  return t ? { clientX: t.clientX, clientY: t.clientY } : null;
+}
+
+/** Attach the one-shot tap handler on the hover card. Tapping the card
+ *  (only enabled in touch mode via .is-tappable) opens the detail panel
+ *  for whichever community is currently previewed. */
+function wireHoverCardTap(communities) {
+  const card = document.getElementById('hoverCard');
+  if (!card) return;
+  card.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!previewedName) return;
+    const c = communities.find((x) => x.name === previewedName);
+    hidePreview();
+    if (c) onSelect(c);
+  });
 }
 
 function openPopupFor(c) {
