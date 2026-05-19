@@ -8,9 +8,11 @@
   .app { height: auto; min-height: 100vh; }
 
   .header {
+    height: auto;
     flex-wrap: wrap;
     gap: 10px;
     padding: 10px 16px;
+    justify-content: flex-start;
   }
   .brand-logo { height: 32px; width: 168px; }
   /* Mobile drops the full nav and the count to keep the header compact;
