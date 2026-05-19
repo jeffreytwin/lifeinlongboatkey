@@ -97,7 +97,7 @@ button {
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 39px;
+  gap: 42px;
   flex-wrap: nowrap;
 }
 .site-nav-link {
