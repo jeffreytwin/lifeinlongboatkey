@@ -83,8 +83,10 @@ button {
 .brand-logo {
   display: block;
   width: 367px;
-  /* 367 × (285 / 1500) ≈ 70 — preserves the logo's intrinsic aspect ratio. */
-  height: 70px;
+  /* 367 × (380 / 1500) ≈ 93 — preserves the updated logo's intrinsic
+     aspect ratio. The PNG has internal whitespace, so 93 ≈ strip's
+     94 px height reads as nearly flush. */
+  height: 93px;
 }
 
 .site-nav {
@@ -96,9 +98,9 @@ button {
 .site-nav-link {
   font-family: 'Manrope', sans-serif;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.02em;
-  color: var(--ink-soft);
+  color: #49C3A9;
   text-decoration: none;
   padding: 6px 2px;
   transition: color 0.15s;

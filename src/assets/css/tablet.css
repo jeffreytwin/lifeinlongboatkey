@@ -11,7 +11,7 @@
     justify-content: flex-start;
     gap: 20px;
   }
-  .brand-logo { height: 38px; width: 200px; }
+  .brand-logo { height: 51px; width: 200px; }
   .site-nav { margin-left: auto; gap: 18px; }
   .site-nav-link { font-size: 12px; }
   .result-count { display: none; }
