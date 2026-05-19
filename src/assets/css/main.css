@@ -57,14 +57,22 @@ button {
   overflow: hidden;
 }
 
-/* Header */
+/* Header — desktop layout matches the main lifeinlongboatkey.com site:
+   94 px white strip, logo + nav links centered as one horizontal group,
+   current-page link in brand orange (no underline), hover also orange
+   (no underline). Result count is pulled out of the flex flow with
+   absolute positioning so it can sit on the right without breaking the
+   centered group. Tablet/mobile override these in their own files. */
 .header {
   background: var(--bg-card);
   border-bottom: 1px solid var(--rule);
-  padding: 14px 28px;
+  height: 94px;
+  padding: 0 28px;
   display: flex;
   align-items: center;
-  gap: 28px;
+  justify-content: center;
+  gap: 36px;
+  position: relative;
 }
 .brand {
   display: inline-flex;
@@ -74,43 +82,38 @@ button {
 }
 .brand-logo {
   display: block;
-  height: 44px;
-  /* Reserve the rendered width up-front so the header doesn't reflow
-     (and trigger a map resize) when the PNG finishes loading. The
-     intrinsic aspect ratio is 1500/285 → ~231 px wide at 44 px tall. */
-  width: 232px;
+  width: 367px;
+  /* 367 × (285 / 1500) ≈ 70 — preserves the logo's intrinsic aspect ratio. */
+  height: 70px;
 }
 
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 24px;
-  margin-left: auto;
-  flex-wrap: wrap;
+  gap: 32px;
+  flex-wrap: nowrap;
 }
 .site-nav-link {
   font-family: 'Manrope', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--ink-soft);
   text-decoration: none;
   padding: 6px 2px;
-  border-bottom: 2px solid transparent;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s;
 }
-.site-nav-link:hover { color: var(--teal); }
-.site-nav-link.is-current {
-  color: var(--teal);
-  border-bottom-color: var(--coral);
-}
+.site-nav-link:hover { color: #E07A1A; }
+.site-nav-link.is-current { color: #E07A1A; }
 
 .result-count {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 12px;
   color: var(--ink-muted);
   white-space: nowrap;
-  padding-left: 18px;
-  border-left: 1px solid var(--rule);
 }
 .result-count strong { color: var(--teal); font-weight: 700; font-size: 13px; }
 
