@@ -91,8 +91,8 @@ button {
      left — the PNG has transparent padding that absorbs the offset, so
      the visible artwork shifts without clipping. */
   position: relative;
-  top: 7px;
-  left: -15px;
+  top: 4px;
+  left: -20px;
 }
 
 .site-nav {
@@ -101,7 +101,7 @@ button {
   gap: 42px;
   flex-wrap: nowrap;
   position: relative;
-  left: -12px;
+  left: -14px;
 }
 .site-nav-link {
   font-family: 'Manrope', sans-serif;
