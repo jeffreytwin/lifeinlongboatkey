@@ -71,7 +71,7 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 36px;
+  gap: 43px;
   position: relative;
 }
 .brand {
@@ -97,7 +97,7 @@ button {
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 39px;
+  gap: 42px;
   flex-wrap: nowrap;
 }
 .site-nav-link {
@@ -113,16 +113,10 @@ button {
 .site-nav-link:hover { color: #E07A1A; }
 .site-nav-link.is-current { color: #E07A1A; }
 
-.result-count {
-  position: absolute;
-  right: 28px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
-  color: var(--ink-muted);
-  white-space: nowrap;
-}
-.result-count strong { color: var(--teal); font-weight: 700; font-size: 13px; }
+/* Result count is hidden on every breakpoint — the running total
+   lives on the filter panel header instead. The element stays in the
+   DOM because filters.js still updates #resultCount on every apply(). */
+.result-count { display: none; }
 
 /* Mobile-only controls; hidden on desktop. */
 .filters-toggle-btn { display: none; }
