@@ -52,7 +52,8 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
     animation:
       narrowItDownEntry 0.5s ease-out 0.3s both,
-      narrowItDownPulse 1.1s ease-in-out 1s 2 both;
+      narrowItDownPulse 1.1s ease-in-out 1s 2 both,
+      narrowItDownFlash 1.1s ease-in-out 1s 1 both;
   }
   .filters-toggle-btn:hover { background: var(--teal-hover); }
 
@@ -71,6 +72,12 @@
   @keyframes narrowItDownPulse {
     0%, 100% { transform: translateX(-50%) scale(1); }
     50%      { transform: translateX(-50%) scale(1.06); }
+  }
+  /* One-shot orange flash, synced with the first wiggle so the colour
+     and the scale change land together as a single attention beat. */
+  @keyframes narrowItDownFlash {
+    0%, 100% { background-color: var(--teal); }
+    50%      { background-color: #E07A1A; }
   }
 
   .main {
@@ -131,11 +138,13 @@
   .map-wrap { height: calc(100vh - 60px); min-height: 360px; }
 
   /* Mobile-specific overrides for the Map/List toggle: position fixed
-     instead of absolute (so it survives any unexpected scroll), nudged
-     slightly lower under the header. */
+     instead of absolute (so it survives any unexpected scroll), and
+     top-aligned with the Condo / Neighborhood legend. Legend sits at
+     14 px inside .map-wrap; .map-wrap starts at the bottom of the
+     76 px header — so 76 + 14 = 90 px from the viewport top. */
   .view-switch {
     position: fixed;
-    top: 74px;
+    top: 90px;
   }
 
   /* List view picks up extra top + bottom padding to clear the floating
