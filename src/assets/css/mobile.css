@@ -12,7 +12,7 @@
     gap: 10px;
     padding: 10px 16px;
   }
-  .brand-logo { height: 32px; }
+  .brand-logo { height: 32px; width: 168px; }
   /* Mobile drops the full nav and the count to keep the header compact;
      the floating "Narrow it down" pill handles primary mobile interaction. */
   .site-nav { display: none; }
