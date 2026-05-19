@@ -256,13 +256,37 @@ if (LISTINGS_COLLECTION) {
     }
     if (!matchedName) continue;
 
-    const price = parseListingPrice(field(item, 'listingPrice', 'listPrice', 'price', 'Listing Price'));
+    const priceRaw = field(item, 'listingPrice', 'listPrice', 'price', 'Listing Price');
+    const price = parseListingPrice(priceRaw);
     const bedsRaw = field(item, 'bedrooms', 'beds', 'Bedrooms');
     const beds = typeof bedsRaw === 'number' && Number.isFinite(bedsRaw) ? bedsRaw : null;
+    const bathsRaw = field(item, 'bathrooms', 'baths', 'Bathrooms');
+    const baths = typeof bathsRaw === 'number' && Number.isFinite(bathsRaw) ? bathsRaw : null;
     const sqft = parseSqft(field(item, 'squareFeet', 'sqft', 'livingArea', 'Square Feet'));
+    const sqftRaw = field(item, 'squareFeet', 'sqft', 'livingArea', 'Square Feet');
+
+    // Per-listing detail kept on the community so the UI can render a
+    // grid of cards beneath the location map. Keep raw display strings
+    // (priceText, sqftText) alongside the parsed numeric values used
+    // for range summarisation.
+    const card = {
+      priceText: typeof priceRaw === 'string' ? priceRaw : (price ? `$${price.toLocaleString('en-US')}` : null),
+      image: resolveWixImage(field(item, 'listingPrimaryImage', 'primaryImage', 'image')),
+      address: field(item, 'propertyAddress', 'address', 'Property Address') || null,
+      beds: beds,
+      baths: baths,
+      garage: field(item, 'garages', 'garage', 'Garages') || null,
+      homeType: field(item, 'homeType', 'Home Type') || null,
+      sqftText: typeof sqftRaw === 'string' ? sqftRaw : (sqft ? sqft.toLocaleString('en-US') : null),
+      url: field(item, 'link-houses-for-sale-propertyAddress', 'pageLink', 'slug') || null,
+    };
+    // Drop entries where required-for-render bits are missing.
+    if (!card.address && !card.priceText) {
+      // Still useful for aggregation though, so keep contributing to ranges below.
+    }
 
     if (!listingsByCommunity.has(matchedName)) listingsByCommunity.set(matchedName, []);
-    listingsByCommunity.get(matchedName).push({ price, beds, sqft });
+    listingsByCommunity.get(matchedName).push({ price, beds, sqft, card });
   }
   console.log(listingsByCommunity.size, 'communities have at least one active listing.');
 }
@@ -321,7 +345,11 @@ function formatSqftRange(lo, hi) {
   return lo === hi ? fmt(lo) : `${fmt(lo)} - ${fmt(hi)}`;
 }
 
-/** Aggregate one community's active listings into pre-formatted range strings. */
+/** Aggregate one community's active listings into pre-formatted range
+ *  strings plus the per-listing cards used by the detail-panel grid.
+ *  Items are sorted by price ascending so cheapest-first reads
+ *  naturally; entries missing both an address and a price are dropped
+ *  from the items array (they still contribute to the range stats). */
 function summarizeListings(rows) {
   const prices = rows.map((r) => r.price).filter((n) => n != null);
   const beds   = rows.map((r) => r.beds  ).filter((n) => n != null);
@@ -330,6 +358,11 @@ function summarizeListings(rows) {
   if (prices.length) out.priceRange = formatPriceRange(Math.min(...prices), Math.max(...prices));
   if (beds.length)   out.bedrooms   = formatBedRange(Math.min(...beds), Math.max(...beds));
   if (sqfts.length)  out.sqft       = formatSqftRange(Math.min(...sqfts), Math.max(...sqfts));
+  const items = rows
+    .filter((r) => r.card && (r.card.address || r.card.priceText))
+    .sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity))
+    .map((r) => r.card);
+  if (items.length) out.items = items;
   return out;
 }
 

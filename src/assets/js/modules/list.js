@@ -8,7 +8,7 @@
  */
 
 import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl, staticMapUrl } from './utils.js';
-import { AMENITY_ICONS, filteredAmenities, homesForSaleUrl } from './amenityIcons.js';
+import { AMENITY_ICONS, filteredAmenities } from './amenityIcons.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
 
@@ -61,6 +61,59 @@ export function renderMobileList(list) {
 }
 
 /**
+ * Render the active-listings section (price card grid) that sits beneath
+ * the location map in the detail panel. Returns '' when there's nothing
+ * to render so the panel skips the section entirely.
+ */
+function renderListings(community) {
+  const items = community.activeListings?.items;
+  if (!Array.isArray(items) || items.length === 0) return '';
+  const baseHost = 'https://www.lifeinlongboatkey.com';
+  const count = community.activeListings.count || items.length;
+  const heading = `${count} Home${count === 1 ? '' : 's'} for Sale`;
+  const cards = items
+    .map((l) => {
+      const href = l.url
+        ? (/^https?:/.test(l.url) ? l.url : baseHost + l.url)
+        : null;
+      const photo = l.image
+        ? `<div class="listing-card-photo"><img src="${escapeHtml(l.image)}" alt="" loading="lazy" /></div>`
+        : '<div class="listing-card-photo listing-card-photo-empty" aria-hidden="true"></div>';
+      const metaBits = [
+        l.beds != null ? `${l.beds} bd` : null,
+        l.baths != null ? `${l.baths} ba` : null,
+        l.sqftText ? `${escapeHtml(l.sqftText)} sqft` : null,
+      ].filter(Boolean);
+      const meta = metaBits.length
+        ? `<div class="listing-card-meta">${metaBits.join(' · ')}</div>`
+        : '';
+      const sub = [
+        l.homeType ? escapeHtml(l.homeType) : null,
+        l.garage ? `${escapeHtml(l.garage)} garage` : null,
+      ].filter(Boolean).join(' · ');
+      const inner = `
+        ${photo}
+        <div class="listing-card-body">
+          ${l.priceText ? `<div class="listing-card-price">${escapeHtml(l.priceText)}</div>` : ''}
+          ${l.address ? `<div class="listing-card-address">${escapeHtml(l.address)}</div>` : ''}
+          ${meta}
+          ${sub ? `<div class="listing-card-sub">${sub}</div>` : ''}
+        </div>`;
+      return `<li class="listing-card">${
+        href
+          ? `<a class="listing-card-link" href="${escapeHtml(href)}" target="_blank" rel="noopener">${inner}</a>`
+          : inner
+      }</li>`;
+    })
+    .join('');
+  return `
+    <section class="detail-listings" id="detail-listings" aria-label="Homes for sale">
+      <div class="detail-listings-label">${escapeHtml(heading)}</div>
+      <ul class="listing-grid">${cards}</ul>
+    </section>`;
+}
+
+/**
  * Render the selected community into the detail panel and open it.
  *
  * @param {object} community
@@ -98,7 +151,6 @@ export function showDetail(community) {
     .join('');
 
   const page = community.pageUrl || '';
-  const homes = homesForSaleUrl(page);
   const baseHost = 'https://www.lifeinlongboatkey.com';
 
   // Prefer live for-sale ranges when active listings exist; fall back to
@@ -134,9 +186,9 @@ export function showDetail(community) {
       })()}
       <div class="detail-actions">
         ${community.hasListings ? `
-          <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + homes)}" target="_blank" rel="noopener">
+          <button type="button" class="detail-link detail-link-primary" data-scroll-to="detail-listings">
             ${escapeHtml(homesCta)}
-          </a>
+          </button>
           <a class="detail-link detail-link-secondary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
             View<br>Community Page
           </a>
@@ -161,6 +213,7 @@ export function showDetail(community) {
           <img src="${escapeHtml(mapSrc)}" alt="Map of ${escapeHtml(community.name)}" loading="lazy" />
         </div>`;
       })()}
+      ${renderListings(community)}
     </div>`;
 
   wireGallery(el);
@@ -174,6 +227,13 @@ export function showDetail(community) {
     mapEl.classList.add('is-clickable');
     mapEl.addEventListener('click', () => onLocateOnMap(community));
   }
+
+  // "View (N) Homes for Sale" scrolls the panel down to the listings
+  // section rather than navigating off-site.
+  el.querySelector('[data-scroll-to]')?.addEventListener('click', (e) => {
+    const id = e.currentTarget.dataset.scrollTo;
+    el.querySelector(`#${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   const content = document.getElementById('content');
   const panel = document.querySelector('.detail-panel');
