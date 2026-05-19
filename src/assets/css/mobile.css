@@ -12,14 +12,14 @@
        9 px from the left. Only the logo renders inside the header on
        mobile (nav, count, and the filters pill are hidden /
        floating), so header padding sets the logo's exact offsets. */
-    height: 78px;
+    height: 76px;
     flex-wrap: nowrap;
     gap: 10px;
     padding: 13px 16px 0 9px;
     justify-content: flex-start;
     align-items: flex-start;
   }
-  .brand-logo { height: 70px; width: 275px; top: 0; left: 0; }
+  .brand-logo { height: 63px; width: 248px; top: 0; left: 0; }
   /* Mobile drops the full nav and the count to keep the header compact;
      the floating "Narrow it down" pill handles primary mobile interaction. */
   .site-nav { display: none; }
