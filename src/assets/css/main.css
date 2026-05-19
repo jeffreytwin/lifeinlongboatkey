@@ -92,7 +92,7 @@ button {
      the visible artwork shifts without clipping. */
   position: relative;
   top: 7px;
-  left: -7px;
+  left: -12px;
 }
 
 .site-nav {
@@ -101,7 +101,7 @@ button {
   gap: 42px;
   flex-wrap: nowrap;
   position: relative;
-  left: -4px;
+  left: -9px;
 }
 .site-nav-link {
   font-family: 'Manrope', sans-serif;
