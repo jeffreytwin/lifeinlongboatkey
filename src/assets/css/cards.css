@@ -137,8 +137,8 @@
   border-radius: 3px;
   margin-bottom: 10px;
 }
-.detail-type-tag.tag-condo { background: #E6EFEF; color: var(--teal); }
-.detail-type-tag.tag-nbhd { background: var(--coral-soft); color: #B85A3F; }
+.detail-type-tag.tag-condo { background: #D9F0E8; color: var(--teal); }
+.detail-type-tag.tag-nbhd { background: var(--coral-soft); color: var(--coral-deep); }
 
 .detail-name {
   font-family: 'Fraunces', serif;

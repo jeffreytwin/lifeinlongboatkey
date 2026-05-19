@@ -43,7 +43,7 @@
   /* Area-style marker: translucent fill + solid outline + no shadow,
      so it reads as a zone rather than a point. */
   width: 46px; height: 46px;
-  background: rgba(228, 122, 92, 0.18);
+  background: rgba(230, 160, 57, 0.18);
   border: 2px solid var(--coral);
   border-radius: 50%;
 }
@@ -60,8 +60,8 @@
 }
 .pin-nbhd.highlighted {
   transform: scale(1.15);
-  background: rgba(228, 122, 92, 0.32);
-  border-color: #B85A3F;
+  background: rgba(230, 160, 57, 0.32);
+  border-color: var(--coral-deep);
   z-index: 1000 !important;
 }
 
@@ -117,7 +117,7 @@
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #083638;
+  color: var(--teal-deep);
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(2px);
   padding: 4px 9px;

@@ -47,49 +47,63 @@ letter-spacing: -0.01em;
 
 CSS variables live on `:root`. Hex values:
 
+**Brand palette** is built from three colors the lifeinlongboatkey.com
+homepage uses:
+
+- `#49C3A9` — mint (logo letterforms)
+- `#E6A039` — gold (the heron silhouette)
+- `#605E5E` — warm gray (body text)
+
+The mint is too light for white-text-on-bg surfaces (~1.97 contrast),
+so the working teal is a darker mint (`--teal: #2A8E78`) that pairs
+with both white text on the button AND dark text on cream. The bright
+logo mint is kept as `--teal-bright` for decorative fills.
+
 ### Surfaces
 
 | Token | Hex | Role |
 |---|---|---|
-| `--bg` | `#F5F1E8` | App background. Warm cream. |
+| `--bg` | `#F8F4EC` | App background. Warm cream. |
 | `--bg-card` | `#FFFFFF` | Cards, popovers, the details panel, sidebar surfaces that sit on the bg. |
-| `--sand` | `#E8DFC9` | Secondary fill (rare; mostly used to back the "55+" pill). |
+| `--sand` | `#EFE5CC` | Secondary fill (rare; mostly used to back the "55+" pill). |
 
 ### Rules + muted strokes
 
 | Token | Hex | Role |
 |---|---|---|
-| `--rule` | `#E3DBCC` | 1 px dividers between sections, card outlines. |
-| `--rule-soft` | `#EFE8D9` | Softer dividers inside cards. |
+| `--rule` | `#E6DFD2` | 1 px dividers between sections, card outlines. |
+| `--rule-soft` | `#F0EADD` | Softer dividers inside cards. |
 
 ### Type
 
 | Token | Hex | Role |
 |---|---|---|
-| `--ink` | `#1A2628` | Primary text. Near-black with a green-grey cast. |
-| `--ink-soft` | `#4A5A5E` | Secondary text, sidebar copy, labels. |
-| `--ink-muted` | `#8A9599` | Tertiary text, meta lines, counts. |
+| `--ink` | `#2D2D2D` | Primary text. Warm dark gray. |
+| `--ink-soft` | `#605E5E` | Secondary text, sidebar copy, labels. Brand warm gray. |
+| `--ink-muted` | `#9A9794` | Tertiary text, meta lines, counts. |
 
-### Brand — teal (primary)
-
-| Token | Hex | Role |
-|---|---|---|
-| `--teal` | `#0E5254` | Primary brand color. Wordmark, condo pin, active filter pill, CTA button, links. |
-| `--teal-deep` | `#083638` | Darkest variant — used for the active filter pill and high-contrast badges. |
-| `--teal-hover` | `#0A4345` | Hover state for teal surfaces. |
-
-### Brand — coral (accent)
+### Brand — mint (primary)
 
 | Token | Hex | Role |
 |---|---|---|
-| `--coral` | `#D97757` | Neighborhood polygon fill + outline, brand-mark dot, hover-card neighborhood accent. |
-| `--coral-soft` | `#F4E4DB` | Soft coral background for the chip variant that signals a neighborhood. |
+| `--teal` | `#2A8E78` | Primary brand color. Wordmark, condo pin, active filter pill, CTA button, links. |
+| `--teal-deep` | `#1F6B5A` | Deeper variant — cluster bubbles, zone labels, hover emphasis. |
+| `--teal-hover` | `#1F6B5A` | Alias of `--teal-deep` for clarity in hover rules. |
+| `--teal-bright` | `#49C3A9` | The logo-true bright mint. Use sparingly for decorative fills. |
+
+### Brand — gold (accent)
+
+| Token | Hex | Role |
+|---|---|---|
+| `--coral` | `#E6A039` | Neighborhood polygon fill + outline, brand-mark dot, hover-card neighborhood accent. Variable kept as `--coral` for compatibility; carries the gold hex. |
+| `--coral-deep` | `#A87A1A` | Dark gold for text on gold-tint backgrounds and neighborhood pin outlines. |
+| `--coral-soft` | `#FAE6C7` | Soft gold wash for the chip variant that signals a neighborhood. |
 
 ### Supporting palette
 
 | Token | Hex | Role |
 |---|---|---|
-| `--gulf` | `#2B7A78` | Gulf-front waterfront tag. |
+| `--gulf` | `#2A8E78` | Gulf-front waterfront tag (harmonized with `--teal`). |
 | `--bay` | `#3A6EA5` | Bay-front waterfront tag. |
 | `--ok` | `#4A7C59` | Success / "Yes" state in amenity rows. |
 
@@ -97,20 +111,22 @@ CSS variables live on `:root`. Hex values:
 
 ```css
 :root {
-  --bg: #F5F1E8;
+  --bg: #F8F4EC;
   --bg-card: #FFFFFF;
-  --ink: #1A2628;
-  --ink-soft: #4A5A5E;
-  --ink-muted: #8A9599;
-  --rule: #E3DBCC;
-  --rule-soft: #EFE8D9;
-  --teal: #0E5254;
-  --teal-deep: #083638;
-  --teal-hover: #0A4345;
-  --coral: #D97757;
-  --coral-soft: #F4E4DB;
-  --sand: #E8DFC9;
-  --gulf: #2B7A78;
+  --ink: #2D2D2D;
+  --ink-soft: #605E5E;
+  --ink-muted: #9A9794;
+  --rule: #E6DFD2;
+  --rule-soft: #F0EADD;
+  --teal: #2A8E78;
+  --teal-deep: #1F6B5A;
+  --teal-hover: #1F6B5A;
+  --teal-bright: #49C3A9;
+  --coral: #E6A039;
+  --coral-deep: #A87A1A;
+  --coral-soft: #FAE6C7;
+  --sand: #EFE5CC;
+  --gulf: #2A8E78;
   --bay: #3A6EA5;
   --ok: #4A7C59;
 }

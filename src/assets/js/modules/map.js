@@ -138,9 +138,9 @@ function renderMapTokenNotice() {
   const el = document.getElementById('map');
   if (!el) return;
   el.innerHTML = `
-    <div style="padding:40px;text-align:center;color:#4A5A5E;font-family:Manrope,sans-serif;height:100%;display:flex;align-items:center;justify-content:center;">
+    <div style="padding:40px;text-align:center;color:#605E5E;font-family:Manrope,sans-serif;height:100%;display:flex;align-items:center;justify-content:center;">
       <div style="max-width:380px">
-        <div style="font-family:Fraunces,serif;font-size:20px;margin-bottom:8px;color:#1A2628">Map unavailable</div>
+        <div style="font-family:Fraunces,serif;font-size:20px;margin-bottom:8px;color:#2D2D2D">Map unavailable</div>
         <p style="font-size:13px;margin:0">Set a Mapbox access token in <code>config.js</code> to enable the map. The filter panel and list view work without it.</p>
       </div>
     </div>`;
@@ -212,7 +212,7 @@ function addNeighborhoodPolygons() {
     type: 'fill',
     source: NBHD_SOURCE_ID,
     paint: {
-      'fill-color': '#E47A5C',  // coral
+      'fill-color': '#E6A039',  // brand gold (the heron)
       'fill-opacity': [
         'case',
         ['boolean', ['feature-state', 'hover'], false], 0.38,
@@ -225,7 +225,7 @@ function addNeighborhoodPolygons() {
     type: 'line',
     source: NBHD_SOURCE_ID,
     paint: {
-      'line-color': '#B85A3F',
+      'line-color': '#A87A1A',  // brand gold deep
       'line-width': [
         'case',
         ['boolean', ['feature-state', 'hover'], false], 2.5,
@@ -326,7 +326,7 @@ function setCommunityFeatures(list) {
     source: SOURCE_ID,
     filter: ['has', 'point_count'],
     paint: {
-      'circle-color': '#0E5254',
+      'circle-color': '#1F6B5A',  // --teal-deep
       'circle-opacity': 0.9,
       'circle-stroke-color': '#FFFFFF',
       'circle-stroke-width': 2,
