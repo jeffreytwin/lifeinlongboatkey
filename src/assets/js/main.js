@@ -122,10 +122,14 @@ document.getElementById('viewMapBtn')?.addEventListener('click', () => setView('
 document.getElementById('viewListBtn')?.addEventListener('click', () => setView('list'));
 setListItemClickHandler(openDetail);
 
-// Clicking the reference map in the details panel (desktop only) flies
-// the big map to that community's coordinates. If the user is currently
-// in list view, also switch to map view so the flyTo is visible.
+// Clicking the reference map in the details panel flies the big map
+// to that community's coordinates. On desktop the side-column detail
+// panel stays open and the user sees the flyTo on the visible map
+// column. On mobile the detail panel is a fullscreen overlay that
+// would hide the flyTo entirely, so close it first.
+const IS_TOUCH = !(window.matchMedia && window.matchMedia('(hover: hover)').matches);
 setLocateOnMapHandler((community) => {
+  if (IS_TOUCH) closeDetail();
   if (state.view !== 'map') setView('map');
   // Let the map container remeasure from the view swap before flying.
   // Zoom near the maximum (18) so the user lands almost-fully-zoomed
