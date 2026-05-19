@@ -448,3 +448,84 @@ body.view-list .map-wrap { display: none; }
 .amenity-chip.wf-gulf { background: #D4E7E6; color: var(--gulf); }
 .amenity-chip.wf-bay { background: #DFE7F0; color: var(--bay); }
 .amenity-chip.is-55 { background: #EADFEF; color: #6B4A80; }
+
+/* Desktop-only gallery zoom affordance. Only set on pointer devices
+   (via the .is-zoomable class added in JS) so touch screens don't get
+   a misleading zoom-in cursor / no-op tap. */
+.detail-gallery.is-zoomable .gallery-slide { cursor: zoom-in; }
+
+/* Fullscreen image lightbox. z-index sits above the details panel
+   (1100) so it covers the entire app while open. */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.88);
+  padding: 56px 72px;
+  animation: lightboxIn 0.12s ease-out both;
+}
+@keyframes lightboxIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  border-radius: 4px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+.lightbox-close,
+.lightbox-arrow {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.12s;
+}
+.lightbox-close:hover,
+.lightbox-arrow:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+.lightbox-close {
+  top: 16px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+  line-height: 1;
+}
+.lightbox-arrow {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  font-size: 28px;
+  line-height: 1;
+}
+.lightbox-arrow-prev { left: 20px; }
+.lightbox-arrow-next { right: 20px; }
+.lightbox-arrow:hover { transform: translateY(-50%) scale(1.06); }
+.lightbox-count {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.78);
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+body.lightbox-open { overflow: hidden; }

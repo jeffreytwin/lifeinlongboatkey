@@ -21,12 +21,6 @@ export function setListItemClickHandler(fn) { onListItemClick = fn; }
 let onLocateOnMap = () => {};
 export function setLocateOnMapHandler(fn) { onLocateOnMap = fn; }
 
-/** Only wire the reference-map click on real pointer devices. */
-const CAN_HOVER =
-  typeof window !== 'undefined' &&
-  window.matchMedia &&
-  window.matchMedia('(hover: hover)').matches;
-
 /**
  * Render the mobile list-view items for a filtered community set.
  * Safe to call even when the user isn't currently in list view — keeps
@@ -171,14 +165,14 @@ export function showDetail(community) {
 
   wireGallery(el);
 
-  // Reference-map click (desktop only) — flies the main map to this
-  // community's location, switching to map view first if needed.
-  if (CAN_HOVER) {
-    const mapEl = el.querySelector('.detail-map');
-    if (mapEl) {
-      mapEl.classList.add('is-clickable');
-      mapEl.addEventListener('click', () => onLocateOnMap(community));
-    }
+  // Reference-map click — flies the main map to this community's
+  // location. On mobile the onLocateOnMap handler also switches to
+  // the map view if the user is currently in list view, so it works
+  // on every device.
+  const mapEl = el.querySelector('.detail-map');
+  if (mapEl) {
+    mapEl.classList.add('is-clickable');
+    mapEl.addEventListener('click', () => onLocateOnMap(community));
   }
 
   const content = document.getElementById('content');
