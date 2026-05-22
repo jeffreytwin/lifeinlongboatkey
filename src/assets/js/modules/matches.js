@@ -33,23 +33,42 @@ function normHomeType(t) {
   return t ? String(t).toLowerCase().replace(/s\b/g, '').trim() : '';
 }
 
-/** Given a listing's homeType and the community's homeTypes array,
- *  return the community-level label that matches (or null). Used so the
- *  filter and chip counts share a consistent vocabulary even when the
- *  listing field uses singular / different-casing values
- *  (e.g. listing "Condominium" maps to community "Condominiums"). */
+/** Listing-vocab → community-vocab (chip-row label) lookup. The HousesforSale
+ *  collection uses different wording than the village home-type tags
+ *  (e.g. "Single Family Residence" vs "Single Family Homes",
+ *  "Townhouse" vs "Townhomes"), so the alias map bridges them. The
+ *  "Condo - Hotel" subtype rolls up into Condominiums for filter
+ *  purposes. */
+const LISTING_TO_COMMUNITY_HOME_TYPE = new Map([
+  ['condominium',              'Condominiums'],
+  ['condo - hotel',            'Condominiums'],
+  ['condo-hotel',              'Condominiums'],
+  ['single family residence',  'Single Family Homes'],
+  ['single family home',       'Single Family Homes'],
+  ['villa',                    'Villas'],
+  ['townhouse',                'Townhomes'],
+  ['townhome',                 'Townhomes'],
+]);
+
+/** Given a listing's homeType, return the community-vocabulary chip
+ *  label it should contribute to (or null if no mapping exists, e.g.
+ *  "Half Duplex"). The communityTypes parameter is kept for API
+ *  stability and used as a courtesy intersection so we don't surface
+ *  a label that no community in the dataset actually carries — when
+ *  it's provided. Pass an empty array (or omit) to skip the
+ *  intersection. */
 export function mapListingHomeType(listingType, communityTypes) {
   const lt = normHomeType(listingType);
-  if (!lt || !Array.isArray(communityTypes)) return null;
-  for (const ct of communityTypes) {
-    if (normHomeType(ct) === lt) return ct;
-  }
-  // Fall back to a loose substring match for slight wording drift.
-  for (const ct of communityTypes) {
-    const ctn = normHomeType(ct);
-    if (ctn && (ctn.startsWith(lt) || lt.startsWith(ctn))) return ct;
-  }
-  return null;
+  if (!lt) return null;
+  const label = LISTING_TO_COMMUNITY_HOME_TYPE.get(lt);
+  if (!label) return null;
+  // Listings filter against the chip vocabulary regardless of the
+  // listing's home community, so listings with a homeType that maps to
+  // a valid chip label always count — even if their own community
+  // isn't tagged with it. Callers can still pass communityTypes when
+  // they want a tighter intersection, but the default is the looser
+  // chip-driven view that matches user expectations.
+  return label;
 }
 
 export function matches(c) {
