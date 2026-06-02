@@ -496,16 +496,16 @@ for (const raw of all) {
   // Re-derive priceTiers from priceRange.
   if (updates.priceRange) updates.priceTiers = priceTiersFor(updates.priceRange);
 
-  // Top-image policy: visualTourGallery drives the slideshow when set;
-  // topBackgroundImage is the single-image fallback. Both empty → no
-  // image (gallery falls back to the type-appropriate placeholder).
-  // Always assigned so stale values from older syncs get cleared.
+  // Top-image policy: topBackgroundImage is the hero shot and always leads
+  // when set; visualTourGallery supplies the rest of the slideshow. So a
+  // community with a gallery shows [hero, ...gallery]; with only a hero it
+  // shows [hero]; with neither, no image (gallery falls back to the
+  // type-appropriate placeholder). Curators are responsible for not
+  // repeating the hero inside the gallery. Always assigned so stale values
+  // from older syncs get cleared.
   const galleryUrls = resolveWixGallery(field(item, 'visualTourGallery', 'Visual Tour Gallery'));
-  let images = galleryUrls;
-  if (images.length === 0) {
-    const bg = resolveWixImage(field(item, 'topBackgroundImage', 'Top Background Image'));
-    if (bg) images = [bg];
-  }
+  const bg = resolveWixImage(field(item, 'topBackgroundImage', 'Top Background Image'));
+  const images = bg ? [bg, ...galleryUrls] : galleryUrls;
   updates.images = images;
   updates.imageUrl = images[0] || null;
 
