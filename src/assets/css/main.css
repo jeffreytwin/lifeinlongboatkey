@@ -22,10 +22,10 @@
   --coral-deep: #A87A1A;
   --coral-soft: #FAE6C7;
   /* Selection highlight — applied to the currently-selected pin/polygon.
-     A deep burnt orange, distinctly darker than the neighborhood orange
+     A darker orange (not red), deeper than the neighborhood orange
      (#E07A1A) so a selected neighborhood still reads as different. */
-  --selected: #C2410C;
-  --selected-deep: #7C2D0A;
+  --selected: #C2660F;
+  --selected-deep: #8A4708;
   --sand: #EFE5CC;
   --gulf: #2A8E78;
   --bay: #3A6EA5;

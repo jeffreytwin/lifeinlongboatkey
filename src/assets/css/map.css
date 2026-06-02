@@ -63,7 +63,7 @@
 /* The white 'C' glyph stays legible on the deep orange — no override needed. */
 .pin-nbhd.highlighted {
   transform: scale(1.15);
-  background: rgba(194, 65, 12, 0.50);
+  background: rgba(194, 102, 15, 0.50);
   border-color: var(--selected-deep);
   z-index: 1000 !important;
 }
