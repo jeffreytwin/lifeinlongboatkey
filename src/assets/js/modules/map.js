@@ -59,6 +59,9 @@ const polygonNames = new Set();
  *  elsewhere dismisses. Unused on hover-capable devices. */
 let previewedName = null;
 let hoveredPolygonName = null;
+/** Name of the neighborhood polygon currently pinned as "highlighted"
+ *  (embed/deep-link focus). Distinct from the transient hover state. */
+let highlightedPolygonName = null;
 
 // Hover previews only make sense on real pointer devices. Touch devices
 // ("hover: none") would otherwise need a double-tap to fire click after
@@ -74,6 +77,7 @@ const canHover = typeof window !== 'undefined'
  */
 export function initMap(communities, callbacks) {
   onSelect = callbacks.onSelect || (() => {});
+  const onReady = callbacks.onReady || (() => {});
   neighborhoodPolygons = callbacks.neighborhoodPolygons || null;
   if (neighborhoodPolygons) {
     for (const f of neighborhoodPolygons.features) polygonNames.add(f.properties.name);
@@ -120,6 +124,10 @@ export function initMap(communities, callbacks) {
     // come back empty on the first pass. 'idle' fires once everything
     // has settled — gate one final visibility pass on it.
     map.once('idle', updateZoomDependentVisibility);
+
+    // Markers and polygons now exist; let the caller focus/highlight a
+    // community (full-map deep-link or location-page embed).
+    onReady();
   });
 
   // Close popup / dismiss the touch preview when tapping empty map
@@ -167,6 +175,7 @@ function addNeighborhoodPolygons() {
       'fill-color': '#E07A1A',
       'fill-opacity': [
         'case',
+        ['boolean', ['feature-state', 'highlight'], false], 0.66,
         ['boolean', ['feature-state', 'hover'], false], 0.58,
         0.40,
       ],
@@ -180,6 +189,7 @@ function addNeighborhoodPolygons() {
       'line-color': '#A05816',  // darker orange to match the brighter fill
       'line-width': [
         'case',
+        ['boolean', ['feature-state', 'highlight'], false], 3,
         ['boolean', ['feature-state', 'hover'], false], 2.5,
         1.5,
       ],
@@ -541,7 +551,7 @@ function wireHoverCardTap(communities) {
   });
 }
 
-function openPopupFor(c) {
+export function openPopupFor(c) {
   if (!map) return;
   if (currentPopup) currentPopup.remove();
   const html = `
@@ -633,6 +643,26 @@ export function setHighlightedPin(name) {
   markerByName.forEach((marker, n) => {
     marker.getElement().classList.toggle('highlighted', n === name);
   });
+}
+
+/**
+ * Pin a neighborhood polygon as "highlighted" (brighter fill + thicker
+ * outline). Pass null to clear. Safe to call with a name that has no
+ * polygon — it's a no-op for circle-marker neighborhoods, which
+ * setHighlightedPin() handles instead.
+ */
+export function setHighlightedPolygon(name) {
+  if (!map || !map.getSource(NBHD_SOURCE_ID)) return;
+  if (highlightedPolygonName && highlightedPolygonName !== name) {
+    map.setFeatureState(
+      { source: NBHD_SOURCE_ID, id: highlightedPolygonName },
+      { highlight: false },
+    );
+  }
+  highlightedPolygonName = name;
+  if (name && polygonNames.has(name)) {
+    map.setFeatureState({ source: NBHD_SOURCE_ID, id: name }, { highlight: true });
+  }
 }
 
 export function focusCommunity(community, { zoom, duration = 650 } = {}) {

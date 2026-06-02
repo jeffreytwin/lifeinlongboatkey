@@ -1,0 +1,67 @@
+/* Embed mode — the chrome-less single-community view served at
+   ?embed=1 and dropped into a Wix location page via <iframe>.
+   Everything here is scoped under html.embed, so the full app is
+   untouched. The CTA pill is hidden by default and only appears in
+   embed mode. */
+
+/* Collapse the app chrome: header, filter rail, mobile view toggle,
+   the list view, and the side detail panel. The map fills the frame. */
+html.embed .header,
+html.embed .filters,
+html.embed .view-switch,
+html.embed .list-view,
+html.embed .detail-panel {
+  display: none !important;
+}
+
+/* With the filter rail gone, the main grid is a single full-bleed column. */
+html.embed .main {
+  grid-template-columns: 1fr;
+}
+html.embed .content,
+html.embed .content.layout-map,
+html.embed .content.layout-detail {
+  grid-template-columns: 1fr !important;
+}
+
+/* CTA pill — only rendered in embed mode, anchored to the map-wrap. */
+.embed-cta {
+  display: none;
+}
+html.embed .embed-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: var(--teal);
+  color: #fff;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+  max-width: calc(100% - 28px);
+}
+html.embed .embed-cta:hover {
+  background: var(--teal-deep);
+  transform: translateX(-50%) translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+/* On narrow frames the legend (top-right) and CTA (bottom-center) don't
+   collide, but shrink the CTA text padding a touch for small embeds. */
+@media (max-width: 420px) {
+  html.embed .embed-cta {
+    font-size: 12px;
+    padding: 9px 14px;
+  }
+}

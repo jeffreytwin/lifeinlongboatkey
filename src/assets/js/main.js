@@ -21,11 +21,16 @@ import {
   initMap,
   renderMap,
   setHighlightedPin,
+  setHighlightedPolygon,
   focusCommunity,
   invalidateSize,
+  openPopupFor,
 } from './modules/map.js';
+import { getEmbedParams, findCommunityBySlug, fullMapUrl } from './modules/embed.js';
 
 const communities = getCommunities();
+const { embed, communitySlug } = getEmbedParams();
+const focusTarget = findCommunityBySlug(communities, communitySlug);
 
 const totalEl = document.getElementById('totalCount');
 if (totalEl) totalEl.textContent = String(communities.length);
@@ -99,48 +104,93 @@ function setLayout() {
   invalidateSize();
 }
 
-renderFilters(communities, apply);
-setupStaticControls(communities, { apply, setLayout });
+/**
+ * Full interactive map — the standalone app at lifeinlongboatkey.web.app.
+ * Filters, list, mobile view toggle, and the details panel.
+ */
+function bootFull() {
+  renderFilters(communities, apply);
+  setupStaticControls(communities, { apply, setLayout });
 
-// Close button for the details panel
-document.getElementById('detailClose')?.addEventListener('click', closeDetail);
+  // Close button for the details panel
+  document.getElementById('detailClose')?.addEventListener('click', closeDetail);
 
-// Mobile filters: open the full-screen overlay, then close it via Save.
-document.getElementById('filtersToggle')?.addEventListener('click', () => {
-  document.body.classList.add('filters-open');
-});
-document.getElementById('filtersSave')?.addEventListener('click', () => {
-  document.body.classList.remove('filters-open');
-  // After narrowing down, jump straight to the list so results are
-  // immediately scannable. (setView is mobile-only in effect; on
-  // desktop body.view-list toggles nothing visible.)
-  setView('list');
-});
+  // Mobile filters: open the full-screen overlay, then close it via Save.
+  document.getElementById('filtersToggle')?.addEventListener('click', () => {
+    document.body.classList.add('filters-open');
+  });
+  document.getElementById('filtersSave')?.addEventListener('click', () => {
+    document.body.classList.remove('filters-open');
+    // After narrowing down, jump straight to the list so results are
+    // immediately scannable. (setView is mobile-only in effect; on
+    // desktop body.view-list toggles nothing visible.)
+    setView('list');
+  });
 
-// Mobile view toggle (Map | List).
-document.getElementById('viewMapBtn')?.addEventListener('click', () => setView('map'));
-document.getElementById('viewListBtn')?.addEventListener('click', () => setView('list'));
-setListItemClickHandler(openDetail);
+  // Mobile view toggle (Map | List).
+  document.getElementById('viewMapBtn')?.addEventListener('click', () => setView('map'));
+  document.getElementById('viewListBtn')?.addEventListener('click', () => setView('list'));
+  setListItemClickHandler(openDetail);
 
-// Clicking the reference map in the details panel flies the big map
-// to that community's coordinates. On desktop the side-column detail
-// panel stays open and the user sees the flyTo on the visible map
-// column. On mobile the detail panel is a fullscreen overlay that
-// would hide the flyTo entirely, so close it first.
-const IS_TOUCH = !(window.matchMedia && window.matchMedia('(hover: hover)').matches);
-setLocateOnMapHandler((community) => {
-  if (IS_TOUCH) closeDetail();
-  if (state.view !== 'map') setView('map');
-  // Let the map container remeasure from the view swap before flying.
-  // Zoom near the maximum (18) so the user lands almost-fully-zoomed
-  // on the community, and give the animation a slightly longer arc
-  // since we may be traveling a greater zoom distance.
-  setTimeout(() => focusCommunity(community, { zoom: 17, duration: 850 }), 140);
-});
+  // Clicking the reference map in the details panel flies the big map
+  // to that community's coordinates. On desktop the side-column detail
+  // panel stays open and the user sees the flyTo on the visible map
+  // column. On mobile the detail panel is a fullscreen overlay that
+  // would hide the flyTo entirely, so close it first.
+  const IS_TOUCH = !(window.matchMedia && window.matchMedia('(hover: hover)').matches);
+  setLocateOnMapHandler((community) => {
+    if (IS_TOUCH) closeDetail();
+    if (state.view !== 'map') setView('map');
+    // Let the map container remeasure from the view swap before flying.
+    // Zoom near the maximum (18) so the user lands almost-fully-zoomed
+    // on the community, and give the animation a slightly longer arc
+    // since we may be traveling a greater zoom distance.
+    setTimeout(() => focusCommunity(community, { zoom: 17, duration: 850 }), 140);
+  });
 
-initMap(communities, {
-  onSelect: openDetail,
-  neighborhoodPolygons: getNeighborhoodPolygons(),
-});
+  initMap(communities, {
+    onSelect: openDetail,
+    neighborhoodPolygons: getNeighborhoodPolygons(),
+    // Deep-link: ?community=<slug> opens that community's detail panel,
+    // focused, once the map is ready.
+    onReady: () => { if (focusTarget) openDetail(focusTarget); },
+  });
 
-apply();
+  apply();
+}
+
+/**
+ * Embed mode — the chrome-less single-community view dropped into a Wix
+ * location page via <iframe src="…?embed=1&community=<slug>">. All 107
+ * communities still render for spatial context, but one is highlighted and
+ * the map flies to it; clicking any pin opens a popup (no side panel), and a
+ * CTA links out to the full map pre-focused on the same community.
+ */
+function bootEmbed() {
+  // The inline head script already added this before first paint; mirror it
+  // here so embed mode is self-contained even if that script is removed.
+  document.documentElement.classList.add('embed');
+
+  const cta = document.getElementById('embedCta');
+  if (cta) cta.href = fullMapUrl(focusTarget);
+
+  initMap(communities, {
+    onSelect: (community) => openPopupFor(community),
+    neighborhoodPolygons: getNeighborhoodPolygons(),
+    onReady: () => {
+      if (!focusTarget) return;
+      focusCommunity(focusTarget, {
+        // Neighborhoods read as areas — pull back a touch so the whole
+        // polygon is in frame; condos are points, so go in tighter.
+        zoom: focusTarget.type === 'neighborhood' ? 14.5 : 15.5,
+        duration: 0,
+      });
+      setHighlightedPin(focusTarget.name);
+      setHighlightedPolygon(focusTarget.name);
+      openPopupFor(focusTarget);
+    },
+  });
+}
+
+if (embed) bootEmbed();
+else bootFull();
