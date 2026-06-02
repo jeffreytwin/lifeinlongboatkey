@@ -54,16 +54,21 @@
   letter-spacing: 0.04em;
 }
 .pin-condo.highlighted {
+  background: var(--selected);
+  border-color: #fff;
   transform: rotate(-45deg) scale(1.35);
   z-index: 1000 !important;
   box-shadow: 0 3px 10px rgba(0,0,0,.4);
 }
+/* Dark glyph on the bright gold pin — white 'C' washes out on gold. */
+.pin-condo.highlighted .pin-inner { color: var(--selected-deep); }
 .pin-nbhd.highlighted {
   transform: scale(1.15);
-  background: rgba(224, 122, 26, 0.50);
-  border-color: #A05816;
+  background: rgba(244, 180, 0, 0.50);
+  border-color: var(--selected-deep);
   z-index: 1000 !important;
 }
+.pin-nbhd.highlighted .pin-inner { color: var(--selected-deep); }
 
 /* Zone bubbles — the big category markers shown at low zoom */
 .zone-bubble {

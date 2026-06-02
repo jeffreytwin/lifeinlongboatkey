@@ -37,7 +37,10 @@ if (totalEl) totalEl.textContent = String(communities.length);
 
 function highlight(name) {
   state.highlightedName = name;
+  // A community is either a marker (condo / polygon-less neighborhood) or a
+  // polygon — drive both; each is a no-op for the type it doesn't apply to.
   setHighlightedPin(name);
+  setHighlightedPolygon(name);
 }
 
 /**

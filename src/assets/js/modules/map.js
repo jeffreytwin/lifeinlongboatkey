@@ -172,7 +172,12 @@ function addNeighborhoodPolygons() {
     paint: {
       // Brighter orange (vs. the brand gold) so the fill reads as
       // "orange" on the cream basemap instead of a yellow smudge.
-      'fill-color': '#E07A1A',
+      // Selected polygons switch to the gold selection color.
+      'fill-color': [
+        'case',
+        ['boolean', ['feature-state', 'highlight'], false], '#F4B400',
+        '#E07A1A',
+      ],
       'fill-opacity': [
         'case',
         ['boolean', ['feature-state', 'highlight'], false], 0.66,
@@ -186,7 +191,11 @@ function addNeighborhoodPolygons() {
     type: 'line',
     source: NBHD_SOURCE_ID,
     paint: {
-      'line-color': '#A05816',  // darker orange to match the brighter fill
+      'line-color': [
+        'case',
+        ['boolean', ['feature-state', 'highlight'], false], '#B5850B',  // deep gold for selected
+        '#A05816',  // darker orange to match the brighter fill
+      ],
       'line-width': [
         'case',
         ['boolean', ['feature-state', 'highlight'], false], 3,

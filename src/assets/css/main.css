@@ -21,6 +21,11 @@
   --coral: #E6A039;
   --coral-deep: #A87A1A;
   --coral-soft: #FAE6C7;
+  /* Selection highlight — applied to the currently-selected pin/polygon.
+     Brighter + yellower than the neighborhood orange so a selected
+     neighborhood still reads as distinct. */
+  --selected: #F4B400;
+  --selected-deep: #B5850B;
   --sand: #EFE5CC;
   --gulf: #2A8E78;
   --bay: #3A6EA5;
