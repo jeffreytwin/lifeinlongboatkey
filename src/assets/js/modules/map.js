@@ -175,7 +175,7 @@ function addNeighborhoodPolygons() {
       // Selected polygons switch to the gold selection color.
       'fill-color': [
         'case',
-        ['boolean', ['feature-state', 'highlight'], false], '#C2410C',  // --selected (deep burnt orange)
+        ['boolean', ['feature-state', 'highlight'], false], '#C2660F',  // --selected (darker orange)
         '#E07A1A',
       ],
       'fill-opacity': [
@@ -193,7 +193,7 @@ function addNeighborhoodPolygons() {
     paint: {
       'line-color': [
         'case',
-        ['boolean', ['feature-state', 'highlight'], false], '#7C2D0A',  // --selected-deep for selected
+        ['boolean', ['feature-state', 'highlight'], false], '#8A4708',  // --selected-deep for selected
         '#A05816',  // darker orange to match the brighter fill
       ],
       'line-width': [
