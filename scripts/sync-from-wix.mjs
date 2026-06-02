@@ -426,7 +426,7 @@ for (const raw of all) {
     priceRange: field(item, 'priceRange', 'Price Range'),
     sqft: field(item, 'squareFeet', 'sqft', 'Square Feet'),
     bedrooms: field(item, 'bedroomRange', 'bedrooms', 'Bedrooms'),
-    youtubeUrl: field(item, 'youtubeVideo', 'youtubeUrl', 'YouTube Video') || undefined,
+    youtubeUrl: field(item, 'youtubeVideo', 'youTubeVideo', 'youtubeUrl', 'youTubeUrl', 'YouTube Video') || undefined,
     pageUrl: field(item, 'link-villages-title', 'link-houses-for-sale-dynamic-pages-title', 'pageUrl', 'slug') || undefined,
     // images / imageUrl resolved below from visualTourGallery →
     // topBackgroundImage. Assigned outside `updates` so empty results
