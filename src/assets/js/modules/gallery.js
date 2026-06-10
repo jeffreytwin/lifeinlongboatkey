@@ -10,9 +10,10 @@
  * When there's only one image the arrows and dots hide themselves so the
  * rendered output looks identical to a plain hero photo.
  *
- * On pointer devices (desktop), clicking the gallery opens a fullscreen
- * lightbox showing the same images with arrow/keyboard navigation. The
- * lightbox is skipped when there's only one image and on touch devices.
+ * Clicking (or tapping) the gallery opens a fullscreen lightbox showing
+ * the same images with arrow/keyboard navigation on desktop and swipe
+ * navigation on touch devices. The lightbox is skipped when there's only
+ * one image.
  */
 
 import { escapeHtml, communityPhotoUrl, wixImageUrl, IMG_SIZES } from './utils.js';
@@ -136,9 +137,13 @@ export function wireGallery(root) {
   const SWIPE_THRESHOLD = 40;
   let touchStartX = 0;
   let touchStartY = 0;
+  // A swipe can also fire a click on touchend in some browsers; this flag
+  // keeps that click from opening the lightbox.
+  let suppressClick = false;
   gallery.addEventListener(
     'touchstart',
     (e) => {
+      suppressClick = false;
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
     },
@@ -151,37 +156,39 @@ export function wireGallery(root) {
       const dy = e.changedTouches[0].clientY - touchStartY;
       // Only treat mostly-horizontal gestures as swipes.
       if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
+      suppressClick = true;
       if (dx < 0) go(current + 1);
       else go(current - 1);
     },
     { passive: true },
   );
 
-  // Desktop-only fullscreen lightbox. Touch devices already get the
-  // swipe carousel inline; tapping to open a separate viewer would
-  // collide with that gesture and feels redundant on a small screen.
-  if (CAN_HOVER) {
-    gallery.classList.add('is-zoomable');
-    gallery.addEventListener('click', (e) => {
-      // Arrows and dots already stopPropagation, so this click only
-      // fires on the slide area itself.
-      if (e.target.closest('.gallery-arrow, .gallery-dot')) return;
-      const images = [...gallery.querySelectorAll('.gallery-slide img')]
-        .map((img) => ({
-          hero: img.getAttribute('src'),
-          full: img.getAttribute('data-full') || img.getAttribute('src'),
-        }))
-        .filter((it) => it.hero && it.full);
-      openLightbox(images, current);
-    });
-  }
+  // Click/tap anywhere on the slide area opens the fullscreen lightbox.
+  // The zoom cursor only makes sense on pointer devices.
+  if (CAN_HOVER) gallery.classList.add('is-zoomable');
+  gallery.addEventListener('click', (e) => {
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
+    // Arrows and dots already stopPropagation, so this click only
+    // fires on the slide area itself.
+    if (e.target.closest('.gallery-arrow, .gallery-dot')) return;
+    const images = [...gallery.querySelectorAll('.gallery-slide img')]
+      .map((img) => ({
+        hero: img.getAttribute('src'),
+        full: img.getAttribute('data-full') || img.getAttribute('src'),
+      }))
+      .filter((it) => it.hero && it.full);
+    openLightbox(images, current);
+  });
 }
 
 /**
  * Open a fullscreen lightbox over the current page showing `images`
  * (array of { hero, full } URL pairs) starting at `startIndex`. Closes
  * on backdrop click, the × button, or Escape; navigates with arrow
- * buttons or ←/→ keys.
+ * buttons, ←/→ keys, or horizontal swipes on touch devices.
  *
  * Loading strategy: the hero variant is already in the browser cache
  * (the gallery just displayed it), so it paints instantly — slightly
@@ -289,8 +296,42 @@ function openLightbox(images, startIndex) {
     e.stopPropagation();
     show(idx + 1);
   });
+  // Touch swipe — mirrors the inline gallery gesture. swiped also keeps
+  // the click some browsers fire after touchend from closing the
+  // lightbox when a swipe ends over the backdrop.
+  const SWIPE_THRESHOLD = 40;
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let swiped = false;
+  box.addEventListener(
+    'touchstart',
+    (e) => {
+      swiped = false;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    },
+    { passive: true },
+  );
+  box.addEventListener(
+    'touchend',
+    (e) => {
+      if (!multi) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
+      swiped = true;
+      if (dx < 0) show(idx + 1);
+      else show(idx - 1);
+    },
+    { passive: true },
+  );
+
   box.addEventListener('click', (e) => {
     // Click on the backdrop (not on the image / buttons) closes.
+    if (swiped) {
+      swiped = false;
+      return;
+    }
     if (e.target === box) close();
   });
   document.addEventListener('keydown', onKey);
