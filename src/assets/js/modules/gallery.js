@@ -34,6 +34,19 @@ export function galleryImagesFor(community) {
 }
 
 /**
+ * Lightbox image size, capped at the user's actual screen so a laptop
+ * never downloads more pixels than it can show. Rounded up to a 320px
+ * step so visitors with similar screens share the same CDN-cached
+ * variant. IMG_SIZES.full is the upper bound.
+ */
+function lightboxImgSize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const px = Math.max(window.screen.width, window.screen.height) * dpr;
+  const w = Math.min(IMG_SIZES.full.w, Math.ceil(px / 320) * 320);
+  return { ...IMG_SIZES.full, w, h: w };
+}
+
+/**
  * Render the gallery HTML for a community. Caller should append it to
  * the detail-content element before calling wireGallery(root) to attach
  * the click/keyboard handlers.
@@ -41,14 +54,15 @@ export function galleryImagesFor(community) {
 export function galleryHtml(community) {
   const images = galleryImagesFor(community);
   const multi = images.length > 1;
-  // Slides render the hero-sized variant; the original-quality URL rides
-  // along in data-full so the lightbox can show it uncropped.
+  // Slides render the hero-sized variant; the lightbox-quality URL rides
+  // along in data-full so fullscreen view can show it uncropped.
+  const fullSize = lightboxImgSize();
   const slides = images
     .map(
       (url, i) => `
       <li class="gallery-slide${i === 0 ? ' is-active' : ''}" data-idx="${i}">
         <img src="${escapeHtml(wixImageUrl(url, IMG_SIZES.hero))}"
-             data-full="${escapeHtml(wixImageUrl(url, IMG_SIZES.full))}"
+             data-full="${escapeHtml(wixImageUrl(url, fullSize))}"
              alt="" decoding="async" ${i === 0 ? '' : 'loading="lazy"'} />
       </li>`,
     )
@@ -153,8 +167,11 @@ export function wireGallery(root) {
       // fires on the slide area itself.
       if (e.target.closest('.gallery-arrow, .gallery-dot')) return;
       const images = [...gallery.querySelectorAll('.gallery-slide img')]
-        .map((img) => img.getAttribute('data-full') || img.getAttribute('src'))
-        .filter(Boolean);
+        .map((img) => ({
+          hero: img.getAttribute('src'),
+          full: img.getAttribute('data-full') || img.getAttribute('src'),
+        }))
+        .filter((it) => it.hero && it.full);
       openLightbox(images, current);
     });
   }
@@ -162,14 +179,25 @@ export function wireGallery(root) {
 
 /**
  * Open a fullscreen lightbox over the current page showing `images`
- * starting at `startIndex`. Closes on backdrop click, the × button, or
- * Escape; navigates with arrow buttons or ←/→ keys.
+ * (array of { hero, full } URL pairs) starting at `startIndex`. Closes
+ * on backdrop click, the × button, or Escape; navigates with arrow
+ * buttons or ←/→ keys.
+ *
+ * Loading strategy: the hero variant is already in the browser cache
+ * (the gallery just displayed it), so it paints instantly — slightly
+ * blurred — while the full-resolution variant loads behind it and
+ * sharpens in on arrival. Once the current image lands, its neighbors
+ * are prefetched so arrowing through the gallery is instant. A small
+ * spinner sits behind the image as a fallback for the cold-cache case
+ * where even the hero hasn't painted yet.
  */
 function openLightbox(images, startIndex) {
   if (!images.length) return;
 
-  let idx = ((startIndex % images.length) + images.length) % images.length;
-  const multi = images.length > 1;
+  const count = images.length;
+  const norm = (i) => ((i % count) + count) % count;
+  let idx = norm(startIndex);
+  const multi = count > 1;
 
   const box = document.createElement('div');
   box.className = 'lightbox';
@@ -178,9 +206,9 @@ function openLightbox(images, startIndex) {
   box.innerHTML = `
     <button type="button" class="lightbox-close" aria-label="Close">×</button>
     ${multi ? `<button type="button" class="lightbox-arrow lightbox-arrow-prev" aria-label="Previous image">‹</button>` : ''}
-    <img class="lightbox-img" src="${escapeHtml(images[idx])}" alt="" />
+    <img class="lightbox-img" alt="" decoding="async" />
     ${multi ? `<button type="button" class="lightbox-arrow lightbox-arrow-next" aria-label="Next image">›</button>` : ''}
-    ${multi ? `<div class="lightbox-count" aria-live="polite">${idx + 1} / ${images.length}</div>` : ''}
+    ${multi ? `<div class="lightbox-count" aria-live="polite"></div>` : ''}
   `;
   document.body.appendChild(box);
   document.body.classList.add('lightbox-open');
@@ -188,10 +216,56 @@ function openLightbox(images, startIndex) {
   const img = box.querySelector('.lightbox-img');
   const counter = box.querySelector('.lightbox-count');
 
-  const update = (i) => {
-    idx = ((i % images.length) + images.length) % images.length;
-    img.src = images[idx];
-    if (counter) counter.textContent = `${idx + 1} / ${images.length}`;
+  // Full-res URLs that have finished downloading (so revisits skip the
+  // blur-up) and ones already requested (so we never fetch twice).
+  const loadedFull = new Set();
+  const requested = new Set();
+
+  const prefetch = (i) => {
+    const url = images[norm(i)].full;
+    if (requested.has(url)) return;
+    requested.add(url);
+    const im = new Image();
+    im.onload = () => loadedFull.add(url);
+    im.src = url;
+  };
+
+  // Guards against an out-of-order onload overwriting a newer slide
+  // when the user arrows past a still-loading image.
+  let token = 0;
+
+  const show = (i) => {
+    idx = norm(i);
+    const t = ++token;
+    const { hero, full } = images[idx];
+    if (counter) counter.textContent = `${idx + 1} / ${count}`;
+
+    if (full === hero || loadedFull.has(full)) {
+      box.classList.remove('is-loading');
+      img.classList.remove('is-preview');
+      img.src = full;
+      if (multi) { prefetch(idx + 1); prefetch(idx - 1); }
+      return;
+    }
+
+    box.classList.add('is-loading');
+    img.classList.add('is-preview');
+    img.src = hero;
+    requested.add(full);
+    const loader = new Image();
+    loader.onload = () => {
+      loadedFull.add(full);
+      if (t !== token) return;
+      img.src = full;
+      img.classList.remove('is-preview');
+      box.classList.remove('is-loading');
+      if (multi) { prefetch(idx + 1); prefetch(idx - 1); }
+    };
+    loader.onerror = () => {
+      // Keep showing the hero rather than an empty frame.
+      if (t === token) box.classList.remove('is-loading');
+    };
+    loader.src = full;
   };
 
   const close = () => {
@@ -202,22 +276,24 @@ function openLightbox(images, startIndex) {
 
   const onKey = (e) => {
     if (e.key === 'Escape') close();
-    else if (multi && e.key === 'ArrowLeft') update(idx - 1);
-    else if (multi && e.key === 'ArrowRight') update(idx + 1);
+    else if (multi && e.key === 'ArrowLeft') show(idx - 1);
+    else if (multi && e.key === 'ArrowRight') show(idx + 1);
   };
 
   box.querySelector('.lightbox-close').addEventListener('click', close);
   box.querySelector('.lightbox-arrow-prev')?.addEventListener('click', (e) => {
     e.stopPropagation();
-    update(idx - 1);
+    show(idx - 1);
   });
   box.querySelector('.lightbox-arrow-next')?.addEventListener('click', (e) => {
     e.stopPropagation();
-    update(idx + 1);
+    show(idx + 1);
   });
   box.addEventListener('click', (e) => {
     // Click on the backdrop (not on the image / buttons) closes.
     if (e.target === box) close();
   });
   document.addEventListener('keydown', onKey);
+
+  show(idx);
 }
