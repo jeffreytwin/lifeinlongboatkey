@@ -46,6 +46,45 @@ export function communityPhotoUrl(c) {
     : '/images/placeholder-neighborhood.jpg';
 }
 
+/**
+ * Standard image sizes, sized at 2× their largest rendered box so they
+ * stay crisp on retina displays. Reusing the same preset across surfaces
+ * (cards, hover card, popup) means the browser fetches each photo once
+ * and serves the rest from cache.
+ */
+export const IMG_SIZES = {
+  card: { w: 640, h: 480 },
+  hero: { w: 880, h: 440 },
+  full: { w: 1920, h: 1920, q: 85, mode: 'fit' },
+};
+
+const WIX_MEDIA_RE = /^https:\/\/static\.wixstatic\.com\/media\/([^/?#]+)/;
+
+/**
+ * Rewrite a Wix media URL to a CDN-resized variant. A bare
+ * `…/media/<id>~mv2.jpg` URL serves the original multi-MB upload; appending
+ * a transform path makes Wix's CDN resize/re-encode on the fly (`enc_auto`
+ * negotiates WebP/AVIF). Non-Wix URLs (e.g. local placeholders) pass
+ * through untouched.
+ *
+ * `mode: 'fill'` (default) center-crops to exactly w×h — right for
+ * object-fit:cover thumbnails. `mode: 'fit'` bounds the image within w×h
+ * without cropping — right for the lightbox.
+ */
+export function wixImageUrl(url, { w, h, q = 80, mode = 'fill' } = {}) {
+  if (typeof url !== 'string' || !w || !h) return url;
+  const m = url.match(WIX_MEDIA_RE);
+  if (!m) return url;
+  const op = mode === 'fit' ? 'fit' : 'fill';
+  const crop = op === 'fill' ? ',al_c' : '';
+  return `https://static.wixstatic.com/media/${m[1]}/v1/${op}/w_${w},h_${h}${crop},q_${q},enc_auto/${m[1]}`;
+}
+
+/** Card/list/hover-sized photo for a community (cache-friendly shared size). */
+export function communityThumbUrl(c) {
+  return wixImageUrl(communityPhotoUrl(c), IMG_SIZES.card);
+}
+
 /** Escape a string for safe use inside an HTML attribute or text node. */
 export function escapeHtml(str) {
   return String(str)

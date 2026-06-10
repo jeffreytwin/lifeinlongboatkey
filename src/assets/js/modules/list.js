@@ -7,7 +7,7 @@
  * and closes via the X button in the panel header.
  */
 
-import { locationLabel, escapeHtml, communityPhotoUrl, youtubeEmbedUrl, staticMapUrl } from './utils.js';
+import { locationLabel, escapeHtml, communityThumbUrl, wixImageUrl, IMG_SIZES, youtubeEmbedUrl, staticMapUrl } from './utils.js';
 import { AMENITY_ICONS, filteredAmenities } from './amenityIcons.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
@@ -39,7 +39,7 @@ export function renderMobileList(list) {
       return `
       <li class="list-view-item" data-name="${escapeHtml(c.name)}">
         <div class="list-view-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
-          <img src="${escapeHtml(communityPhotoUrl(c))}" alt="" loading="lazy" />
+          <img src="${escapeHtml(communityThumbUrl(c))}" alt="" loading="lazy" decoding="async" />
         </div>
         <div class="list-view-body">
           <div class="list-view-meta">
@@ -77,7 +77,7 @@ function renderListings(community) {
         ? (/^https?:/.test(l.url) ? l.url : baseHost + l.url)
         : null;
       const photo = l.image
-        ? `<div class="listing-card-photo"><img src="${escapeHtml(l.image)}" alt="" loading="lazy" /></div>`
+        ? `<div class="listing-card-photo"><img src="${escapeHtml(wixImageUrl(l.image, IMG_SIZES.card))}" alt="" loading="lazy" decoding="async" /></div>`
         : '<div class="listing-card-photo listing-card-photo-empty" aria-hidden="true"></div>';
       const metaBits = [
         l.beds != null ? `${l.beds} bd` : null,

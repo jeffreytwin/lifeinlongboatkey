@@ -15,7 +15,7 @@
 
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { locationLabel, escapeHtml, communityPhotoUrl } from './utils.js';
+import { locationLabel, escapeHtml, communityThumbUrl } from './utils.js';
 
 const SOURCE_ID = 'communities';
 const CLUSTER_LAYER_ID = 'clusters';
@@ -472,7 +472,7 @@ function showHoverCard(c, evt) {
   if (!card) return;
   card.innerHTML = `
     <div class="hover-card-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
-      <img src="${escapeHtml(communityPhotoUrl(c))}" alt="" />
+      <img src="${escapeHtml(communityThumbUrl(c))}" alt="" decoding="async" />
     </div>
     <div class="hover-card-body">
       <div class="hover-card-name">${escapeHtml(c.name)}</div>
@@ -565,7 +565,7 @@ export function openPopupFor(c) {
   if (currentPopup) currentPopup.remove();
   const html = `
     <div class="popup-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
-      <img src="${escapeHtml(communityPhotoUrl(c))}" alt="" loading="lazy" />
+      <img src="${escapeHtml(communityThumbUrl(c))}" alt="" loading="lazy" decoding="async" />
     </div>
     <div class="popup-title">${escapeHtml(c.name)}</div>
     <div class="popup-sub">${c.type === 'condo' ? 'Condo Community' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}</div>
