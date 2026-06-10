@@ -15,7 +15,7 @@
  * lightbox is skipped when there's only one image and on touch devices.
  */
 
-import { escapeHtml, communityPhotoUrl } from './utils.js';
+import { escapeHtml, communityPhotoUrl, wixImageUrl, IMG_SIZES } from './utils.js';
 
 const CAN_HOVER =
   typeof window !== 'undefined' &&
@@ -41,11 +41,15 @@ export function galleryImagesFor(community) {
 export function galleryHtml(community) {
   const images = galleryImagesFor(community);
   const multi = images.length > 1;
+  // Slides render the hero-sized variant; the original-quality URL rides
+  // along in data-full so the lightbox can show it uncropped.
   const slides = images
     .map(
       (url, i) => `
       <li class="gallery-slide${i === 0 ? ' is-active' : ''}" data-idx="${i}">
-        <img src="${escapeHtml(url)}" alt="" ${i === 0 ? '' : 'loading="lazy"'} />
+        <img src="${escapeHtml(wixImageUrl(url, IMG_SIZES.hero))}"
+             data-full="${escapeHtml(wixImageUrl(url, IMG_SIZES.full))}"
+             alt="" decoding="async" ${i === 0 ? '' : 'loading="lazy"'} />
       </li>`,
     )
     .join('');
@@ -149,7 +153,7 @@ export function wireGallery(root) {
       // fires on the slide area itself.
       if (e.target.closest('.gallery-arrow, .gallery-dot')) return;
       const images = [...gallery.querySelectorAll('.gallery-slide img')]
-        .map((img) => img.getAttribute('src'))
+        .map((img) => img.getAttribute('data-full') || img.getAttribute('src'))
         .filter(Boolean);
       openLightbox(images, current);
     });
