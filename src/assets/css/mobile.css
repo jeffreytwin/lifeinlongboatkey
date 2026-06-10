@@ -181,4 +181,11 @@
     font-size: 24px;
   }
   .detail-gallery { height: auto; aspect-ratio: 16 / 9; max-height: 50vh; }
+
+  /* Fullscreen lightbox — shrink the desktop letterbox padding so the
+     photo uses the small screen, and drop the arrows (swipe is the
+     navigation gesture here, same as the inline gallery). Top/bottom
+     padding clears the × button and the image counter. */
+  .lightbox { padding: 64px 12px; }
+  .lightbox-arrow { display: none; }
 }
