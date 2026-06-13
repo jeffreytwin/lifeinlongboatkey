@@ -162,6 +162,36 @@
 .legend-condo { background: var(--teal); }
 .legend-nbhd { background: var(--coral); }
 
+/* "Map | Satellite" basemap toggle (custom Mapbox control, bottom-right).
+   Segmented pill matching the app palette; active segment is teal. */
+.basemap-toggle {
+  display: flex;
+  background: #FFFFFF;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  font-family: 'Manrope', sans-serif;
+}
+.basemap-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.basemap-btn + .basemap-btn { border-left: 1px solid var(--rule); }
+.basemap-btn:hover { background: rgba(42, 142, 120, 0.08); }
+.basemap-btn.is-active {
+  background: var(--teal);
+  color: #FFFFFF;
+}
+
 /* Hover card — small preview that follows the cursor over pins/polygons */
 .hover-card {
   position: absolute;
