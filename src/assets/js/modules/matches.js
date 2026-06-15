@@ -71,53 +71,56 @@ export function mapListingHomeType(listingType, communityTypes) {
   return label;
 }
 
+/** True when any filter that applies at the individual-listing level is
+ *  active. Amenities / Location / 55+ / Community Type are community
+ *  attributes and aren't listing-level, so they're deliberately excluded. */
+export function hasListingLevelFilters() {
+  return state.priceTiers.size > 0 || state.homeTypes.size > 0 || state.bedrooms.size > 0;
+}
+
+/** Does ONE listing satisfy ALL active listing-level filters at once?
+ *  (Combined, not per-category — a single home must match the chosen price
+ *  tier AND home type AND bedroom count.) Shared by the community matcher
+ *  and the detail-panel listing filter so they can never disagree. */
+export function listingMatchesActiveFilters(l) {
+  if (state.priceTiers.size) {
+    const tier = priceToTier(l.price);
+    if (!tier || !state.priceTiers.has(tier)) return false;
+  }
+  if (state.homeTypes.size) {
+    const mapped = mapListingHomeType(l.homeType);
+    if (!mapped || !state.homeTypes.has(mapped)) return false;
+  }
+  if (state.bedrooms.size) {
+    if (l.beds == null || !state.bedrooms.has(String(l.beds))) return false;
+  }
+  return true;
+}
+
 export function matches(c) {
   if (state.type !== 'all' && c.type !== state.type) return false;
   if (state.locations.size && !state.locations.has(c.location)) return false;
   if (state.waterfronts.size && !c.waterfront.some((w) => state.waterfronts.has(w))) return false;
-  // Price tiers — when 'Currently for sale' is on AND we have per-listing
-  // detail, bucket each listing's numeric price into a tier and match.
-  // Falls back to the community's broader priceTiers otherwise.
-  if (state.priceTiers.size) {
+
+  // Listing-level filters (price / beds / home type).
+  //  - 'Currently for sale' ON: the community must have at least one active
+  //    listing matching ALL active listing-level filters combined. No match
+  //    (or no active homes) → excluded.
+  //  - 'Currently for sale' OFF: a community with active homes is never
+  //    excluded by these filters — it's surfaced and filtered inside the
+  //    detail panel instead. Communities with no active homes fall back to
+  //    their broader community-level tags.
+  if (hasListingLevelFilters()) {
     const items = c.activeListings?.items;
-    if (state.hasListingsOnly && Array.isArray(items) && items.length) {
-      const ok = items.some((it) => {
-        const tier = priceToTier(it.price);
-        return tier && state.priceTiers.has(tier);
-      });
-      if (!ok) return false;
-    } else if (!c.priceTiers.some((t) => state.priceTiers.has(t))) {
-      return false;
+    const hasActiveHomes = Array.isArray(items) && items.length > 0;
+    if (state.hasListingsOnly) {
+      if (!hasActiveHomes || !items.some(listingMatchesActiveFilters)) return false;
+    } else if (!hasActiveHomes) {
+      if (state.priceTiers.size && !c.priceTiers.some((t) => state.priceTiers.has(t))) return false;
+      if (state.homeTypes.size && !c.homeTypes.some((t) => state.homeTypes.has(t))) return false;
+      if (state.bedrooms.size && !c.bedTags.some((t) => state.bedrooms.has(t))) return false;
     }
-  }
-  // Home types — same listings-aware pattern. Listings' homeType field
-  // tends to be singular ("Condominium") where the community is plural
-  // ("Condominiums"); mapListingHomeType bridges the two vocabularies.
-  if (state.homeTypes.size) {
-    const items = c.activeListings?.items;
-    if (state.hasListingsOnly && Array.isArray(items) && items.length) {
-      const ok = items.some((it) => {
-        const mapped = mapListingHomeType(it.homeType, c.homeTypes);
-        return mapped && state.homeTypes.has(mapped);
-      });
-      if (!ok) return false;
-    } else if (!c.homeTypes.some((t) => state.homeTypes.has(t))) {
-      return false;
-    }
-  }
-  // Bedrooms — when 'Currently for sale' is on AND we have per-listing
-  // detail, match against the actual active listings' bedroom counts
-  // rather than the community's broader bedroomRange. Otherwise the
-  // filter says "match this community because some 4-bed home exists
-  // here" but the panel only shows a 3-bed listing.
-  if (state.bedrooms.size) {
-    const items = c.activeListings?.items;
-    if (state.hasListingsOnly && Array.isArray(items) && items.length) {
-      const ok = items.some((it) => it.beds != null && state.bedrooms.has(String(it.beds)));
-      if (!ok) return false;
-    } else if (!c.bedTags.some((t) => state.bedrooms.has(t))) {
-      return false;
-    }
+    // OFF + has active homes → always included.
   }
   // Amenities use AND: a community must have every checked amenity.
   // All other multi-select filters are OR (a property can only be in one
