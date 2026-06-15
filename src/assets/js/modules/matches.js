@@ -78,6 +78,10 @@ export function hasListingLevelFilters() {
   return state.priceTiers.size > 0 || state.homeTypes.size > 0 || state.bedrooms.size > 0;
 }
 
+/** Highest bedroom chip. The top chip is treated as "this many or more", so
+ *  a 6-bedroom listing matches a "5" selection (chips are ['1'..'5']). */
+const BEDROOM_MAX = 5;
+
 /** Does ONE listing satisfy ALL active listing-level filters at once?
  *  (Combined, not per-category — a single home must match the chosen price
  *  tier AND home type AND bedroom count.) Shared by the community matcher
@@ -92,7 +96,9 @@ export function listingMatchesActiveFilters(l) {
     if (!mapped || !state.homeTypes.has(mapped)) return false;
   }
   if (state.bedrooms.size) {
-    if (l.beds == null || !state.bedrooms.has(String(l.beds))) return false;
+    if (l.beds == null) return false;
+    // Clamp to the top chip so "5" includes 5, 6, 7+ bedrooms.
+    if (!state.bedrooms.has(String(Math.min(l.beds, BEDROOM_MAX)))) return false;
   }
   return true;
 }
