@@ -81,9 +81,9 @@ Current order in the sidebar (index.html):
 1. **Community Type** (pill buttons, front and center) — All / Neighborhoods / Condos
 2. **Price** (chip buckets — deliberately NOT a slider) — Under $500K / $500K–$1M / $1M–$2M / $2M–$5M / $5M–$10M / $10M–$15M / $15M+
 3. **Home Type** (checkboxes) — Condominiums / Single Family Homes / Villas / Townhomes
-4. **Amenities** (checkboxes, sorted by frequency) — **AND semantics**: community must have every checked amenity
-5. **Location on Island** (checkboxes) — North End / Mid-Key / South End
-6. **Bedrooms** (chip selector) — 1 / 2 / 3 / 4 / 5
+4. **Bedrooms** (chip selector) — 1 / 2 / 3 / 4 / 5
+5. **Amenities** (checkboxes, sorted by frequency) — **AND semantics**: community must have every checked amenity
+6. **Location on Island** (checkboxes) — North End / Mid-Key / South End
 7. **55+ Community** (toggle)
 
 All multi-select filters are OR (any match) **except Amenities**, which is AND (all must match).

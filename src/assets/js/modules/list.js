@@ -77,7 +77,7 @@ function renderListings(community) {
         ? (/^https?:/.test(l.url) ? l.url : baseHost + l.url)
         : null;
       const photo = l.image
-        ? `<div class="listing-card-photo"><img src="${escapeHtml(wixImageUrl(l.image, IMG_SIZES.card))}" alt="" loading="lazy" decoding="async" /></div>`
+        ? `<div class="listing-card-photo"><img src="${escapeHtml(wixImageUrl(l.image, IMG_SIZES.listing))}" alt="" loading="lazy" decoding="async" /></div>`
         : '<div class="listing-card-photo listing-card-photo-empty" aria-hidden="true"></div>';
       const metaBits = [
         l.beds != null ? `${l.beds} bd` : null,
