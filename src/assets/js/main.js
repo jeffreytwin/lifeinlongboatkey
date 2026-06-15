@@ -14,6 +14,7 @@ import {
   showDetail,
   hideDetail,
   renderMobileList,
+  refreshOpenDetailListings,
   setListItemClickHandler,
   setLocateOnMapHandler,
 } from './modules/list.js';
@@ -81,9 +82,12 @@ function apply() {
 
   // If the currently-selected community is no longer in the filtered set,
   // close the detail panel to avoid showing a community that's been
-  // filtered out.
+  // filtered out. Otherwise, if it's still showing, refresh its listings
+  // so they reflect the new filters without needing a re-click.
   if (state.selectedCommunity && !filtered.some((c) => c.name === state.selectedCommunity.name)) {
     closeDetail();
+  } else if (state.selectedCommunity) {
+    refreshOpenDetailListings();
   }
 }
 

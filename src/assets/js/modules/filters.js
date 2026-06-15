@@ -192,7 +192,7 @@ function renderChecklist(containerId, options, counts, stateSet, onChange) {
  * @param {Set<string>} stateSet
  * @param {() => void} onChange
  */
-function renderChips(containerId, options, counts, stateSet, onChange) {
+function renderChips(containerId, options, counts, stateSet, onChange, labelFn) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = '';
@@ -204,7 +204,8 @@ function renderChips(containerId, options, counts, stateSet, onChange) {
       'chip' +
       (stateSet.has(opt) ? ' active' : '') +
       (count === 0 ? ' is-zero' : '');
-    btn.innerHTML = `${escapeHtml(opt)}<span class="count">${count}</span>`;
+    const label = labelFn ? labelFn(opt) : opt;
+    btn.innerHTML = `${escapeHtml(label)}<span class="count">${count}</span>`;
     btn.addEventListener('click', () => {
       if (count === 0) return;
       const nowActive = !stateSet.has(opt);
@@ -295,7 +296,8 @@ export function renderFilters(communities, onChange) {
   renderChecklist('homeTypeList', homeTypeOptions, homeTypeCounts, state.homeTypes, onChange);
   renderChecklist('amenityList', amenityOptions, amenityCounts, state.amenities, onChange);
   renderPriceChips(priceTierCounts, onChange);
-  renderChips('bedroomList', BEDROOM_OPTIONS, bedCounts, state.bedrooms, onChange);
+  renderChips('bedroomList', BEDROOM_OPTIONS, bedCounts, state.bedrooms, onChange,
+    (o) => (o === '5' ? '5+' : o));
 }
 
 function renderLocationFilter(locationCounts, waterfrontCounts, onChange) {
