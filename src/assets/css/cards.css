@@ -596,12 +596,13 @@ body.lightbox-open { overflow: hidden; }
 }
 .listing-card-link {
   display: flex;
-  align-items: stretch;
+  flex-direction: column;
   text-decoration: none;
   color: inherit;
 }
 .listing-card-photo {
-  flex: 0 0 110px;
+  width: 100%;
+  aspect-ratio: 16 / 10;
   background: var(--rule-soft);
   overflow: hidden;
   position: relative;
@@ -617,7 +618,7 @@ body.lightbox-open { overflow: hidden; }
 }
 .listing-card-body {
   flex: 1;
-  padding: 10px 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -625,7 +626,7 @@ body.lightbox-open { overflow: hidden; }
 }
 .listing-card-price {
   font-family: 'Fraunces', serif;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 500;
   color: var(--teal);
   line-height: 1.1;

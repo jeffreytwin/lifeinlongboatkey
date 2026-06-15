@@ -65,6 +65,14 @@
     display: none;
   }
 
+  /* Larger Price + Bedrooms chips on mobile for easier tapping. Both
+     groups share .chip, so they stay sized in step. */
+  .chip {
+    font-size: 14px;
+    padding: 7px 13px;
+  }
+  .chip .count { font-size: 11px; }
+
   @keyframes narrowItDownEntry {
     from { transform: translateX(-50%) translateY(90%); opacity: 0; }
     to   { transform: translateX(-50%) translateY(0);   opacity: 1; }

@@ -55,6 +55,7 @@ export function communityPhotoUrl(c) {
 export const IMG_SIZES = {
   card: { w: 640, h: 480 },
   hero: { w: 880, h: 440 },
+  listing: { w: 800, h: 500 },
   full: { w: 1920, h: 1920, q: 85, mode: 'fit' },
 };
 
