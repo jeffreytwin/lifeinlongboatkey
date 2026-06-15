@@ -575,6 +575,29 @@ body.lightbox-open { overflow: hidden; }
   color: var(--ink-muted);
   margin-bottom: 10px;
 }
+/* Toggle between "matching only" and "all homes" in the listings section. */
+.listings-toggle {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0 0 10px;
+  margin: -2px 0 0;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.listings-toggle:hover { color: var(--teal-deep); }
+.listings-note {
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
 .listing-grid {
   list-style: none;
   padding: 0;
