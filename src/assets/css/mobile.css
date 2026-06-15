@@ -197,7 +197,14 @@
   .lightbox { padding: 64px 12px; }
   .lightbox-arrow { display: none; }
 
-  /* Lift the Map | Satellite toggle clear of the bottom edge so it's
-     tappable on small screens. */
-  .basemap-toggle { transform: translateY(-20px); }
+  /* The bottom edge on mobile is crowded — the map fills the viewport, so
+     the bottom-right toggle collided with the fixed "Narrow it down" pill
+     (which renders on top of it) and the browser chrome. Relocate the
+     Map | Satellite toggle to the top-right, just under the legend, where
+     it's reliably tappable. (Only the toggle lives in bottom-right; the
+     Mapbox attribution is in bottom-left.) */
+  .mapboxgl-ctrl-bottom-right {
+    top: 72px;
+    bottom: auto;
+  }
 }
