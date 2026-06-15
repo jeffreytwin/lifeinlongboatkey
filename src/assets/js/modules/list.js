@@ -11,7 +11,7 @@ import { locationLabel, escapeHtml, communityThumbUrl, wixImageUrl, IMG_SIZES, y
 import { AMENITY_ICONS, filteredAmenities } from './amenityIcons.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
-import { hasListingLevelFilters, listingMatchesActiveFilters } from './matches.js';
+import { hasListingLevelFilters, listingMatchesActiveFilters, isLandListing } from './matches.js';
 
 /** Callback passed from main.js for list-item clicks. */
 let onListItemClick = () => {};
@@ -95,17 +95,20 @@ function renderListingCard(l, baseHost) {
   const photo = l.image
     ? `<div class="listing-card-photo"><img src="${escapeHtml(wixImageUrl(l.image, IMG_SIZES.listing))}" alt="" loading="lazy" decoding="async" /></div>`
     : '<div class="listing-card-photo listing-card-photo-empty" aria-hidden="true"></div>';
+  const isLand = isLandListing(l);
   const metaBits = [
     l.beds != null ? `${l.beds} bd` : null,
     l.baths != null ? `${l.baths} ba` : null,
-    l.sqftText ? `${escapeHtml(l.sqftText)} sqft` : null,
+    // Skip the "0 sqft" placeholder (land lots and incomplete records).
+    l.sqftText && l.sqftText !== '0' ? `${escapeHtml(l.sqftText)} sqft` : null,
   ].filter(Boolean);
   const meta = metaBits.length
     ? `<div class="listing-card-meta">${metaBits.join(' · ')}</div>`
     : '';
+  const typeLabel = isLand ? 'Land' : l.homeType;
   const sub = [
-    l.homeType ? escapeHtml(l.homeType) : null,
-    l.garage ? `${escapeHtml(l.garage)} garage` : null,
+    typeLabel ? escapeHtml(typeLabel) : null,
+    (!isLand && l.garage) ? `${escapeHtml(l.garage)} garage` : null,
   ].filter(Boolean).join(' · ');
   const inner = `
     ${photo}

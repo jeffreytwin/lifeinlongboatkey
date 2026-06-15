@@ -9,7 +9,7 @@
 
 import { state, resetFilters } from './state.js';
 import { countsBy, escapeHtml } from './utils.js';
-import { matches, priceToTier, mapListingHomeType } from './matches.js';
+import { matches, priceToTier, mapListingHomeType, isLandListing } from './matches.js';
 
 export const LOCATION_OPTIONS = [
   { key: 'north', label: 'North End' },
@@ -126,15 +126,21 @@ function priceTiersForCounting(c) {
 
 function homeTypesForCounting(c) {
   const items = c.activeListings?.items;
+  // 'Land' is listing-derived (a lot for sale), so count it whenever the
+  // community has a land listing — in either toggle mode — so the option
+  // never falsely reads zero / disabled.
+  const hasLand = Array.isArray(items) && items.some(isLandListing);
+  const out = new Set();
   if (state.hasListingsOnly && Array.isArray(items) && items.length) {
-    const out = new Set();
     for (const it of items) {
-      const mapped = mapListingHomeType(it.homeType, c.homeTypes);
+      const mapped = mapListingHomeType(it.homeType);
       if (mapped) out.add(mapped);
     }
-    return [...out];
+  } else {
+    for (const t of c.homeTypes) out.add(t);
   }
-  return c.homeTypes;
+  if (hasLand) out.add('Land');
+  return [...out];
 }
 
 export const PRICE_TIERS = [
@@ -271,8 +277,13 @@ export function renderFilters(communities, onChange) {
   // Option order is cached on first render (from the full dataset) so
   // positions stay stable even as counts shift with filter state.
   if (!cachedHomeTypeOrder) {
-    const full = countsBy(communities, 'homeTypes', true);
-    cachedHomeTypeOrder = Object.keys(full).sort((a, b) => a.localeCompare(b));
+    const keys = Object.keys(countsBy(communities, 'homeTypes', true));
+    // 'Land' isn't a community-level home type — surface it as an option
+    // when any community has a vacant-land listing.
+    if (communities.some((c) => (c.activeListings?.items || []).some(isLandListing))) {
+      keys.push('Land');
+    }
+    cachedHomeTypeOrder = keys.sort((a, b) => a.localeCompare(b));
   }
   if (!cachedAmenityOrder) {
     const full = countsBy(communities, 'amenities', true);
