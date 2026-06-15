@@ -78,6 +78,17 @@ export function hasListingLevelFilters() {
   return state.priceTiers.size > 0 || state.homeTypes.size > 0 || state.bedrooms.size > 0;
 }
 
+/** A vacant-land / lot listing — these come through from the feed with no
+ *  home type, no bedrooms, and zero building sqft. Treated as the 'Land'
+ *  home type for filtering. */
+export function isLandListing(l) {
+  if (!l) return false;
+  const noType = l.homeType == null || String(l.homeType).trim() === '';
+  const noBeds = l.beds == null;
+  const noSqft = l.sqftText == null || l.sqftText === '' || l.sqftText === '0';
+  return noType && noBeds && noSqft;
+}
+
 /** Highest bedroom chip. The top chip is treated as "this many or more", so
  *  a 6-bedroom listing matches a "5" selection (chips are ['1'..'5']). */
 const BEDROOM_MAX = 5;
@@ -92,7 +103,7 @@ export function listingMatchesActiveFilters(l) {
     if (!tier || !state.priceTiers.has(tier)) return false;
   }
   if (state.homeTypes.size) {
-    const mapped = mapListingHomeType(l.homeType);
+    const mapped = isLandListing(l) ? 'Land' : mapListingHomeType(l.homeType);
     if (!mapped || !state.homeTypes.has(mapped)) return false;
   }
   if (state.bedrooms.size) {

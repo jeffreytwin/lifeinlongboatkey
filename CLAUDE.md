@@ -80,8 +80,8 @@ Current order in the sidebar (index.html):
 
 1. **Community Type** (pill buttons, front and center) — All / Neighborhoods / Condos
 2. **Price** (chip buckets — deliberately NOT a slider) — Under $500K / $500K–$1M / $1M–$2M / $2M–$5M / $5M–$10M / $10M–$15M / $15M+
-3. **Home Type** (checkboxes) — Condominiums / Single Family Homes / Villas / Townhomes
-4. **Bedrooms** (chip selector) — 1 / 2 / 3 / 4 / 5
+3. **Home Type** (checkboxes) — Condominiums / Single Family Homes / Villas / Townhomes / Land. **Land** is listing-derived (no community-level `homeTypes` value): a listing with no home type, no bedrooms, and 0 sqft is treated as Land (`isLandListing()` in `matches.js`). The option only appears when the dataset has land listings.
+4. **Bedrooms** (chip selector) — 1 / 2 / 3 / 4 / 5+ (the top chip displays "5+" and matches 5 or more bedrooms; stored value stays `"5"`)
 5. **Amenities** (checkboxes, sorted by frequency) — **AND semantics**: community must have every checked amenity
 6. **Location on Island** (checkboxes) — North End / Mid-Key / South End
 7. **55+ Community** (toggle)
