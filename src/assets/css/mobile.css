@@ -196,4 +196,8 @@
      padding clears the × button and the image counter. */
   .lightbox { padding: 64px 12px; }
   .lightbox-arrow { display: none; }
+
+  /* Lift the Map | Satellite toggle clear of the bottom edge so it's
+     tappable on small screens. */
+  .basemap-toggle { transform: translateY(-20px); }
 }

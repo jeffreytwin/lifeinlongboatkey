@@ -162,6 +162,19 @@ function parseValue(raw) {
   if (isNaN(n)) return null;
   return n < 25 ? n * 1e6 : n * 1000;
 }
+/** Clamp bedroom tags to the top chip (5 = "5+") and de-dupe, preserving
+ *  numeric order. "2,3,4,5,6" -> "2,3,4,5". */
+const BEDROOM_MAX_TAG = 5;
+function capBedTags(tags) {
+  const seen = new Set();
+  for (const t of tags) {
+    const n = parseInt(t, 10);
+    if (!Number.isFinite(n)) continue;
+    seen.add(String(Math.min(n, BEDROOM_MAX_TAG)));
+  }
+  return [...seen].sort((a, b) => Number(a) - Number(b));
+}
+
 function priceTiersFor(rangeStr) {
   if (!rangeStr) return [];
   const parts = String(rangeStr).split(/\s*[-–—]\s*/);
@@ -480,8 +493,11 @@ for (const raw of all) {
   // updates.homeTypes was set when the updates object was built.
 
   // Bedroom tags — Wix exposes bedroomTags as the canonical multi-select.
+  // Cap every tag at the top chip ("5", which the UI shows as "5+" and
+  // treats as 5-or-more), so a range like "2 - 6" never produces an
+  // unreachable "6" tag. capBedTag also de-dupes the clamped result.
   const bedTagsRaw = field(item, 'bedroomTags', 'bedTags', 'Bedroom Tags');
-  if (Array.isArray(bedTagsRaw)) updates.bedTags = bedTagsRaw.map(String);
+  if (Array.isArray(bedTagsRaw)) updates.bedTags = capBedTags(bedTagsRaw.map(String));
   else if (typeof updates.bedrooms === 'string') {
     const m = updates.bedrooms.match(/(\d+)/g);
     if (m) {
@@ -489,7 +505,7 @@ for (const raw of all) {
       const hi = parseInt(m[m.length - 1], 10);
       const out = [];
       for (let n = lo; n <= hi; n++) out.push(String(n));
-      updates.bedTags = out;
+      updates.bedTags = capBedTags(out);
     }
   }
 
