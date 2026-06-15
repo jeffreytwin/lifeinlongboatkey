@@ -41,7 +41,7 @@ export function renderMobileList(list) {
   }
   el.innerHTML = list
     .map((c) => {
-      const priceRange = c.activeListings?.priceRange || c.priceRange || '—';
+      const priceRange = displayRange(c, 'priceRange') || '—';
       return `
       <li class="list-view-item" data-name="${escapeHtml(c.name)}">
         <div class="list-view-photo ${c.type === 'condo' ? 'photo-condo' : 'photo-nbhd'}">
@@ -64,6 +64,24 @@ export function renderMobileList(list) {
       if (c) onListItemClick(c);
     });
   });
+}
+
+/** Pick a display range (priceRange / bedrooms / sqft) for a community,
+ *  honoring the 'Currently for sale' toggle: active-listing ranges when on,
+ *  historic ranges when off — each falling back to the other when absent.
+ *  Active lives on `community.activeListings.*`, historic on `community.*`. */
+function displayRange(community, field) {
+  const activeVal = community.activeListings?.[field];
+  const historicVal = community[field];
+  return state.hasListingsOnly ? (activeVal || historicVal) : (historicVal || activeVal);
+}
+
+/** Bedrooms + Sq Ft meta block for the detail panel (shared by the initial
+ *  render and the live refresh so the two can't drift). */
+function detailMetaHtml(community) {
+  const bedrooms = displayRange(community, 'bedrooms');
+  const sqft = displayRange(community, 'sqft');
+  return `${bedrooms ? `<div class="meta"><span class="meta-label">Bedrooms</span><span class="meta-val">${escapeHtml(bedrooms)}</span></div>` : ''}${sqft ? `<div class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(sqft)}</span></div>` : ''}`;
 }
 
 /** Label for the "View … Homes for Sale" CTA. Mirrors what the listings
@@ -216,6 +234,14 @@ export function refreshOpenDetailListings() {
   if (!community) return;
   const el = document.getElementById('detailContent');
   if (!el) return;
+
+  // Price / beds / sqft ranges depend on the 'Currently for sale' toggle,
+  // so refresh them too (active when on, historic when off).
+  const priceEl = el.querySelector('.detail-price');
+  if (priceEl) priceEl.textContent = displayRange(community, 'priceRange') || '—';
+  const metaEl = el.querySelector('.detail-meta');
+  if (metaEl) metaEl.innerHTML = detailMetaHtml(community);
+
   // Re-evaluate from the default ("matching") view against the new filters.
   listingsShowAll = false;
   const section = el.querySelector('#detail-listings');
@@ -274,12 +300,9 @@ export function showDetail(community) {
   const page = community.pageUrl || '';
   const baseHost = 'https://www.lifeinlongboatkey.com';
 
-  // Prefer live for-sale ranges when active listings exist; fall back to
-  // the static Wix-curated priceRange/bedrooms/sqft otherwise.
-  const active = community.activeListings;
-  const priceRange = active?.priceRange || community.priceRange;
-  const bedrooms   = active?.bedrooms   || community.bedrooms;
-  const sqft       = active?.sqft       || community.sqft;
+  // Active-listing ranges when 'Currently for sale' is on; historic ranges
+  // when off (displayRange handles the toggle + cross-fallback).
+  const priceRange = displayRange(community, 'priceRange');
   const homesCta = listingsCtaLabel(community);
 
   el.innerHTML = `
@@ -316,10 +339,7 @@ export function showDetail(community) {
           </a>
         `}
       </div>
-      <div class="detail-meta">
-        ${bedrooms ? `<div class="meta"><span class="meta-label">Bedrooms</span><span class="meta-val">${escapeHtml(bedrooms)}</span></div>` : ''}
-        ${sqft ? `<div class="meta"><span class="meta-label">Sq Ft</span><span class="meta-val">${escapeHtml(sqft)}</span></div>` : ''}
-      </div>
+      <div class="detail-meta">${detailMetaHtml(community)}</div>
       ${amenitiesHtml ? `<div class="detail-amenities">${amenitiesHtml}</div>` : ''}
       ${community.shortDescription ? `<p class="detail-desc">${escapeHtml(community.shortDescription)}</p>` : ''}
       ${classChips ? `<div class="detail-chips">${classChips}</div>` : ''}
