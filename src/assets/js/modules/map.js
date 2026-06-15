@@ -103,9 +103,16 @@ export function initMap(communities, callbacks) {
     minZoom: 10,
     maxZoom: 18,
     maxBounds: LBK_BOUNDS,
+    // Replace the default expanded attribution with a compact ⓘ (below) so
+    // the corner stays clean. Mapbox/OSM attribution is required by ToS, so
+    // it can't be removed outright — only collapsed.
+    attributionControl: false,
   });
 
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
+  // Compact attribution lives bottom-left next to the Mapbox logo, leaving
+  // the bottom-right free for just the Map | Satellite toggle.
+  map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'bottom-left');
   map.addControl(new BasemapToggleControl(), 'bottom-right');
 
   map.on('load', () => {
