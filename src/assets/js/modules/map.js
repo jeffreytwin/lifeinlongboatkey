@@ -24,6 +24,8 @@ const UNCLUSTERED_LAYER_ID = 'unclustered-hit';
 const NBHD_SOURCE_ID = 'neighborhoods';
 const NBHD_FILL_LAYER_ID = 'neighborhoods-fill';
 const NBHD_LINE_LAYER_ID = 'neighborhoods-line';
+const SAT_SOURCE_ID = 'satellite';
+const SAT_LAYER_ID = 'satellite-basemap';
 
 const MAP_STYLE = 'mapbox://styles/mapbox/light-v11';
 
@@ -104,8 +106,10 @@ export function initMap(communities, callbacks) {
   });
 
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
+  map.addControl(new BasemapToggleControl(), 'bottom-right');
 
   map.on('load', () => {
+    addSatelliteBasemap();
     addNeighborhoodPolygons();
     setCommunityFeatures(communities);
     wireClusterInteractions();
@@ -155,6 +159,79 @@ function renderMapTokenNotice() {
         <p style="font-size:13px;margin:0">Set a Mapbox access token in <code>config.js</code> to enable the map. The filter panel and list view work without it.</p>
       </div>
     </div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Satellite basemap. Rather than swapping the whole Mapbox style (which wipes
+// every custom source/layer and feature-state), we add Mapbox's satellite
+// imagery as a raster layer and toggle its visibility. It's inserted just
+// below the basemap's first symbol (label) layer, so place/road labels stay
+// readable on top of the imagery, while our pins and neighborhood polygons —
+// added later, above everything — remain fully intact.
+// ---------------------------------------------------------------------------
+
+/** Id of the lowest symbol layer in the base style, used as the insert anchor. */
+function firstSymbolLayerId() {
+  const layers = map.getStyle()?.layers || [];
+  const sym = layers.find((l) => l.type === 'symbol');
+  return sym ? sym.id : undefined;
+}
+
+function addSatelliteBasemap() {
+  if (!map || map.getSource(SAT_SOURCE_ID)) return;
+  map.addSource(SAT_SOURCE_ID, {
+    type: 'raster',
+    url: 'mapbox://mapbox.satellite',
+    tileSize: 256,
+  });
+  // Hidden by default — tiles aren't fetched until the layer is shown.
+  map.addLayer(
+    {
+      id: SAT_LAYER_ID,
+      type: 'raster',
+      source: SAT_SOURCE_ID,
+      layout: { visibility: 'none' },
+      paint: { 'raster-opacity': 1 },
+    },
+    firstSymbolLayerId(),
+  );
+}
+
+/** Show satellite imagery ('satellite') or the default light basemap ('map'). */
+function setBasemap(styleName) {
+  if (!map || !map.getLayer(SAT_LAYER_ID)) return;
+  map.setLayoutProperty(
+    SAT_LAYER_ID,
+    'visibility',
+    styleName === 'satellite' ? 'visible' : 'none',
+  );
+}
+
+/** Lower-right "Map | Satellite" segmented toggle (a Mapbox custom control). */
+class BasemapToggleControl {
+  onAdd(mapInstance) {
+    this._map = mapInstance;
+    const c = document.createElement('div');
+    c.className = 'mapboxgl-ctrl basemap-toggle';
+    c.innerHTML = `
+      <button type="button" class="basemap-btn is-active" data-style="map">Map</button>
+      <button type="button" class="basemap-btn" data-style="satellite">Satellite</button>`;
+    c.addEventListener('click', (e) => {
+      const btn = e.target.closest('.basemap-btn');
+      if (!btn) return;
+      setBasemap(btn.dataset.style);
+      c.querySelectorAll('.basemap-btn').forEach((b) =>
+        b.classList.toggle('is-active', b === btn),
+      );
+    });
+    this._container = c;
+    return c;
+  }
+
+  onRemove() {
+    this._container?.remove();
+    this._map = null;
+  }
 }
 
 function addNeighborhoodPolygons() {
