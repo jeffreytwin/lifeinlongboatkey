@@ -203,6 +203,33 @@ function wireListingsToggle(root, community) {
 }
 
 /**
+ * Refresh the open detail panel's listings section + "View Homes" CTA after
+ * a filter change, so the matching listings update live without the user
+ * having to re-click the community. Re-renders only the listings section
+ * (keeps gallery state and scroll position). No-op when the panel is closed.
+ */
+export function refreshOpenDetailListings() {
+  const community = state.selectedCommunity;
+  if (!community) return;
+  const el = document.getElementById('detailContent');
+  if (!el) return;
+  // Re-evaluate from the default ("matching") view against the new filters.
+  listingsShowAll = false;
+  const section = el.querySelector('#detail-listings');
+  if (section) {
+    const fresh = renderListings(community);
+    if (fresh) {
+      section.outerHTML = fresh;
+      wireListingsToggle(el, community);
+    } else {
+      section.remove();
+    }
+  }
+  const cta = el.querySelector('[data-scroll-to="detail-listings"]');
+  if (cta) cta.textContent = listingsCtaLabel(community);
+}
+
+/**
  * Render the selected community into the detail panel and open it.
  *
  * @param {object} community
