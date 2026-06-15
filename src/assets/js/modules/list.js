@@ -11,10 +11,16 @@ import { locationLabel, escapeHtml, communityThumbUrl, wixImageUrl, IMG_SIZES, y
 import { AMENITY_ICONS, filteredAmenities } from './amenityIcons.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
+import { priceToTier, mapListingHomeType } from './matches.js';
 
 /** Callback passed from main.js for list-item clicks. */
 let onListItemClick = () => {};
 export function setListItemClickHandler(fn) { onListItemClick = fn; }
+
+/** Per-panel toggle: show every listing in the community, or just the ones
+ *  matching the active filters. Reset to "matching" each time a community
+ *  opens (see showDetail). */
+let listingsShowAll = false;
 
 /** Callback passed from main.js for clicking the reference map at the
  *  bottom of the details panel (desktop only — mobile doesn't wire it). */
@@ -60,57 +66,148 @@ export function renderMobileList(list) {
   });
 }
 
+/** True when any filter that applies at the individual-listing level is
+ *  active. Amenities / Location / 55+ are community attributes and don't
+ *  narrow listings, so they're deliberately excluded here. */
+function hasListingLevelFilters() {
+  return state.priceTiers.size > 0 || state.homeTypes.size > 0 || state.bedrooms.size > 0;
+}
+
+/** Does one listing satisfy the active price / beds / home-type filters?
+ *  Uses the same helpers the community matcher uses, so the panel's
+ *  "matching" set is exactly the listings that made the community match. */
+function listingMatchesFilters(l) {
+  if (state.priceTiers.size) {
+    const tier = priceToTier(l.price);
+    if (!tier || !state.priceTiers.has(tier)) return false;
+  }
+  if (state.homeTypes.size) {
+    const mapped = mapListingHomeType(l.homeType);
+    if (!mapped || !state.homeTypes.has(mapped)) return false;
+  }
+  if (state.bedrooms.size) {
+    if (l.beds == null || !state.bedrooms.has(String(l.beds))) return false;
+  }
+  return true;
+}
+
+/** Count of listings the panel shows by default on open: the matching
+ *  subset when listing-level filters are active and at least one matches,
+ *  otherwise the full count. Keeps the "View (N) Homes" CTA in step with
+ *  the listings-section heading. */
+function defaultListingsCount(community) {
+  const items = community.activeListings?.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    return community.activeListings?.count || 0;
+  }
+  if (hasListingLevelFilters()) {
+    const matching = items.filter(listingMatchesFilters);
+    if (matching.length > 0) return matching.length;
+  }
+  return community.activeListings?.count || items.length;
+}
+
+/** Render a single for-sale listing card. */
+function renderListingCard(l, baseHost) {
+  const href = l.url
+    ? (/^https?:/.test(l.url) ? l.url : baseHost + l.url)
+    : null;
+  const photo = l.image
+    ? `<div class="listing-card-photo"><img src="${escapeHtml(wixImageUrl(l.image, IMG_SIZES.listing))}" alt="" loading="lazy" decoding="async" /></div>`
+    : '<div class="listing-card-photo listing-card-photo-empty" aria-hidden="true"></div>';
+  const metaBits = [
+    l.beds != null ? `${l.beds} bd` : null,
+    l.baths != null ? `${l.baths} ba` : null,
+    l.sqftText ? `${escapeHtml(l.sqftText)} sqft` : null,
+  ].filter(Boolean);
+  const meta = metaBits.length
+    ? `<div class="listing-card-meta">${metaBits.join(' · ')}</div>`
+    : '';
+  const sub = [
+    l.homeType ? escapeHtml(l.homeType) : null,
+    l.garage ? `${escapeHtml(l.garage)} garage` : null,
+  ].filter(Boolean).join(' · ');
+  const inner = `
+    ${photo}
+    <div class="listing-card-body">
+      ${l.priceText ? `<div class="listing-card-price">${escapeHtml(l.priceText)}</div>` : ''}
+      ${l.address ? `<div class="listing-card-address">${escapeHtml(l.address)}</div>` : ''}
+      ${meta}
+      ${sub ? `<div class="listing-card-sub">${sub}</div>` : ''}
+    </div>`;
+  return `<li class="listing-card">${
+    href
+      ? `<a class="listing-card-link" href="${escapeHtml(href)}" target="_blank" rel="noopener">${inner}</a>`
+      : inner
+  }</li>`;
+}
+
 /**
  * Render the active-listings section (price card grid) that sits beneath
  * the location map in the detail panel. Returns '' when there's nothing
  * to render so the panel skips the section entirely.
+ *
+ * When the active filters apply at the listing level (price / beds / home
+ * type), the panel shows only the matching homes by default, with a toggle
+ * to reveal every home in the community. Reflects the `listingsShowAll`
+ * module flag.
  */
 function renderListings(community) {
   const items = community.activeListings?.items;
   if (!Array.isArray(items) || items.length === 0) return '';
   const baseHost = 'https://www.lifeinlongboatkey.com';
-  const count = community.activeListings.count || items.length;
-  const heading = `${count} Home${count === 1 ? '' : 's'} for Sale`;
-  const cards = items
-    .map((l) => {
-      const href = l.url
-        ? (/^https?:/.test(l.url) ? l.url : baseHost + l.url)
-        : null;
-      const photo = l.image
-        ? `<div class="listing-card-photo"><img src="${escapeHtml(wixImageUrl(l.image, IMG_SIZES.listing))}" alt="" loading="lazy" decoding="async" /></div>`
-        : '<div class="listing-card-photo listing-card-photo-empty" aria-hidden="true"></div>';
-      const metaBits = [
-        l.beds != null ? `${l.beds} bd` : null,
-        l.baths != null ? `${l.baths} ba` : null,
-        l.sqftText ? `${escapeHtml(l.sqftText)} sqft` : null,
-      ].filter(Boolean);
-      const meta = metaBits.length
-        ? `<div class="listing-card-meta">${metaBits.join(' · ')}</div>`
-        : '';
-      const sub = [
-        l.homeType ? escapeHtml(l.homeType) : null,
-        l.garage ? `${escapeHtml(l.garage)} garage` : null,
-      ].filter(Boolean).join(' · ');
-      const inner = `
-        ${photo}
-        <div class="listing-card-body">
-          ${l.priceText ? `<div class="listing-card-price">${escapeHtml(l.priceText)}</div>` : ''}
-          ${l.address ? `<div class="listing-card-address">${escapeHtml(l.address)}</div>` : ''}
-          ${meta}
-          ${sub ? `<div class="listing-card-sub">${sub}</div>` : ''}
-        </div>`;
-      return `<li class="listing-card">${
-        href
-          ? `<a class="listing-card-link" href="${escapeHtml(href)}" target="_blank" rel="noopener">${inner}</a>`
-          : inner
-      }</li>`;
-    })
-    .join('');
+
+  const filtersActive = hasListingLevelFilters();
+  const matching = filtersActive ? items.filter(listingMatchesFilters) : items;
+
+  // Only offer the matched/all toggle when filters carve out a real subset.
+  // If nothing matches exactly (can happen when 'Currently for sale' is off
+  // and the community matched on its broader range), showing zero cards is
+  // unhelpful — fall back to all with a short note.
+  const hasSubset = filtersActive && matching.length > 0 && matching.length < items.length;
+  const noneMatch = filtersActive && matching.length === 0;
+  const showAll = listingsShowAll || !hasSubset;
+  const shown = showAll ? items : matching;
+
+  const count = shown.length;
+  const heading = hasSubset && !showAll
+    ? `${count} Matching Home${count === 1 ? '' : 's'} for Sale`
+    : `${count} Home${count === 1 ? '' : 's'} for Sale`;
+
+  let controlHtml = '';
+  if (hasSubset) {
+    controlHtml = showAll
+      ? `<button type="button" class="listings-toggle" data-listings-toggle>
+           Show only the ${matching.length} matching your filters
+         </button>`
+      : `<button type="button" class="listings-toggle" data-listings-toggle>
+           Show all ${items.length} homes in this community
+         </button>`;
+  } else if (noneMatch) {
+    controlHtml = `<div class="listings-note">None of the ${items.length} active home${items.length === 1 ? '' : 's'} match your exact filters — showing all.</div>`;
+  }
+
+  const cards = shown.map((l) => renderListingCard(l, baseHost)).join('');
   return `
     <section class="detail-listings" id="detail-listings" aria-label="Homes for sale">
       <div class="detail-listings-label">${escapeHtml(heading)}</div>
+      ${controlHtml}
       <ul class="listing-grid">${cards}</ul>
     </section>`;
+}
+
+/** Wire the "show all / show matching" toggle. Re-renders just the listings
+ *  section in place and rebinds itself; listing cards are plain anchors so
+ *  they need no rebinding. */
+function wireListingsToggle(root, community) {
+  const btn = root.querySelector('[data-listings-toggle]');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    listingsShowAll = !listingsShowAll;
+    const section = root.querySelector('#detail-listings');
+    if (section) section.outerHTML = renderListings(community);
+    wireListingsToggle(root, community);
+  });
 }
 
 /**
@@ -120,6 +217,8 @@ function renderListings(community) {
  */
 export function showDetail(community) {
   state.selectedCommunity = community;
+  // Each open starts in "matching only" mode; the toggle flips it.
+  listingsShowAll = false;
   const el = document.getElementById('detailContent');
   if (!el) return;
 
@@ -159,7 +258,7 @@ export function showDetail(community) {
   const priceRange = active?.priceRange || community.priceRange;
   const bedrooms   = active?.bedrooms   || community.bedrooms;
   const sqft       = active?.sqft       || community.sqft;
-  const listingsCount = active?.count || 0;
+  const listingsCount = defaultListingsCount(community);
   const homesCta = listingsCount === 1
     ? 'View (1) Home for Sale'
     : `View (${listingsCount}) Homes for Sale`;
@@ -217,6 +316,7 @@ export function showDetail(community) {
     </div>`;
 
   wireGallery(el);
+  wireListingsToggle(el, community);
 
   // Reference-map click — flies the main map to this community's
   // location. On mobile the onLocateOnMap handler also switches to
