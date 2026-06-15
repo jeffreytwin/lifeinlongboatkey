@@ -591,13 +591,29 @@ body.lightbox-open { overflow: hidden; }
   text-underline-offset: 2px;
 }
 .listings-toggle:hover { color: var(--teal-deep); }
-.listings-note {
+/* Shown when a community has active homes but none match the filters. */
+.listings-empty {
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #C2660F;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+.listings-showall-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid #C2660F;
+  color: #C2660F;
+  border-radius: 999px;
+  padding: 7px 16px;
   font-family: 'Manrope', sans-serif;
   font-size: 12px;
-  color: var(--ink-soft);
-  margin-bottom: 10px;
-  line-height: 1.4;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
+.listings-showall-btn:hover { background: #C2660F; color: #FFFFFF; }
 .listing-grid {
   list-style: none;
   padding: 0;

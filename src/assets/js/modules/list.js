@@ -11,7 +11,7 @@ import { locationLabel, escapeHtml, communityThumbUrl, wixImageUrl, IMG_SIZES, y
 import { AMENITY_ICONS, filteredAmenities } from './amenityIcons.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
-import { priceToTier, mapListingHomeType } from './matches.js';
+import { hasListingLevelFilters, listingMatchesActiveFilters } from './matches.js';
 
 /** Callback passed from main.js for list-item clicks. */
 let onListItemClick = () => {};
@@ -66,45 +66,25 @@ export function renderMobileList(list) {
   });
 }
 
-/** True when any filter that applies at the individual-listing level is
- *  active. Amenities / Location / 55+ are community attributes and don't
- *  narrow listings, so they're deliberately excluded here. */
-function hasListingLevelFilters() {
-  return state.priceTiers.size > 0 || state.homeTypes.size > 0 || state.bedrooms.size > 0;
-}
-
-/** Does one listing satisfy the active price / beds / home-type filters?
- *  Uses the same helpers the community matcher uses, so the panel's
- *  "matching" set is exactly the listings that made the community match. */
-function listingMatchesFilters(l) {
-  if (state.priceTiers.size) {
-    const tier = priceToTier(l.price);
-    if (!tier || !state.priceTiers.has(tier)) return false;
-  }
-  if (state.homeTypes.size) {
-    const mapped = mapListingHomeType(l.homeType);
-    if (!mapped || !state.homeTypes.has(mapped)) return false;
-  }
-  if (state.bedrooms.size) {
-    if (l.beds == null || !state.bedrooms.has(String(l.beds))) return false;
-  }
-  return true;
-}
-
-/** Count of listings the panel shows by default on open: the matching
- *  subset when listing-level filters are active and at least one matches,
- *  otherwise the full count. Keeps the "View (N) Homes" CTA in step with
- *  the listings-section heading. */
-function defaultListingsCount(community) {
+/** Label for the "View … Homes for Sale" CTA. Mirrors what the listings
+ *  section shows by default: the matching count when listing-level filters
+ *  carve out a subset, no count when a shown community has homes but none
+ *  match (the panel surfaces a note instead), otherwise the full count. */
+function listingsCtaLabel(community) {
   const items = community.activeListings?.items;
-  if (!Array.isArray(items) || items.length === 0) {
-    return community.activeListings?.count || 0;
+  const hasItems = Array.isArray(items) && items.length > 0;
+  if (hasItems && hasListingLevelFilters()) {
+    const matching = items.filter(listingMatchesActiveFilters);
+    if (matching.length === 0) return 'View Homes for Sale';
+    if (matching.length < items.length) {
+      return matching.length === 1
+        ? 'View (1) Home for Sale'
+        : `View (${matching.length}) Homes for Sale`;
+    }
+    // All match — fall through to the total count.
   }
-  if (hasListingLevelFilters()) {
-    const matching = items.filter(listingMatchesFilters);
-    if (matching.length > 0) return matching.length;
-  }
-  return community.activeListings?.count || items.length;
+  const n = hasItems ? items.length : (community.activeListings?.count || 0);
+  return n === 1 ? 'View (1) Home for Sale' : `View (${n}) Homes for Sale`;
 }
 
 /** Render a single for-sale listing card. */
@@ -158,41 +138,53 @@ function renderListings(community) {
   const baseHost = 'https://www.lifeinlongboatkey.com';
 
   const filtersActive = hasListingLevelFilters();
-  const matching = filtersActive ? items.filter(listingMatchesFilters) : items;
+  const matching = filtersActive ? items.filter(listingMatchesActiveFilters) : items;
+  const allCount = items.length;
 
-  // Only offer the matched/all toggle when filters carve out a real subset.
-  // If nothing matches exactly (can happen when 'Currently for sale' is off
-  // and the community matched on its broader range), showing zero cards is
-  // unhelpful — fall back to all with a short note.
-  const hasSubset = filtersActive && matching.length > 0 && matching.length < items.length;
   const noneMatch = filtersActive && matching.length === 0;
-  const showAll = listingsShowAll || !hasSubset;
-  const shown = showAll ? items : matching;
+  const hasSubset = filtersActive && matching.length > 0 && matching.length < allCount;
 
-  const count = shown.length;
-  const heading = hasSubset && !showAll
-    ? `${count} Matching Home${count === 1 ? '' : 's'} for Sale`
-    : `${count} Home${count === 1 ? '' : 's'} for Sale`;
-
+  let shown;
+  let heading;
   let controlHtml = '';
-  if (hasSubset) {
-    controlHtml = showAll
-      ? `<button type="button" class="listings-toggle" data-listings-toggle>
-           Show only the ${matching.length} matching your filters
-         </button>`
-      : `<button type="button" class="listings-toggle" data-listings-toggle>
-           Show all ${items.length} homes in this community
-         </button>`;
-  } else if (noneMatch) {
-    controlHtml = `<div class="listings-note">None of the ${items.length} active home${items.length === 1 ? '' : 's'} match your exact filters — showing all.</div>`;
+
+  if (noneMatch) {
+    // The community has active homes but none match the filters (only
+    // reachable when 'Currently for sale' is off — it's excluded otherwise).
+    // Don't auto-show them; surface a note + an explicit reveal button.
+    heading = 'Homes for Sale';
+    if (listingsShowAll) {
+      shown = items;
+      controlHtml = `<button type="button" class="listings-toggle" data-listings-toggle>Hide homes that don’t match</button>`;
+    } else {
+      shown = [];
+      controlHtml = `
+        <div class="listings-empty">None of the active homes in this community match your filters.</div>
+        <button type="button" class="listings-showall-btn" data-listings-toggle>View all homes for sale</button>`;
+    }
+  } else if (hasSubset) {
+    if (listingsShowAll) {
+      shown = items;
+      heading = `${allCount} Home${allCount === 1 ? '' : 's'} for Sale`;
+      controlHtml = `<button type="button" class="listings-toggle" data-listings-toggle>Show only the ${matching.length} matching your filters</button>`;
+    } else {
+      shown = matching;
+      heading = `${matching.length} Matching Home${matching.length === 1 ? '' : 's'} for Sale`;
+      controlHtml = `<button type="button" class="listings-toggle" data-listings-toggle>Show all ${allCount} homes in this community</button>`;
+    }
+  } else {
+    // All listings match, or no listing-level filters are active.
+    shown = items;
+    heading = `${allCount} Home${allCount === 1 ? '' : 's'} for Sale`;
   }
 
   const cards = shown.map((l) => renderListingCard(l, baseHost)).join('');
+  const cardsHtml = cards ? `<ul class="listing-grid">${cards}</ul>` : '';
   return `
     <section class="detail-listings" id="detail-listings" aria-label="Homes for sale">
       <div class="detail-listings-label">${escapeHtml(heading)}</div>
       ${controlHtml}
-      <ul class="listing-grid">${cards}</ul>
+      ${cardsHtml}
     </section>`;
 }
 
@@ -258,10 +250,7 @@ export function showDetail(community) {
   const priceRange = active?.priceRange || community.priceRange;
   const bedrooms   = active?.bedrooms   || community.bedrooms;
   const sqft       = active?.sqft       || community.sqft;
-  const listingsCount = defaultListingsCount(community);
-  const homesCta = listingsCount === 1
-    ? 'View (1) Home for Sale'
-    : `View (${listingsCount}) Homes for Sale`;
+  const homesCta = listingsCtaLabel(community);
 
   el.innerHTML = `
     ${galleryHtml(community)}
