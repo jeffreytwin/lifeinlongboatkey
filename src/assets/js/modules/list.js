@@ -91,6 +91,22 @@ function listingMatchesFilters(l) {
   return true;
 }
 
+/** Count of listings the panel shows by default on open: the matching
+ *  subset when listing-level filters are active and at least one matches,
+ *  otherwise the full count. Keeps the "View (N) Homes" CTA in step with
+ *  the listings-section heading. */
+function defaultListingsCount(community) {
+  const items = community.activeListings?.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    return community.activeListings?.count || 0;
+  }
+  if (hasListingLevelFilters()) {
+    const matching = items.filter(listingMatchesFilters);
+    if (matching.length > 0) return matching.length;
+  }
+  return community.activeListings?.count || items.length;
+}
+
 /** Render a single for-sale listing card. */
 function renderListingCard(l, baseHost) {
   const href = l.url
@@ -242,7 +258,7 @@ export function showDetail(community) {
   const priceRange = active?.priceRange || community.priceRange;
   const bedrooms   = active?.bedrooms   || community.bedrooms;
   const sqft       = active?.sqft       || community.sqft;
-  const listingsCount = active?.count || 0;
+  const listingsCount = defaultListingsCount(community);
   const homesCta = listingsCount === 1
     ? 'View (1) Home for Sale'
     : `View (${listingsCount}) Homes for Sale`;
