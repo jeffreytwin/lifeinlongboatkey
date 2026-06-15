@@ -35,7 +35,7 @@
     align-items: center;
     justify-content: center;
     position: fixed;
-    bottom: 37px;
+    bottom: 57px;
     left: 50%;
     transform: translateX(-50%);
     padding: 14px 26px;
@@ -197,14 +197,9 @@
   .lightbox { padding: 64px 12px; }
   .lightbox-arrow { display: none; }
 
-  /* The bottom edge on mobile is crowded — the map fills the viewport, so
-     the bottom-right toggle collided with the fixed "Narrow it down" pill
-     (which renders on top of it) and the browser chrome. Relocate the
-     Map | Satellite toggle to the top-right, just under the legend, where
-     it's reliably tappable. (Only the toggle lives in bottom-right; the
-     Mapbox attribution is in bottom-left.) */
-  .mapboxgl-ctrl-bottom-right {
-    top: 72px;
-    bottom: auto;
-  }
+  /* Keep the Map | Satellite toggle in the bottom-right, but lift it 20px
+     clear of the browser chrome and shrink the text so it's more compact
+     and doesn't crowd the "Narrow it down" pill (also lifted, below). */
+  .basemap-toggle { transform: translateY(-20px); }
+  .basemap-btn { font-size: 11px; padding: 5px 10px; }
 }
