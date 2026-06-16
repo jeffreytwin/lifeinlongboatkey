@@ -35,7 +35,7 @@
     align-items: center;
     justify-content: center;
     position: fixed;
-    bottom: 57px;
+    bottom: 22px;
     left: 50%;
     transform: translateX(-50%);
     padding: 14px 26px;
@@ -197,17 +197,8 @@
   .lightbox { padding: 64px 12px; }
   .lightbox-arrow { display: none; }
 
-  /* The toggle is a Mapbox control anchored to the bottom of the map, but
-     the map's height is 100vh-based and runs behind Safari's bottom toolbar,
-     hiding the toggle there. Pin it to the viewport like the 'Narrow it
-     down' pill (which clears the toolbar at bottom:57px), plus the safe-area
-     inset, with smaller text so it stays compact. */
-  .mapboxgl-ctrl-bottom-right {
-    position: fixed;
-    bottom: calc(58px + env(safe-area-inset-bottom, 0px));
-    right: 8px;
-    z-index: 60;
-  }
-  .basemap-toggle { transform: none; }
-  .basemap-btn { font-size: 11px; padding: 5px 10px; }
+  /* Hide the Map | Satellite toggle on mobile — it kept colliding with
+     Safari's bottom toolbar. Mobile is map-only; satellite remains on
+     desktop. */
+  .basemap-toggle { display: none; }
 }
