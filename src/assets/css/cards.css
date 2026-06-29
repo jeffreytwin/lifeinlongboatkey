@@ -34,6 +34,10 @@
   transform: scale(1.06);
 }
 
+/* The mobile "Back to results" pill is hidden on desktop (the side-column
+   panel uses the corner ×). Shown + styled in mobile.css. */
+.detail-back-mobile { display: none; }
+
 .detail-panel::-webkit-scrollbar { width: 6px; }
 .detail-panel::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
 

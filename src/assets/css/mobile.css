@@ -181,13 +181,30 @@
     background: var(--bg);
     -webkit-overflow-scrolling: touch;
   }
-  .detail-close {
-    top: 12px;
-    right: 16px;
-    width: 36px;
-    height: 36px;
-    font-size: 24px;
+  /* On mobile the panel is fullscreen and the absolute × scrolls out of
+     view. Replace it with a fixed "Back to results" pill (teal, matching the
+     'Narrow it down' button) that stays put as the user scrolls. */
+  .detail-close { display: none; }
+  .content.layout-detail .detail-back-mobile {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    position: fixed;
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    left: 12px;
+    z-index: 1200;
+    padding: 9px 16px 9px 12px;
+    background: var(--teal);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
   }
+  .content.layout-detail .detail-back-mobile:active { background: var(--teal-hover); }
   .detail-gallery { height: auto; aspect-ratio: 16 / 9; max-height: 50vh; }
 
   /* Fullscreen lightbox — shrink the desktop letterbox padding so the
