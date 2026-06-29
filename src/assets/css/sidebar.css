@@ -24,25 +24,19 @@
   text-transform: uppercase;
   color: var(--ink);
 }
-/* Desktop shows "Narrow it down"; mobile keeps the shorter "Refine"
-   (the mobile sidebar is a compact overlay and has its own pill CTA). */
-.filter-header h2 .title-mobile { display: none; }
-
-/* One-shot attention beat on load: the desktop heading pulses + flashes to
-   brand teal twice, drawing the eye to where the user starts narrowing —
-   mirroring the mobile pill's entrance. Desktop-only because the span is
-   hidden on mobile; plays once since .filter-header isn't re-rendered. */
-.filter-header h2 .title-desktop {
-  display: inline-block;
-  transform-origin: left center;
-  animation: narrowHeadingBeat 1.3s ease-in-out 0.45s 1 both;
+/* One-shot entrance on load: the whole sidebar eases in from the left so a
+   first-time visitor's eye is drawn to where they start narrowing. Desktop
+   only (the mobile sidebar is an opened-on-demand overlay — animation is
+   disabled there in mobile.css). Plays once; .filters isn't re-rendered. */
+.filters {
+  animation: filtersPanelIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
 }
-@keyframes narrowHeadingBeat {
-  0%, 50%, 100% { transform: scale(1);    color: var(--ink); }
-  25%, 75%      { transform: scale(1.08); color: var(--teal); }
+@keyframes filtersPanelIn {
+  from { opacity: 0; transform: translateX(-26px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .filter-header h2 .title-desktop { animation: none; }
+  .filters { animation: none; }
 }
 .clear-btn {
   font-size: 11px;
