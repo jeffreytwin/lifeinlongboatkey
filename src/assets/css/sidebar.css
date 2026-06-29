@@ -24,16 +24,19 @@
   text-transform: uppercase;
   color: var(--ink);
 }
-/* One-shot entrance on load: the whole sidebar eases in from the left so a
-   first-time visitor's eye is drawn to where they start narrowing. Desktop
-   only (the mobile sidebar is an opened-on-demand overlay — animation is
-   disabled there in mobile.css). Plays once; .filters isn't re-rendered. */
+/* One-shot attention pulse on load: the whole sidebar briefly pulses (twice)
+   with a soft teal glow so a first-time visitor's eye is drawn to where they
+   start narrowing. Anchored to the left edge so it grows toward the map.
+   Desktop only (the mobile sidebar is an opened-on-demand overlay — animation
+   is disabled there in mobile.css). Plays once; .filters isn't re-rendered. */
 .filters {
-  animation: filtersPanelIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  transform-origin: left center;
+  animation: filtersPanelPulse 0.9s ease-in-out 0.3s 1 both;
 }
-@keyframes filtersPanelIn {
-  from { opacity: 0; transform: translateX(-26px); }
-  to   { opacity: 1; transform: translateX(0); }
+@keyframes filtersPanelPulse {
+  0%, 100% { transform: scale(1);     box-shadow: 0 0 0 0 rgba(42, 142, 120, 0); }
+  25%, 75% { transform: scale(1.025); box-shadow: 0 0 16px 0 rgba(42, 142, 120, 0.22); }
+  50%      { transform: scale(1);     box-shadow: 0 0 0 0 rgba(42, 142, 120, 0); }
 }
 @media (prefers-reduced-motion: reduce) {
   .filters { animation: none; }
