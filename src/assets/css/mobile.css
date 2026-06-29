@@ -99,9 +99,6 @@
      mounts as a full-screen overlay. */
   .filters {
     display: none;
-    /* The desktop load-in animation doesn't apply on mobile (sidebar is an
-       opened-on-demand overlay, not present at load). */
-    animation: none;
   }
   body.filters-open {
     overflow: hidden;
