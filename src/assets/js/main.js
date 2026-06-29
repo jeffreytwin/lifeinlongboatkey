@@ -60,7 +60,19 @@ function closeDetail() {
   invalidateSize();
 }
 
-function apply() {
+// One-shot guard for the desktop "flip to list on first refine" behavior.
+// appBooted gates out the initial render's apply() call.
+let appBooted = false;
+let didAutoFlipToList = false;
+
+/** apply() variant used by the actual narrowing filters (Community Type +
+ *  the facets). Only these trigger the desktop flip-to-list — Clear All,
+ *  Sort, and the Currently-for-sale toggle call apply() directly and don't. */
+function applyNarrowing() {
+  apply(true);
+}
+
+function apply(narrowing = false) {
   const filtered = getFiltered(communities);
   const resultCount = document.getElementById('resultCount');
   if (resultCount) resultCount.textContent = String(filtered.length);
@@ -69,7 +81,7 @@ function apply() {
 
   // Refresh filter counts — each option shows how many communities would
   // remain if that option were toggled on top of the current state.
-  renderFilters(communities, apply);
+  renderFilters(communities, applyNarrowing);
 
   // Update the mobile Save button with the running count so users can
   // see how their narrowing is going without dismissing the panel.
@@ -88,6 +100,17 @@ function apply() {
     closeDetail();
   } else if (state.selectedCommunity) {
     refreshOpenDetailListings();
+  }
+
+  // Desktop: the first time the user changes a narrowing filter (after the
+  // initial boot render), flip to the list view so they immediately see
+  // their narrowed results — mirroring mobile, where Save jumps to the list.
+  // One-shot, so a later manual switch back to Map is respected. Excludes
+  // Clear All / Sort / Currently-for-sale, which call apply() without narrowing.
+  if (narrowing && appBooted && !didAutoFlipToList && state.view !== 'list'
+      && window.matchMedia('(min-width: 861px)').matches) {
+    didAutoFlipToList = true;
+    setView('list');
   }
 }
 
@@ -116,8 +139,8 @@ function setLayout() {
  * Filters, list, mobile view toggle, and the details panel.
  */
 function bootFull() {
-  renderFilters(communities, apply);
-  setupStaticControls(communities, { apply, setLayout });
+  renderFilters(communities, applyNarrowing);
+  setupStaticControls(communities, { apply, applyNarrowing, setLayout });
 
   // Close button for the details panel (× on desktop, "Back to results"
   // pill on mobile — both dismiss the panel and return to the map/results).
@@ -166,6 +189,9 @@ function bootFull() {
   });
 
   apply();
+  // From here on, apply() runs only in response to user refinements, so the
+  // desktop "flip to list on first refine" guard can arm.
+  appBooted = true;
 }
 
 /**

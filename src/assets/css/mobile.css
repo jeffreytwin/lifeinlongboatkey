@@ -25,6 +25,11 @@
   .site-nav { display: none; }
   .result-count { display: none; }
 
+  /* Keep the shorter "Refine" heading on mobile (desktop shows the longer
+     "Narrow it down"). */
+  .filter-header h2 .title-desktop { display: none; }
+  .filter-header h2 .title-mobile { display: inline; }
+
   /* Floating "Narrow it down" pill, bottom-center. Positioned fixed so
      it stays in view as the user pans the map. Entrance animation
      (slide up + pulse twice) draws attention on first load; both
