@@ -27,6 +27,23 @@
 /* Desktop shows "Narrow it down"; mobile keeps the shorter "Refine"
    (the mobile sidebar is a compact overlay and has its own pill CTA). */
 .filter-header h2 .title-mobile { display: none; }
+
+/* One-shot attention beat on load: the desktop heading pulses + flashes to
+   brand teal twice, drawing the eye to where the user starts narrowing —
+   mirroring the mobile pill's entrance. Desktop-only because the span is
+   hidden on mobile; plays once since .filter-header isn't re-rendered. */
+.filter-header h2 .title-desktop {
+  display: inline-block;
+  transform-origin: left center;
+  animation: narrowHeadingBeat 1.3s ease-in-out 0.45s 1 both;
+}
+@keyframes narrowHeadingBeat {
+  0%, 50%, 100% { transform: scale(1);    color: var(--ink); }
+  25%, 75%      { transform: scale(1.08); color: var(--teal); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .filter-header h2 .title-desktop { animation: none; }
+}
 .clear-btn {
   font-size: 11px;
   color: var(--coral);
