@@ -60,6 +60,11 @@ function closeDetail() {
   invalidateSize();
 }
 
+// One-shot guard for the desktop "flip to list on first refine" behavior.
+// appBooted gates out the initial render's apply() call.
+let appBooted = false;
+let didAutoFlipToList = false;
+
 function apply() {
   const filtered = getFiltered(communities);
   const resultCount = document.getElementById('resultCount');
@@ -88,6 +93,16 @@ function apply() {
     closeDetail();
   } else if (state.selectedCommunity) {
     refreshOpenDetailListings();
+  }
+
+  // Desktop: the first time the user actually refines (after the initial
+  // boot render), flip to the list view so they immediately see their
+  // narrowed results — mirroring mobile, where Save jumps to the list.
+  // One-shot, so a later manual switch back to Map is respected.
+  if (appBooted && !didAutoFlipToList && state.view !== 'list'
+      && window.matchMedia('(min-width: 861px)').matches) {
+    didAutoFlipToList = true;
+    setView('list');
   }
 }
 
@@ -166,6 +181,9 @@ function bootFull() {
   });
 
   apply();
+  // From here on, apply() runs only in response to user refinements, so the
+  // desktop "flip to list on first refine" guard can arm.
+  appBooted = true;
 }
 
 /**

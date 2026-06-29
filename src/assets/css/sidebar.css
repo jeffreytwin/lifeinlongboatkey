@@ -24,6 +24,9 @@
   text-transform: uppercase;
   color: var(--ink);
 }
+/* Desktop shows "Narrow it down"; mobile keeps the shorter "Refine"
+   (the mobile sidebar is a compact overlay and has its own pill CTA). */
+.filter-header h2 .title-mobile { display: none; }
 .clear-btn {
   font-size: 11px;
   color: var(--coral);
