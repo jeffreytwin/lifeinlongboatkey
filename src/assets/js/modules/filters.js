@@ -360,7 +360,7 @@ function renderLocationFilter(locationCounts, waterfrontCounts, onChange) {
  * @param {Array<object>} communities
  * @param {{ apply: () => void, setLayout: (layout: string) => void }} callbacks
  */
-export function setupStaticControls(communities, { apply, setLayout }) {
+export function setupStaticControls(communities, { apply, applyNarrowing, setLayout }) {
   // Type pills
   document.querySelectorAll('.type-pill').forEach((pill) => {
     pill.addEventListener('click', () => {
@@ -371,7 +371,7 @@ export function setupStaticControls(communities, { apply, setLayout }) {
       pill.classList.add('active');
       pill.setAttribute('aria-checked', 'true');
       state.type = pill.dataset.type;
-      apply();
+      applyNarrowing();
     });
   });
 
@@ -392,7 +392,9 @@ export function setupStaticControls(communities, { apply, setLayout }) {
       p.setAttribute('aria-checked', isAll ? 'true' : 'false');
     });
     forSale?.setAttribute('aria-pressed', 'true'); // resets to default ON
-    renderFilters(communities, apply);
+    // Re-render facets flip-capable for future changes, but Clear All itself
+    // doesn't flip (apply() without narrowing).
+    renderFilters(communities, applyNarrowing);
     apply();
   });
 
