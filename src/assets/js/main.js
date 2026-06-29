@@ -119,8 +119,10 @@ function bootFull() {
   renderFilters(communities, apply);
   setupStaticControls(communities, { apply, setLayout });
 
-  // Close button for the details panel
+  // Close button for the details panel (× on desktop, "Back to results"
+  // pill on mobile — both dismiss the panel and return to the map/results).
   document.getElementById('detailClose')?.addEventListener('click', closeDetail);
+  document.getElementById('detailBack')?.addEventListener('click', closeDetail);
 
   // Mobile filters: open the full-screen overlay, then close it via Save.
   document.getElementById('filtersToggle')?.addEventListener('click', () => {
