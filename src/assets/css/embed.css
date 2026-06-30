@@ -145,4 +145,26 @@ html.embed:not(.embed-app) .embed-cta:hover {
     width: 24px;
     height: 24px;
   }
+
+  /* The filter drawer, list, and community-detail overlay get the same Wix
+     upscale. Counter-scale their content uniformly with zoom — it reflows
+     cleanly (unlike transform), is reliable in Safari/Chrome, and never
+     touches the Mapbox canvas (the detail's reference map is a static
+     image, so it scales safely too). */
+  html.embed-app .filters > * {
+    zoom: 0.8;
+  }
+  html.embed-app .list-view-items {
+    zoom: 0.8;
+  }
+  html.embed-app .detail-content {
+    zoom: 0.8;
+  }
+
+  /* The "Back to results" pill is chrome (outside .detail-content), so
+     shrink it directly like the other overlay controls. */
+  html.embed-app .content.layout-detail .detail-back-mobile {
+    padding: 7px 13px;
+    font-size: 11px;
+  }
 }
