@@ -117,45 +117,6 @@ export function findCommunityBySlug(communities, slug) {
 }
 
 /**
- * Counter Wix's mobile iframe upscale. On a Wix mobile page the embed is laid
- * out on a ~320px design canvas and scaled up to fill the device width, which
- * magnifies the UI (oversized chrome, drawer, list, detail). The iframe is
- * full-bleed there, so the visual scale ≈ device width ÷ the iframe's own
- * layout width — expose its inverse as the `--embed-scale` CSS variable, which
- * embed.css applies via `zoom` to the overlays / surfaces (never the Mapbox
- * canvas). No-ops to 1 when unscaled (desktop, or the embed opened directly),
- * and re-measures on resize / orientation change.
- *
- * The same formula is mirrored in index.html's head script so the chrome
- * doesn't flash full-size before this runs.
- */
-/**
- * Deliberate extra reduction applied on top of the Wix-upscale compensation,
- * so the mobile embed chrome renders a bit smaller than the standalone app
- * (more breathing room for the map). 1 = match standalone; lower = smaller.
- * Mirrored in index.html's head script — keep them in sync.
- */
-const EMBED_CHROME_SCALE = 0.8;
-
-export function applyEmbedScale() {
-  const root = document.documentElement;
-  const compute = () => {
-    const screenW = (window.screen && window.screen.width) || window.innerWidth;
-    let scale = 1;
-    // Only mobile-width, full-bleed iframes are upscaled. Clamp the measured
-    // inverse so we never enlarge and don't over-shrink if the embed isn't
-    // actually full-bleed, then apply the deliberate extra reduction.
-    if (window.innerWidth <= 860 && screenW > 0) {
-      scale = Math.max(0.7, Math.min(1, window.innerWidth / screenW)) * EMBED_CHROME_SCALE;
-    }
-    root.style.setProperty('--embed-scale', String(scale));
-  };
-  compute();
-  window.addEventListener('resize', compute);
-  window.addEventListener('orientationchange', compute);
-}
-
-/**
  * Build the "open the full map" URL for the embed CTA, pre-focused on the
  * given community when there is one.
  */

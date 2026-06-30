@@ -107,42 +107,62 @@ html.embed-app .detail-map {
     height: 100vh;
   }
 
-  /* Counter Wix's mobile iframe upscale. --embed-scale is set in JS (and
-     pre-set in the head script) to the inverse of the measured scale — ~0.8
-     on a typical phone, and 1 (no-op) when the embed isn't scaled, e.g. on
-     desktop or when opened directly. Applied via `zoom`, which reflows
-     cleanly (unlike transform) and is reliable in Safari/Chrome. Scoped to
-     the chrome overlays, markers, list, filter drawer, and the detail
-     content (whose reference map is a static image) — never the Mapbox
-     canvas. Each surface scales uniformly, so it tracks any device exactly. */
+  /* Wix lays the mobile page out on its ~320px design canvas and scales it
+     up to the device width, which magnifies the embed's chrome. Counter it
+     with fixed (non-adaptive) values: the overlay controls + pins shrink to
+     ~0.8x, and the filter drawer / list / detail content scale uniformly via
+     zoom. Embed-only — the standalone app is untouched. Tunable: nudge these
+     together if the embed reads too big or too small. */
   html.embed-app .filters-toggle-btn {
-    zoom: var(--embed-scale, 1);
+    padding: 11px 21px;
+    font-size: 11px;
     white-space: nowrap;
   }
   html.embed-app .view-switch {
     top: 14px;
-    zoom: var(--embed-scale, 1);
+  }
+  html.embed-app .view-switch-btn {
+    padding: 5px 14px;
+    font-size: 10px;
   }
   html.embed-app .map-legend {
-    zoom: var(--embed-scale, 1);
+    padding: 6px 10px;
+    font-size: 9px;
+    gap: 5px;
   }
-  html.embed-app .mapboxgl-ctrl-group {
-    zoom: var(--embed-scale, 1);
+  html.embed-app .legend-item {
+    gap: 6px;
   }
-  html.embed-app .pin-condo,
+  html.embed-app .legend-dot {
+    width: 8px;
+    height: 8px;
+  }
+  html.embed-app .pin-condo {
+    width: 22px;
+    height: 22px;
+  }
   html.embed-app .pin-nbhd {
-    zoom: var(--embed-scale, 1);
+    width: 37px;
+    height: 37px;
+  }
+  html.embed-app .pin-nbhd .pin-inner {
+    font-size: 10px;
+  }
+  html.embed-app .mapboxgl-ctrl-group button {
+    width: 24px;
+    height: 24px;
   }
   html.embed-app .filters > * {
-    zoom: var(--embed-scale, 1);
+    zoom: 0.8;
   }
   html.embed-app .list-view-items {
-    zoom: var(--embed-scale, 1);
+    zoom: 0.8;
   }
   html.embed-app .detail-content {
-    zoom: var(--embed-scale, 1);
+    zoom: 0.8;
   }
   html.embed-app .content.layout-detail .detail-back-mobile {
-    zoom: var(--embed-scale, 1);
+    padding: 7px 13px;
+    font-size: 11px;
   }
 }
