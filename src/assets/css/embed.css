@@ -14,6 +14,15 @@ html.embed .detail-panel {
   display: none !important;
 }
 
+/* The header is display:none in embed mode, which drops it out of the
+   .app grid flow. .app declares two rows (auto 1fr); with the header gone,
+   .main would otherwise be auto-placed into the now-empty `auto` track and
+   collapse to zero height (blank frame). Collapse to a single 1fr row so
+   .main fills the full viewport height. */
+html.embed .app {
+  grid-template-rows: 1fr;
+}
+
 /* With the filter rail gone, the main grid is a single full-bleed column. */
 html.embed .main {
   grid-template-columns: 1fr;
