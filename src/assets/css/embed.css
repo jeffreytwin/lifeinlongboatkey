@@ -93,9 +93,6 @@ html.embed:not(.embed-app) .embed-cta:hover {
    view toggle.
    ===================================================================== */
 @media (max-width: 860px) {
-  html.embed-app .view-switch {
-    top: 14px;
-  }
   html.embed-app .map-wrap {
     height: 100vh;
   }
@@ -103,68 +100,42 @@ html.embed:not(.embed-app) .embed-cta:hover {
     height: 100vh;
   }
 
-  /* Wix lays the mobile page out on its ~320px design canvas and scales it
-     up to the device width (~1.25x), which magnifies the embed's chrome and
-     clips the legend. Counter-scale the overlay controls + pins by ~0.8x so
-     they land near the standalone mobile size. Embed-only — the standalone
-     app is untouched. Tunable: nudge these together if a device over/under
-     shoots. */
+  /* Counter Wix's mobile iframe upscale. --embed-scale is set in JS (and
+     pre-set in the head script) to the inverse of the measured scale — ~0.8
+     on a typical phone, and 1 (no-op) when the embed isn't scaled, e.g. on
+     desktop or when opened directly. Applied via `zoom`, which reflows
+     cleanly (unlike transform) and is reliable in Safari/Chrome. Scoped to
+     the chrome overlays, markers, list, filter drawer, and the detail
+     content (whose reference map is a static image) — never the Mapbox
+     canvas. Each surface scales uniformly, so it tracks any device exactly. */
   html.embed-app .filters-toggle-btn {
-    padding: 11px 21px;
-    font-size: 11px;
+    zoom: var(--embed-scale, 1);
     white-space: nowrap;
   }
-  html.embed-app .view-switch-btn {
-    padding: 5px 14px;
-    font-size: 10px;
+  html.embed-app .view-switch {
+    top: 14px;
+    zoom: var(--embed-scale, 1);
   }
   html.embed-app .map-legend {
-    padding: 6px 10px;
-    font-size: 9px;
-    gap: 5px;
+    zoom: var(--embed-scale, 1);
   }
-  html.embed-app .legend-item {
-    gap: 6px;
+  html.embed-app .mapboxgl-ctrl-group {
+    zoom: var(--embed-scale, 1);
   }
-  html.embed-app .legend-dot {
-    width: 8px;
-    height: 8px;
-  }
-  html.embed-app .pin-condo {
-    width: 22px;
-    height: 22px;
-  }
+  html.embed-app .pin-condo,
   html.embed-app .pin-nbhd {
-    width: 37px;
-    height: 37px;
+    zoom: var(--embed-scale, 1);
   }
-  html.embed-app .pin-nbhd .pin-inner {
-    font-size: 10px;
-  }
-  html.embed-app .mapboxgl-ctrl-group button {
-    width: 24px;
-    height: 24px;
-  }
-
-  /* The filter drawer, list, and community-detail overlay get the same Wix
-     upscale. Counter-scale their content uniformly with zoom — it reflows
-     cleanly (unlike transform), is reliable in Safari/Chrome, and never
-     touches the Mapbox canvas (the detail's reference map is a static
-     image, so it scales safely too). */
   html.embed-app .filters > * {
-    zoom: 0.8;
+    zoom: var(--embed-scale, 1);
   }
   html.embed-app .list-view-items {
-    zoom: 0.8;
+    zoom: var(--embed-scale, 1);
   }
   html.embed-app .detail-content {
-    zoom: 0.8;
+    zoom: var(--embed-scale, 1);
   }
-
-  /* The "Back to results" pill is chrome (outside .detail-content), so
-     shrink it directly like the other overlay controls. */
   html.embed-app .content.layout-detail .detail-back-mobile {
-    padding: 7px 13px;
-    font-size: 11px;
+    zoom: var(--embed-scale, 1);
   }
 }
