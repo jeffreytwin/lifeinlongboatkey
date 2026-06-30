@@ -53,6 +53,10 @@ const zoneBubbleByZone = new Map();
 let currentPopup = null;
 let currentList = [];
 let onSelect = () => {};
+/** When false (group embeds), the low-zoom zone-bubble layer is suppressed
+ *  and individual pins / polygons show at every zoom — there's no point
+ *  collapsing a 15-community subset into three island-wide bubbles. */
+let zonesEnabled = true;
 let neighborhoodPolygons = null; // FeatureCollection
 /** Names of neighborhoods that have a polygon — these skip the circle marker. */
 const polygonNames = new Set();
@@ -80,6 +84,7 @@ const canHover = typeof window !== 'undefined'
 export function initMap(communities, callbacks) {
   onSelect = callbacks.onSelect || (() => {});
   const onReady = callbacks.onReady || (() => {});
+  zonesEnabled = callbacks.zones !== false;
   neighborhoodPolygons = callbacks.neighborhoodPolygons || null;
   if (neighborhoodPolygons) {
     for (const f of neighborhoodPolygons.features) polygonNames.add(f.properties.name);
@@ -123,7 +128,7 @@ export function initMap(communities, callbacks) {
     wireNeighborhoodPolygonInteractions(communities);
     wireHoverCardTap(communities);
     syncMarkers(communities);
-    syncZoneBubbles(communities);
+    if (zonesEnabled) syncZoneBubbles(communities);
     setNeighborhoodPolygonFilter(communities);
     updateZoomDependentVisibility();
     map.on('moveend', updateZoomDependentVisibility);
@@ -676,7 +681,9 @@ function updateZoomDependentVisibility() {
   // isStyleLoaded() flips to true, leaving the initial visibility pass
   // a no-op and the map stuck with default-visible markers + bubbles.
   if (!map) return;
-  const zoomedOut = map.getZoom() < ZONE_ZOOM_THRESHOLD;
+  // Group embeds suppress the zone-bubble view entirely, so pins / polygons
+  // stay visible at every zoom (never "zoomed out" into bubbles).
+  const zoomedOut = zonesEnabled && map.getZoom() < ZONE_ZOOM_THRESHOLD;
 
   // Zone bubbles
   zoneBubbleByZone.forEach((marker) => {
@@ -765,6 +772,26 @@ export function focusCommunity(community, { zoom, duration = 650 } = {}) {
     zoom: zoom ?? Math.max(map.getZoom(), 14),
     duration,
   });
+}
+
+/**
+ * Frame the map to fit a set of communities — used by group embeds to fit
+ * the whole cluster (e.g. all Bay Isles communities) instead of flying to a
+ * single pin. Uses each community's stored coordinate (polygon centroids for
+ * neighborhoods); padding absorbs the slack so polygon edges aren't clipped.
+ */
+export function fitToCommunities(list, { padding = 56, maxZoom = 15.5, duration = 0 } = {}) {
+  if (!map || !Array.isArray(list) || !list.length) return;
+  const bounds = new mapboxgl.LngLatBounds();
+  let count = 0;
+  for (const c of list) {
+    if (typeof c.lat === 'number' && typeof c.lng === 'number') {
+      bounds.extend([c.lng, c.lat]);
+      count++;
+    }
+  }
+  if (!count) return;
+  map.fitBounds(bounds, { padding, maxZoom, duration });
 }
 
 export function invalidateSize() {

@@ -26,12 +26,20 @@ import {
   focusCommunity,
   invalidateSize,
   openPopupFor,
+  fitToCommunities,
 } from './modules/map.js';
-import { getEmbedParams, findCommunityBySlug, fullMapUrl } from './modules/embed.js';
+import {
+  getEmbedParams,
+  findCommunityBySlug,
+  findGroup,
+  filterByGroup,
+  fullMapUrl,
+} from './modules/embed.js';
 
 const communities = getCommunities();
-const { embed, communitySlug } = getEmbedParams();
+const { embed, communitySlug, groupSlug } = getEmbedParams();
 const focusTarget = findCommunityBySlug(communities, communitySlug);
+const group = findGroup(groupSlug);
 
 const totalEl = document.getElementById('totalCount');
 if (totalEl) totalEl.textContent = String(communities.length);
@@ -195,6 +203,31 @@ function bootFull() {
 }
 
 /**
+ * Group embed — a chrome-less mini-map scoped to a named cluster of
+ * communities (`?embed=1&group=bay-isles`), for a community-specific landing
+ * page. Only the group's members render, the map fits their bounds, the
+ * zone-bubble view is suppressed, and the CTA links out to the full map.
+ */
+function bootGroupEmbed() {
+  document.documentElement.classList.add('embed');
+
+  const groupList = filterByGroup(communities, group);
+
+  const cta = document.getElementById('embedCta');
+  if (cta) {
+    cta.href = fullMapUrl(focusTarget);  // base full map when no single focus
+    cta.textContent = 'Explore all neighborhoods on the full map →';
+  }
+
+  initMap(groupList, {
+    onSelect: (community) => openPopupFor(community),
+    neighborhoodPolygons: getNeighborhoodPolygons(),
+    zones: false,
+    onReady: () => fitToCommunities(groupList),
+  });
+}
+
+/**
  * Embed mode — the chrome-less single-community view dropped into a Wix
  * location page via <iframe src="…?embed=1&community=<slug>">. All 107
  * communities still render for spatial context, but one is highlighted and
@@ -227,5 +260,6 @@ function bootEmbed() {
   });
 }
 
-if (embed) bootEmbed();
+if (embed && group) bootGroupEmbed();
+else if (embed) bootEmbed();
 else bootFull();

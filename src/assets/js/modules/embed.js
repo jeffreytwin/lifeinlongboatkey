@@ -11,12 +11,31 @@
  *                       pageUrl, e.g. "islander-club" from
  *                       "/neighborhood/islander-club"). `?focus=` is accepted
  *                       as an alias.
+ *   ?group=<slug>       restrict the embed to a named cluster of communities
+ *                       (e.g. "bay-isles"). Only the group's members render
+ *                       and the map fits its bounds — for a community-specific
+ *                       landing page that wants a pre-filtered mini-map.
  *   ?embed=1            collapse the chrome (header / filters / list) so the
  *                       map fills the frame and a single CTA links out to the
  *                       full map.
  */
 
 const FULL_MAP_BASE = 'https://lifeinlongboatkey.web.app/';
+
+/**
+ * Named community groups for `?group=<slug>` embeds. Each entry is a slug →
+ * { label, match } where match(community) decides membership. Adding a new
+ * gated community / cluster (e.g. Longboat Key Club) is a one-line addition
+ * here — no data changes. Matching by name substring is intentional: the
+ * dataset names these consistently ("… (Bay Isles)", "Bay Isles - …"), and
+ * no unrelated community collides on the phrase.
+ */
+const GROUPS = {
+  'bay-isles': {
+    label: 'Bay Isles',
+    match: (c) => /bay isles/i.test(c.name || ''),
+  },
+};
 
 /** Trim leading/trailing slashes and lowercase. */
 function norm(s) {
@@ -38,14 +57,39 @@ function slugifyName(name) {
 
 /**
  * Read the embed/deep-link params off the current URL.
- * @returns {{ embed: boolean, communitySlug: string|null }}
+ * @returns {{ embed: boolean, communitySlug: string|null, groupSlug: string|null }}
  */
 export function getEmbedParams() {
   const p = new URLSearchParams(window.location.search);
   const raw = p.get('embed');
   const embed = raw !== null && raw !== '0' && raw !== 'false';
   const community = p.get('community') || p.get('focus');
-  return { embed, communitySlug: community ? norm(community) : null };
+  const group = p.get('group');
+  return {
+    embed,
+    communitySlug: community ? norm(community) : null,
+    groupSlug: group ? norm(group) : null,
+  };
+}
+
+/**
+ * Resolve a group slug to its definition, or null if unknown.
+ * @returns {{ label: string, match: (c: object) => boolean }|null}
+ */
+export function findGroup(slug) {
+  if (!slug) return null;
+  return GROUPS[slug] || null;
+}
+
+/**
+ * Return the communities belonging to a resolved group.
+ * @param {Array<object>} communities
+ * @param {{ match: (c: object) => boolean }|null} group
+ * @returns {Array<object>}
+ */
+export function filterByGroup(communities, group) {
+  if (!group) return [];
+  return communities.filter((c) => group.match(c));
 }
 
 /**
