@@ -41,8 +41,18 @@ const { embed, communitySlug, groupSlug } = getEmbedParams();
 const focusTarget = findCommunityBySlug(communities, communitySlug);
 const group = findGroup(groupSlug);
 
+// The set the interactive app operates on. A group embed scopes the whole
+// experience — filters, counts, list, and map — to that cluster; every other
+// surface sees the full dataset.
+const workingSet = group ? filterByGroup(communities, group) : communities;
+
+// Compact chrome = the mobile-style drawer / view toggle / fullscreen detail
+// at every width, used by the featured group embed. It also gates out the
+// desktop-only "flip to list on first refine" affordance below.
+let compactChrome = false;
+
 const totalEl = document.getElementById('totalCount');
-if (totalEl) totalEl.textContent = String(communities.length);
+if (totalEl) totalEl.textContent = String(workingSet.length);
 
 function highlight(name) {
   state.highlightedName = name;
@@ -81,7 +91,7 @@ function applyNarrowing() {
 }
 
 function apply(narrowing = false) {
-  const filtered = getFiltered(communities);
+  const filtered = getFiltered(workingSet);
   const resultCount = document.getElementById('resultCount');
   if (resultCount) resultCount.textContent = String(filtered.length);
   renderMap(filtered);
@@ -89,7 +99,7 @@ function apply(narrowing = false) {
 
   // Refresh filter counts — each option shows how many communities would
   // remain if that option were toggled on top of the current state.
-  renderFilters(communities, applyNarrowing);
+  renderFilters(workingSet, applyNarrowing);
 
   // Update the mobile Save button with the running count so users can
   // see how their narrowing is going without dismissing the panel.
@@ -115,7 +125,10 @@ function apply(narrowing = false) {
   // their narrowed results — mirroring mobile, where Save jumps to the list.
   // One-shot, so a later manual switch back to Map is respected. Excludes
   // Clear All / Sort / Currently-for-sale, which call apply() without narrowing.
+  // Skipped in compact chrome (the featured embed), where the filter drawer's
+  // Save button already handles the jump-to-list.
   if (narrowing && appBooted && !didAutoFlipToList && state.view !== 'list'
+      && !compactChrome
       && window.matchMedia('(min-width: 861px)').matches) {
     didAutoFlipToList = true;
     setView('list');
@@ -143,31 +156,32 @@ function setLayout() {
 }
 
 /**
- * Full interactive map — the standalone app at lifeinlongboatkey.web.app.
- * Filters, list, mobile view toggle, and the details panel.
+ * Wire the interactive controls shared by the full app and the featured
+ * group embed: filter panel, details-panel close, filter drawer, Map/List
+ * toggle, list-item clicks, and the "locate on map" link. Both surfaces use
+ * the identical event flow — only the map setup (below) differs.
  */
-function bootFull() {
-  renderFilters(communities, applyNarrowing);
-  setupStaticControls(communities, { apply, applyNarrowing, setLayout });
+function wireInteractiveApp() {
+  renderFilters(workingSet, applyNarrowing);
+  setupStaticControls(workingSet, { apply, applyNarrowing, setLayout });
 
   // Close button for the details panel (× on desktop, "Back to results"
-  // pill on mobile — both dismiss the panel and return to the map/results).
+  // pill on mobile / embed — both dismiss the panel and return to results).
   document.getElementById('detailClose')?.addEventListener('click', closeDetail);
   document.getElementById('detailBack')?.addEventListener('click', closeDetail);
 
-  // Mobile filters: open the full-screen overlay, then close it via Save.
+  // Filter drawer: open the full-screen overlay, then close it via Save.
   document.getElementById('filtersToggle')?.addEventListener('click', () => {
     document.body.classList.add('filters-open');
   });
   document.getElementById('filtersSave')?.addEventListener('click', () => {
     document.body.classList.remove('filters-open');
     // After narrowing down, jump straight to the list so results are
-    // immediately scannable. (setView is mobile-only in effect; on
-    // desktop body.view-list toggles nothing visible.)
+    // immediately scannable.
     setView('list');
   });
 
-  // Mobile view toggle (Map | List).
+  // View toggle (Map | List).
   document.getElementById('viewMapBtn')?.addEventListener('click', () => setView('map'));
   document.getElementById('viewListBtn')?.addEventListener('click', () => setView('list'));
   setListItemClickHandler(openDetail);
@@ -175,11 +189,11 @@ function bootFull() {
   // Clicking the reference map in the details panel flies the big map
   // to that community's coordinates. On desktop the side-column detail
   // panel stays open and the user sees the flyTo on the visible map
-  // column. On mobile the detail panel is a fullscreen overlay that
+  // column. On touch / embed the detail panel is a fullscreen overlay that
   // would hide the flyTo entirely, so close it first.
   const IS_TOUCH = !(window.matchMedia && window.matchMedia('(hover: hover)').matches);
   setLocateOnMapHandler((community) => {
-    if (IS_TOUCH) closeDetail();
+    if (IS_TOUCH || compactChrome) closeDetail();
     if (state.view !== 'map') setView('map');
     // Let the map container remeasure from the view swap before flying.
     // Zoom near the maximum (18) so the user lands almost-fully-zoomed
@@ -187,8 +201,16 @@ function bootFull() {
     // since we may be traveling a greater zoom distance.
     setTimeout(() => focusCommunity(community, { zoom: 17, duration: 850 }), 140);
   });
+}
 
-  initMap(communities, {
+/**
+ * Full interactive map — the standalone app at lifeinlongboatkey.web.app.
+ * Filters, list, view toggle, and the details panel.
+ */
+function bootFull() {
+  wireInteractiveApp();
+
+  initMap(workingSet, {
     onSelect: openDetail,
     neighborhoodPolygons: getNeighborhoodPolygons(),
     // Deep-link: ?community=<slug> opens that community's detail panel,
@@ -203,28 +225,34 @@ function bootFull() {
 }
 
 /**
- * Group embed — a chrome-less mini-map scoped to a named cluster of
- * communities (`?embed=1&group=bay-isles`), for a community-specific landing
- * page. Only the group's members render, the map fits their bounds, the
- * zone-bubble view is suppressed, and the CTA links out to the full map.
+ * Featured group embed (`?embed=bay-isles` or `?embed=1&group=<slug>`) — the
+ * full filter / list / details experience, scoped to the group and dropped
+ * into a community landing page via <iframe>. Uses the compact (mobile-style)
+ * chrome at every width: a "Narrow it down" drawer, Map/List toggle, and a
+ * fullscreen details overlay. The map fits the group's bounds and suppresses
+ * the island-wide zone bubbles.
  */
-function bootGroupEmbed() {
-  document.documentElement.classList.add('embed');
+function bootFeaturedEmbed() {
+  compactChrome = true;
+  // The inline head script adds both classes pre-paint; mirror here so the
+  // mode is self-contained even if that script is removed.
+  document.documentElement.classList.add('embed', 'embed-app');
 
-  const groupList = filterByGroup(communities, group);
+  wireInteractiveApp();
 
-  const cta = document.getElementById('embedCta');
-  if (cta) {
-    cta.href = fullMapUrl(focusTarget);  // base full map when no single focus
-    cta.textContent = 'Explore all neighborhoods on the full map →';
-  }
-
-  initMap(groupList, {
-    onSelect: (community) => openPopupFor(community),
+  initMap(workingSet, {
+    onSelect: openDetail,
     neighborhoodPolygons: getNeighborhoodPolygons(),
     zones: false,
-    onReady: () => fitToCommunities(groupList),
+    onReady: () => {
+      fitToCommunities(workingSet);
+      // Honor a community deep-link inside the group if one was passed.
+      if (focusTarget) openDetail(focusTarget);
+    },
   });
+
+  apply();
+  appBooted = true;
 }
 
 /**
@@ -260,6 +288,6 @@ function bootEmbed() {
   });
 }
 
-if (embed && group) bootGroupEmbed();
+if (embed && group) bootFeaturedEmbed();
 else if (embed) bootEmbed();
 else bootFull();

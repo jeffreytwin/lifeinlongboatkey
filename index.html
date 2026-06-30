@@ -23,9 +23,15 @@
          boots; the param check matches getEmbedParams() in embed.js. -->
     <script>
       try {
-        var e = new URLSearchParams(location.search).get('embed');
+        var p = new URLSearchParams(location.search);
+        var e = p.get('embed');
         if (e !== null && e !== '0' && e !== 'false') {
           document.documentElement.classList.add('embed');
+          // Featured group embed (?embed=<slug> or ?embed=1&group=<slug>)
+          // gets the compact full-app chrome. Mirrors getEmbedParams().
+          var toggle = ['', '1', 'true', 'yes', 'on'];
+          var grp = p.get('group') || (toggle.indexOf(e.toLowerCase()) === -1 ? e : null);
+          if (grp) document.documentElement.classList.add('embed-app');
         }
       } catch (_) {}
     </script>
@@ -46,9 +52,6 @@
         <div class="result-count">
           Showing <strong><span id="resultCount">0</span></strong> of <span id="totalCount">0</span> communities
         </div>
-        <button id="filtersToggle" type="button" class="filters-toggle-btn" aria-label="Open filters">
-          Narrow it down
-        </button>
       </header>
 
       <!-- Main layout -->
@@ -145,6 +148,13 @@
             <button id="detailBack" type="button" class="detail-back-mobile" aria-label="Back to results">‹ Back to results</button>
             <div id="detailContent" class="detail-content"></div>
           </aside>
+
+          <!-- "Narrow it down" drawer trigger. Lives in the content area (not
+               the header) so it still renders when embed mode hides the header.
+               Shown only on mobile and in the featured embed (CSS-gated). -->
+          <button id="filtersToggle" type="button" class="filters-toggle-btn" aria-label="Open filters">
+            Narrow it down
+          </button>
         </section>
       </div>
     </div>
