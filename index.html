@@ -31,7 +31,15 @@
           // gets the compact full-app chrome. Mirrors getEmbedParams().
           var toggle = ['', '1', 'true', 'yes', 'on'];
           var grp = p.get('group') || (toggle.indexOf(e.toLowerCase()) === -1 ? e : null);
-          if (grp) document.documentElement.classList.add('embed-app');
+          if (grp) {
+            document.documentElement.classList.add('embed-app');
+            // On mobile the featured embed shows a poster (the app is opened
+            // full-screen in a new tab instead). Flag it pre-paint so the app
+            // shell never flashes before main.js swaps in the poster.
+            if (window.matchMedia && window.matchMedia('(max-width: 860px)').matches) {
+              document.documentElement.classList.add('embed-poster');
+            }
+          }
         }
       } catch (_) {}
     </script>
@@ -158,6 +166,15 @@
         </section>
       </div>
     </div>
+
+    <!-- Mobile embed poster. Shown only when html.embed-poster is set (the
+         featured embed on a narrow screen); main.js fills in the live map
+         image, the link, and the group label. Tapping opens the full app in
+         a new tab — a native full-screen experience, not the scaled iframe. -->
+    <a id="embedPoster" class="embed-poster" target="_blank" rel="noopener" aria-label="Explore the map">
+      <span class="embed-poster-scrim" aria-hidden="true"></span>
+      <span class="embed-poster-cta">Click here to explore the map</span>
+    </a>
 
     <script src="./config.js"></script>
     <script type="module" src="./src/assets/js/main.js"></script>

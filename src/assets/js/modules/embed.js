@@ -127,3 +127,14 @@ export function fullMapUrl(target) {
     ? `${FULL_MAP_BASE}?community=${encodeURIComponent(slug)}`
     : FULL_MAP_BASE;
 }
+
+/**
+ * Full-app URL scoped to a group (e.g. ?group=bay-isles). This is the
+ * standalone, top-level experience — full chrome, scoped + focused on the
+ * group — that the mobile embed poster opens.
+ */
+export function groupMapUrl(groupSlug) {
+  return groupSlug
+    ? `${FULL_MAP_BASE}?group=${encodeURIComponent(groupSlug)}`
+    : FULL_MAP_BASE;
+}

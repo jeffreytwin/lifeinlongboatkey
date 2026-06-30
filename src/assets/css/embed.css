@@ -94,75 +94,62 @@ html.embed-app .detail-map {
 }
 
 /* ========================================================================
-   Featured embed on a narrow frame. It reuses the app's mobile layout, but
-   that layout offsets everything below the ~76px site header the embed
-   hides — leaving a gap. Reclaim it: full-height map/list and a top-aligned
-   view toggle.
+   Mobile embed poster. On a narrow screen the featured embed doesn't run the
+   interactive app inside the iframe (Wix scales it awkwardly and an iframe
+   can't go full-screen on iOS). Instead html.embed-poster hides the app and
+   shows a full-frame map image with a CTA that opens the full app in a new
+   tab. main.js fills in the image, link, and label.
    ===================================================================== */
-@media (max-width: 860px) {
-  html.embed-app .map-wrap {
-    height: 100vh;
-  }
-  html.embed-app .list-view {
-    height: 100vh;
-  }
-
-  /* Wix lays the mobile page out on its ~320px design canvas and scales it
-     up to the device width, which magnifies the embed's chrome. Counter it
-     with fixed (non-adaptive) values: the overlay controls + pins shrink to
-     ~0.8x, and the filter drawer / list / detail content scale uniformly via
-     zoom. Embed-only — the standalone app is untouched. Tunable: nudge these
-     together if the embed reads too big or too small. */
-  html.embed-app .filters-toggle-btn {
-    padding: 11px 21px;
-    font-size: 11px;
-    white-space: nowrap;
-  }
-  html.embed-app .view-switch {
-    top: 14px;
-  }
-  html.embed-app .view-switch-btn {
-    padding: 5px 14px;
-    font-size: 10px;
-  }
-  html.embed-app .map-legend {
-    padding: 6px 10px;
-    font-size: 9px;
-    gap: 5px;
-  }
-  html.embed-app .legend-item {
-    gap: 6px;
-  }
-  html.embed-app .legend-dot {
-    width: 8px;
-    height: 8px;
-  }
-  html.embed-app .pin-condo {
-    width: 22px;
-    height: 22px;
-  }
-  html.embed-app .pin-nbhd {
-    width: 37px;
-    height: 37px;
-  }
-  html.embed-app .pin-nbhd .pin-inner {
-    font-size: 10px;
-  }
-  html.embed-app .mapboxgl-ctrl-group button {
-    width: 24px;
-    height: 24px;
-  }
-  html.embed-app .filters > * {
-    zoom: 0.8;
-  }
-  html.embed-app .list-view-items {
-    zoom: 0.8;
-  }
-  html.embed-app .detail-content {
-    zoom: 0.8;
-  }
-  html.embed-app .content.layout-detail .detail-back-mobile {
-    padding: 7px 13px;
-    font-size: 11px;
-  }
+/* Hide the poster anchor by default. Scoped to `a.` on purpose: the <html>
+   element also carries the `embed-poster` mode class, and a bare
+   `.embed-poster` rule would match (and hide) the whole document. */
+a.embed-poster {
+  display: none;
+}
+html.embed-poster .app {
+  display: none;
+}
+html.embed-poster .embed-poster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  text-decoration: none;
+  background: #cfe0e2; /* matches the map's water tone while the image loads */
+  -webkit-tap-highlight-color: transparent;
+}
+.embed-poster-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.embed-poster-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.34));
+}
+.embed-poster-cta {
+  position: relative;
+  z-index: 1;
+  background: var(--teal);
+  color: #fff;
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  padding: 16px 28px;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  max-width: calc(100% - 40px);
+}
+html.embed-poster .embed-poster:hover .embed-poster-cta,
+html.embed-poster .embed-poster:active .embed-poster-cta {
+  background: var(--teal-deep);
 }
