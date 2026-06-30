@@ -85,6 +85,12 @@ export function initMap(communities, callbacks) {
   onSelect = callbacks.onSelect || (() => {});
   const onReady = callbacks.onReady || (() => {});
   zonesEnabled = callbacks.zones !== false;
+  // Embeds live inside a scrollable host page, so the map must not trap the
+  // page scroll. Cooperative gestures gate map zoom/pan behind ⌘/Ctrl+scroll
+  // (desktop) and two fingers (touch), letting a plain scroll / one-finger
+  // drag pass through to the page. The standalone app (where the map fills
+  // the whole page) leaves this off so scroll-to-zoom works normally.
+  const cooperativeGestures = callbacks.cooperativeGestures === true;
   neighborhoodPolygons = callbacks.neighborhoodPolygons || null;
   if (neighborhoodPolygons) {
     for (const f of neighborhoodPolygons.features) polygonNames.add(f.properties.name);
@@ -108,6 +114,7 @@ export function initMap(communities, callbacks) {
     minZoom: 10,
     maxZoom: 18,
     maxBounds: LBK_BOUNDS,
+    cooperativeGestures,
     // Replace the default expanded attribution with a compact ⓘ (below) so
     // the corner stays clean. Mapbox/OSM attribution is required by ToS, so
     // it can't be removed outright — only collapsed.

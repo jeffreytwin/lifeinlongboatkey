@@ -238,6 +238,8 @@ function bootFeaturedEmbed() {
     onSelect: openDetail,
     neighborhoodPolygons: getNeighborhoodPolygons(),
     zones: false,
+    // Embedded in a scrollable host page — don't trap the page scroll.
+    cooperativeGestures: true,
     onReady: () => {
       fitToCommunities(workingSet);
       // Honor a community deep-link inside the group if one was passed.
@@ -267,6 +269,8 @@ function bootEmbed() {
   initMap(communities, {
     onSelect: (community) => openPopupFor(community),
     neighborhoodPolygons: getNeighborhoodPolygons(),
+    // Embedded in a scrollable host page — don't trap the page scroll.
+    cooperativeGestures: true,
     onReady: () => {
       if (!focusTarget) return;
       focusCommunity(focusTarget, {
