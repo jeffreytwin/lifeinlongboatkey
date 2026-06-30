@@ -133,3 +133,26 @@ export function staticMapUrl(community, { width = 400, height = 200, zoom = 14 }
     `?access_token=${encodeURIComponent(token)}`
   );
 }
+
+/**
+ * Static Mapbox image of a set of communities — a marker per community, with
+ * `auto` framing so the whole cluster is in view. Used for the mobile embed
+ * poster. Returns null when there's no token or no placeable communities.
+ * (No @2x: keeps each dimension under Mapbox's 1280px static-image limit.)
+ */
+export function staticMapForGroup(communities, { width = 640, height = 900 } = {}) {
+  const token = typeof window !== 'undefined' ? window.config?.mapboxAccessToken : null;
+  if (!token || token === 'pk.dummy' || token === 'YOUR_MAPBOX_ACCESS_TOKEN_HERE') return null;
+  const pts = (communities || []).filter(
+    (c) => typeof c?.lat === 'number' && typeof c?.lng === 'number',
+  );
+  if (!pts.length) return null;
+  const overlays = pts
+    .map((c) => `pin-s+${c.type === 'condo' ? '1F6B5A' : 'E07A1A'}(${c.lng},${c.lat})`)
+    .join(',');
+  return (
+    `https://api.mapbox.com/styles/v1/mapbox/light-v11/static/` +
+    `${overlays}/auto/${width}x${height}` +
+    `?access_token=${encodeURIComponent(token)}&padding=50`
+  );
+}

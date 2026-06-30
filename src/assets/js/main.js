@@ -34,7 +34,9 @@ import {
   findGroup,
   filterByGroup,
   fullMapUrl,
+  groupMapUrl,
 } from './modules/embed.js';
+import { staticMapForGroup } from './modules/utils.js';
 
 const communities = getCommunities();
 const { embed, communitySlug, groupSlug } = getEmbedParams();
@@ -205,9 +207,15 @@ function bootFull() {
   initMap(workingSet, {
     onSelect: openDetail,
     neighborhoodPolygons: getNeighborhoodPolygons(),
-    // Deep-link: ?community=<slug> opens that community's detail panel,
-    // focused, once the map is ready.
-    onReady: () => { if (focusTarget) openDetail(focusTarget); },
+    // When scoped to a group (?group=<slug>), open focused on that cluster
+    // and skip the island-wide zone bubbles — this is the full-screen target
+    // the mobile embed poster opens. Otherwise the normal island view.
+    zones: group ? false : undefined,
+    onReady: () => {
+      if (group) fitToCommunities(workingSet);
+      // Deep-link: ?community=<slug> opens that community's detail panel.
+      if (focusTarget) openDetail(focusTarget);
+    },
   });
 
   apply();
@@ -232,6 +240,17 @@ function bootFeaturedEmbed() {
   // chrome-less embed (`html.embed` alone).
   document.documentElement.classList.add('embed', 'embed-app');
 
+  // Mobile: an iframe can't go truly full-screen on iOS, and a Wix mobile
+  // page scales it awkwardly. So instead of cramming the interactive app into
+  // the frame, show a poster that opens the full app (scoped to the group) as
+  // its own top-level page — native full-screen, no iframe scaling. Desktop
+  // keeps the inline interactive experience.
+  const isMobile = window.matchMedia && window.matchMedia('(max-width: 860px)').matches;
+  if (isMobile) {
+    showEmbedPoster();
+    return;
+  }
+
   wireInteractiveApp();
 
   initMap(workingSet, {
@@ -249,6 +268,33 @@ function bootFeaturedEmbed() {
 
   apply();
   appBooted = true;
+}
+
+/**
+ * Mobile embed poster — a map image of the group with a "Click here to
+ * explore <Group>" CTA. Tapping opens the full app (scoped + focused on the
+ * group) in a new tab, giving a native full-screen experience instead of the
+ * scaled-down iframe. The static poster element lives in index.html so it
+ * paints immediately; here we fill in the live map image, link, and label.
+ */
+function showEmbedPoster() {
+  document.documentElement.classList.add('embed-poster');
+  const poster = document.getElementById('embedPoster');
+  if (!poster) return;
+  poster.href = groupMapUrl(groupSlug);
+  const label = group?.label || 'the map';
+  const cta = poster.querySelector('.embed-poster-cta');
+  if (cta) cta.textContent = `Click here to explore ${label}`;
+  poster.setAttribute('aria-label', `Explore ${label}`);
+  const img = staticMapForGroup(workingSet);
+  if (img) {
+    const el = document.createElement('img');
+    el.className = 'embed-poster-img';
+    el.alt = '';
+    el.decoding = 'async';
+    el.src = img;
+    poster.insertBefore(el, poster.firstChild);
+  }
 }
 
 /**
