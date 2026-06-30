@@ -86,6 +86,13 @@ html.embed:not(.embed-app) .embed-cta:hover {
   }
 }
 
+/* Drop the detail overlay's "Location on Longboat Key" reference map in the
+   featured embed — the host community page already provides location
+   context. (All widths; the standalone app keeps it.) */
+html.embed-app .detail-map {
+  display: none;
+}
+
 /* ========================================================================
    Featured embed on a narrow frame. It reuses the app's mobile layout, but
    that layout offsets everything below the ~76px site header the embed
