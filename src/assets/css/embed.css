@@ -140,13 +140,13 @@ html.embed-poster .embed-poster {
   background: var(--teal);
   color: #fff;
   font-family: 'Manrope', sans-serif;
-  font-size: 16px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-align: center;
-  padding: 16px 28px;
+  padding: 8px 15px;
   border-radius: 999px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.28);
   max-width: calc(100% - 40px);
 }
 html.embed-poster .embed-poster:hover .embed-poster-cta,
