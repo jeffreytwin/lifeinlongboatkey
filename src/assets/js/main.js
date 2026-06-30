@@ -284,8 +284,8 @@ function showEmbedPoster() {
   poster.href = groupMapUrl(groupSlug);
   const label = group?.label || 'the map';
   const cta = poster.querySelector('.embed-poster-cta');
-  if (cta) cta.textContent = `Click here to explore ${label}`;
-  poster.setAttribute('aria-label', `Explore ${label}`);
+  if (cta) cta.textContent = `Find your home in ${label}`;
+  poster.setAttribute('aria-label', `Find your home in ${label}`);
   const img = staticMapForGroup(workingSet);
   if (img) {
     const el = document.createElement('img');
