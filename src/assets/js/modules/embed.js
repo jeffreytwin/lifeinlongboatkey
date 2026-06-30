@@ -18,6 +18,10 @@
  *   ?embed=1            collapse the chrome (header / filters / list) so the
  *                       map fills the frame and a single CTA links out to the
  *                       full map.
+ *   ?embed=<slug>       single-param shorthand for ?embed=1&group=<slug>
+ *                       (e.g. ?embed=bay-isles). Avoids a second '&'-joined
+ *                       param, which some CMS URL fields — notably Wix's
+ *                       "Website Address" embed — silently truncate.
  */
 
 const FULL_MAP_BASE = 'https://lifeinlongboatkey.web.app/';
@@ -64,7 +68,13 @@ export function getEmbedParams() {
   const raw = p.get('embed');
   const embed = raw !== null && raw !== '0' && raw !== 'false';
   const community = p.get('community') || p.get('focus');
-  const group = p.get('group');
+  // Group can come from ?group=<slug>, or as the single-param shorthand
+  // ?embed=<slug> — anything in the embed param that isn't a plain on/off
+  // toggle is treated as a group slug. ?group= wins if both are present.
+  const TOGGLE = new Set(['', '1', 'true', 'yes', 'on']);
+  const embedShorthand =
+    raw !== null && !TOGGLE.has(raw.toLowerCase()) ? raw : null;
+  const group = p.get('group') || embedShorthand;
   return {
     embed,
     communitySlug: community ? norm(community) : null,
