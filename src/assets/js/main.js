@@ -46,11 +46,6 @@ const group = findGroup(groupSlug);
 // surface sees the full dataset.
 const workingSet = group ? filterByGroup(communities, group) : communities;
 
-// Compact chrome = the mobile-style drawer / view toggle / fullscreen detail
-// at every width, used by the featured group embed. It also gates out the
-// desktop-only "flip to list on first refine" affordance below.
-let compactChrome = false;
-
 const totalEl = document.getElementById('totalCount');
 if (totalEl) totalEl.textContent = String(workingSet.length);
 
@@ -125,10 +120,7 @@ function apply(narrowing = false) {
   // their narrowed results — mirroring mobile, where Save jumps to the list.
   // One-shot, so a later manual switch back to Map is respected. Excludes
   // Clear All / Sort / Currently-for-sale, which call apply() without narrowing.
-  // Skipped in compact chrome (the featured embed), where the filter drawer's
-  // Save button already handles the jump-to-list.
   if (narrowing && appBooted && !didAutoFlipToList && state.view !== 'list'
-      && !compactChrome
       && window.matchMedia('(min-width: 861px)').matches) {
     didAutoFlipToList = true;
     setView('list');
@@ -189,11 +181,11 @@ function wireInteractiveApp() {
   // Clicking the reference map in the details panel flies the big map
   // to that community's coordinates. On desktop the side-column detail
   // panel stays open and the user sees the flyTo on the visible map
-  // column. On touch / embed the detail panel is a fullscreen overlay that
+  // column. On mobile the detail panel is a fullscreen overlay that
   // would hide the flyTo entirely, so close it first.
   const IS_TOUCH = !(window.matchMedia && window.matchMedia('(hover: hover)').matches);
   setLocateOnMapHandler((community) => {
-    if (IS_TOUCH || compactChrome) closeDetail();
+    if (IS_TOUCH) closeDetail();
     if (state.view !== 'map') setView('map');
     // Let the map container remeasure from the view swap before flying.
     // Zoom near the maximum (18) so the user lands almost-fully-zoomed
@@ -227,15 +219,17 @@ function bootFull() {
 /**
  * Featured group embed (`?embed=bay-isles` or `?embed=1&group=<slug>`) — the
  * full filter / list / details experience, scoped to the group and dropped
- * into a community landing page via <iframe>. Uses the compact (mobile-style)
- * chrome at every width: a "Narrow it down" drawer, Map/List toggle, and a
- * fullscreen details overlay. The map fits the group's bounds and suppresses
- * the island-wide zone bubbles.
+ * into a community landing page via <iframe>. It reuses the standalone app's
+ * responsive layout verbatim (desktop filter sidebar + map when the iframe is
+ * wide; the mobile drawer / view toggle / fullscreen detail when it's narrow),
+ * just with the site header hidden. The map fits the group's bounds and
+ * suppresses the island-wide zone bubbles.
  */
 function bootFeaturedEmbed() {
-  compactChrome = true;
   // The inline head script adds both classes pre-paint; mirror here so the
-  // mode is self-contained even if that script is removed.
+  // mode is self-contained even if that script is removed. `embed-app`
+  // distinguishes the featured embed (keeps the chrome) from the minimal,
+  // chrome-less embed (`html.embed` alone).
   document.documentElement.classList.add('embed', 'embed-app');
 
   wireInteractiveApp();
