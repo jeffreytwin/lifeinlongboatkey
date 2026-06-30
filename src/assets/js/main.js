@@ -34,7 +34,6 @@ import {
   findGroup,
   filterByGroup,
   fullMapUrl,
-  applyEmbedScale,
 } from './modules/embed.js';
 
 const communities = getCommunities();
@@ -232,10 +231,6 @@ function bootFeaturedEmbed() {
   // distinguishes the featured embed (keeps the chrome) from the minimal,
   // chrome-less embed (`html.embed` alone).
   document.documentElement.classList.add('embed', 'embed-app');
-
-  // Adapt the mobile chrome to Wix's iframe upscale, and keep it in step on
-  // resize / orientation change.
-  applyEmbedScale();
 
   wireInteractiveApp();
 
