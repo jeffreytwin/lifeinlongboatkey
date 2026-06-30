@@ -102,4 +102,47 @@ html.embed:not(.embed-app) .embed-cta:hover {
   html.embed-app .list-view {
     height: 100vh;
   }
+
+  /* Wix lays the mobile page out on its ~320px design canvas and scales it
+     up to the device width (~1.25x), which magnifies the embed's chrome and
+     clips the legend. Counter-scale the overlay controls + pins by ~0.8x so
+     they land near the standalone mobile size. Embed-only — the standalone
+     app is untouched. Tunable: nudge these together if a device over/under
+     shoots. */
+  html.embed-app .filters-toggle-btn {
+    padding: 11px 21px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  html.embed-app .view-switch-btn {
+    padding: 5px 14px;
+    font-size: 10px;
+  }
+  html.embed-app .map-legend {
+    padding: 6px 10px;
+    font-size: 9px;
+    gap: 5px;
+  }
+  html.embed-app .legend-item {
+    gap: 6px;
+  }
+  html.embed-app .legend-dot {
+    width: 8px;
+    height: 8px;
+  }
+  html.embed-app .pin-condo {
+    width: 22px;
+    height: 22px;
+  }
+  html.embed-app .pin-nbhd {
+    width: 37px;
+    height: 37px;
+  }
+  html.embed-app .pin-nbhd .pin-inner {
+    font-size: 10px;
+  }
+  html.embed-app .mapboxgl-ctrl-group button {
+    width: 24px;
+    height: 24px;
+  }
 }
