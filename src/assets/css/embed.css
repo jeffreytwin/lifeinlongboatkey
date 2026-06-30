@@ -1,29 +1,29 @@
-/* Embed mode — the chrome-less single-community view served at
-   ?embed=1 and dropped into a Wix location page via <iframe>.
-   Everything here is scoped under html.embed, so the full app is
-   untouched. The CTA pill is hidden by default and only appears in
-   embed mode. */
+/* Embed mode — served at ?embed=… and dropped into a Wix page via <iframe>.
+   Everything here is scoped under html.embed, so the standalone app is
+   untouched. There are two flavors:
 
-/* Collapse the app chrome: header, filter rail, mobile view toggle,
-   the list view, and the side detail panel. The map fills the frame. */
-html.embed .header,
-html.embed .filters,
-html.embed .view-switch,
-html.embed .list-view,
-html.embed .detail-panel {
+     html.embed              — minimal embed: a chrome-less map (the single-
+                               community / context view). Filters, list, view
+                               toggle, and the detail panel are stripped; a
+                               single CTA links out to the full map.
+     html.embed.embed-app    — featured group embed: the full filter / list /
+                               details experience, scoped to a group, using the
+                               compact (mobile-style) chrome at every width. */
+
+/* The site header is external-site nav — hidden in every embed mode. */
+html.embed .header {
   display: none !important;
 }
 
-/* The header is display:none in embed mode, which drops it out of the
-   .app grid flow. .app declares two rows (auto 1fr); with the header gone,
-   .main would otherwise be auto-placed into the now-empty `auto` track and
-   collapse to zero height (blank frame). Collapse to a single 1fr row so
-   .main fills the full viewport height. */
+/* Hiding the header drops it out of the .app grid flow. .app declares two
+   rows (auto 1fr); with the header gone, .main would otherwise be auto-placed
+   into the now-empty `auto` track and collapse to zero height (blank frame).
+   Collapse to a single 1fr row so .main fills the full viewport height. */
 html.embed .app {
   grid-template-rows: 1fr;
 }
 
-/* With the filter rail gone, the main grid is a single full-bleed column. */
+/* With the desktop filter rail gone, the layout is a single full-bleed column. */
 html.embed .main {
   grid-template-columns: 1fr;
 }
@@ -33,11 +33,24 @@ html.embed .content.layout-detail {
   grid-template-columns: 1fr !important;
 }
 
-/* CTA pill — only rendered in embed mode, anchored to the map-wrap. */
+/* ========================================================================
+   Minimal embed (no group) — strip every interactive surface; map only.
+   ===================================================================== */
+html.embed:not(.embed-app) .filters,
+html.embed:not(.embed-app) .view-switch,
+html.embed:not(.embed-app) .list-view,
+html.embed:not(.embed-app) .filters-toggle-btn,
+html.embed:not(.embed-app) .detail-panel {
+  display: none !important;
+}
+
+/* CTA pill — only the minimal embed shows it (the featured app is
+   self-sufficient and the pill would collide with its "Narrow it down"
+   button). Anchored to the map-wrap, bottom-center. */
 .embed-cta {
   display: none;
 }
-html.embed .embed-cta {
+html.embed:not(.embed-app) .embed-cta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -60,17 +73,143 @@ html.embed .embed-cta {
   white-space: nowrap;
   max-width: calc(100% - 28px);
 }
-html.embed .embed-cta:hover {
+html.embed:not(.embed-app) .embed-cta:hover {
   background: var(--teal-deep);
   transform: translateX(-50%) translateY(-1px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
 }
-
-/* On narrow frames the legend (top-right) and CTA (bottom-center) don't
-   collide, but shrink the CTA text padding a touch for small embeds. */
 @media (max-width: 420px) {
-  html.embed .embed-cta {
+  html.embed:not(.embed-app) .embed-cta {
     font-size: 12px;
     padding: 9px 14px;
   }
+}
+
+/* ========================================================================
+   Featured embed (.embed-app) — the compact full-app chrome at every width.
+   Mirrors the mobile layout (mobile.css) without the max-width media query,
+   since an iframe can be any width but always wants the compact UX. The site
+   has no header here, so vertical offsets are measured from the frame top.
+   ===================================================================== */
+
+/* Floating "Narrow it down" pill — the only way into the filters (no header).
+   It lives inside .content (moved out of the hidden header) and is fixed to
+   the bottom-center of the frame. */
+html.embed-app .filters-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 13px 24px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  z-index: 60;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+html.embed-app .filters-toggle-btn:hover {
+  background: var(--teal-hover);
+}
+/* Hide the pill while the drawer is open or a community detail is showing. */
+html.embed-app body.filters-open .filters-toggle-btn,
+html.embed-app body:has(.content.layout-detail) .filters-toggle-btn {
+  display: none;
+}
+
+/* Filter rail: hidden by default, mounts as a full-frame overlay when the
+   drawer is opened (body.filters-open, toggled by the pill). */
+html.embed-app .filters {
+  display: none;
+}
+html.embed-app body.filters-open {
+  overflow: hidden;
+}
+html.embed-app body.filters-open .filters {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  max-height: none;
+  border: none;
+  padding: 16px 18px 0;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+/* Save button — sticky bottom bar inside the filter overlay. */
+html.embed-app .filters-save-btn {
+  display: block;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 16px -18px 0;
+  padding: 18px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+}
+html.embed-app .filters-save-btn:hover {
+  background: var(--teal-hover);
+}
+
+/* List view: leave room at the bottom so the last card clears the pill. */
+html.embed-app .list-view {
+  padding-bottom: 84px;
+}
+
+/* Details: fullscreen overlay (the desktop side-column is too wide for a
+   frame). z-index beats the highlighted-pin rule (1000) so the selected
+   pin doesn't poke through. */
+html.embed-app .content.layout-detail .detail-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  border-left: none;
+  background: var(--bg);
+  -webkit-overflow-scrolling: touch;
+}
+/* Swap the corner × (scrolls away in a fullscreen panel) for a fixed
+   "Back to results" pill. */
+html.embed-app .detail-close {
+  display: none;
+}
+html.embed-app .content.layout-detail .detail-back-mobile {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1200;
+  padding: 9px 16px 9px 12px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+html.embed-app .content.layout-detail .detail-back-mobile:active {
+  background: var(--teal-hover);
 }
