@@ -129,16 +129,24 @@ export function findCommunityBySlug(communities, slug) {
  * The same formula is mirrored in index.html's head script so the chrome
  * doesn't flash full-size before this runs.
  */
+/**
+ * Deliberate extra reduction applied on top of the Wix-upscale compensation,
+ * so the mobile embed chrome renders a bit smaller than the standalone app
+ * (more breathing room for the map). 1 = match standalone; lower = smaller.
+ * Mirrored in index.html's head script — keep them in sync.
+ */
+const EMBED_CHROME_SCALE = 0.8;
+
 export function applyEmbedScale() {
   const root = document.documentElement;
   const compute = () => {
     const screenW = (window.screen && window.screen.width) || window.innerWidth;
     let scale = 1;
-    // Only mobile-width, full-bleed iframes are upscaled. Clamp so we never
-    // enlarge, and don't over-shrink if the embed isn't actually full-bleed
-    // (a padded container would skew the ratio).
+    // Only mobile-width, full-bleed iframes are upscaled. Clamp the measured
+    // inverse so we never enlarge and don't over-shrink if the embed isn't
+    // actually full-bleed, then apply the deliberate extra reduction.
     if (window.innerWidth <= 860 && screenW > 0) {
-      scale = Math.max(0.7, Math.min(1, window.innerWidth / screenW));
+      scale = Math.max(0.7, Math.min(1, window.innerWidth / screenW)) * EMBED_CHROME_SCALE;
     }
     root.style.setProperty('--embed-scale', String(scale));
   };

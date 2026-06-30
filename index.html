@@ -33,11 +33,12 @@
           var grp = p.get('group') || (toggle.indexOf(e.toLowerCase()) === -1 ? e : null);
           if (grp) {
             document.documentElement.classList.add('embed-app');
-            // Pre-set the counter-scale (mirrors applyEmbedScale in embed.js)
-            // so the mobile chrome doesn't flash full-size before JS runs.
+            // Pre-set the counter-scale (mirrors applyEmbedScale in embed.js,
+            // incl. the 0.8 EMBED_CHROME_SCALE reduction) so the mobile chrome
+            // doesn't flash full-size before JS runs.
             var sw = (window.screen && window.screen.width) || window.innerWidth;
             var sc = (window.innerWidth <= 860 && sw > 0)
-              ? Math.max(0.7, Math.min(1, window.innerWidth / sw)) : 1;
+              ? Math.max(0.7, Math.min(1, window.innerWidth / sw)) * 0.8 : 1;
             document.documentElement.style.setProperty('--embed-scale', String(sc));
           }
         }
