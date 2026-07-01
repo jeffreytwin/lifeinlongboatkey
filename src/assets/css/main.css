@@ -2,9 +2,9 @@
 
 /* Design tokens — source of truth. Brand: mint (logo letterforms),
    gold (the heron), warm gray (body) per the lifeinlongboatkey.com
-   homepage. `--teal` is the medium-mint working color (works for
-   white-text buttons + text on cream); `--teal-bright` is the
-   logo-true bright mint reserved for decorative fills. `--coral` is
+   homepage. `--teal` is the site's brand green (#4DC0A9), used for
+   white-text buttons, pins, and active states; `--teal-deep` /
+   `--teal-hover` are the darker shade for hover/selected. `--coral` is
    retained as a variable name but carries the gold hex now. */
 :root {
   --bg: #F8F4EC;
@@ -14,7 +14,7 @@
   --ink-muted: #9A9794;
   --rule: #E6DFD2;
   --rule-soft: #F0EADD;
-  --teal: #2A8E78;
+  --teal: #4DC0A9;
   --teal-deep: #1F6B5A;
   --teal-hover: #1F6B5A;
   --teal-bright: #49C3A9;
