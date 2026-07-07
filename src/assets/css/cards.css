@@ -270,7 +270,7 @@
 .detail-link-primary:hover { background: var(--teal-hover); }
 
 /* Attention pulse on the "View Homes for Sale" CTA each time the details
-   panel opens — a few orange flashes with an expanding glow, then back to
+   panel opens — two orange flashes with an expanding glow, then back to
    the normal teal. The class is baked into the markup showDetail() renders,
    so every open replays it on a fresh element. */
 @keyframes cta-pulse-orange {
@@ -279,7 +279,7 @@
   100% { background: var(--teal);     box-shadow: 0 0 0 14px rgba(194, 102, 15, 0); }
 }
 .detail-link-primary.cta-pulse {
-  animation: cta-pulse-orange 0.9s ease-in-out 0.35s 3;
+  animation: cta-pulse-orange 0.9s ease-in-out 0.35s 2;
 }
 @media (prefers-reduced-motion: reduce) {
   .detail-link-primary.cta-pulse { animation: none; }
