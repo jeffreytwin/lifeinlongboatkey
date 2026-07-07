@@ -338,7 +338,7 @@ function wireInteractiveApp() {
 }
 
 /**
- * Full interactive map — the standalone app at lifeinlongboatkey.web.app.
+ * Full interactive map — the standalone app at map.lifeinlongboatkey.com.
  * Filters, list, view toggle, and the details panel.
  */
 function bootFull() {

@@ -3,7 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Interactive Map | Life in Longboat Key</title>
+    <title>Interactive Map of Longboat Key Neighborhoods & Condos | Life in Longboat Key</title>
+    <!-- One canonical URL for the app. Param variants (?community=…,
+         ?embed=…) consolidate here instead of indexing separately. -->
+    <link rel="canonical" href="https://map.lifeinlongboatkey.com/" />
+    <!-- Canonical home is the custom domain. The Firebase-issued hostnames
+         can't be disabled, so hop over immediately (query + hash intact —
+         deep links and old embeds keep working). replace() keeps the
+         Firebase URL out of history so back doesn't bounce through it. -->
+    <script>
+      if (location.hostname === 'lifeinlongboatkey.web.app'
+          || location.hostname === 'lifeinlongboatkey.firebaseapp.com') {
+        location.replace('https://map.lifeinlongboatkey.com'
+          + location.pathname + location.search + location.hash);
+      }
+    </script>
     <meta name="description" content="Explore every neighborhood and condo community on Longboat Key, FL. Filter by price, home type, bedrooms, amenities, and location on the island — then browse homes currently for sale." />
     <!-- Social link previews (Open Graph + Twitter Card). og:image must be
          an absolute URL; scrapers don't resolve relative paths. -->
@@ -11,15 +25,15 @@
     <meta property="og:site_name" content="Life in Longboat Key" />
     <meta property="og:title" content="Interactive Neighborhoods & Condos Map | Life in Longboat Key" />
     <meta property="og:description" content="Explore every neighborhood and condo community on Longboat Key, FL. Filter by price, home type, bedrooms, amenities, and location on the island — then browse homes currently for sale." />
-    <meta property="og:url" content="https://lifeinlongboatkey.web.app/" />
-    <meta property="og:image" content="https://lifeinlongboatkey.web.app/images/social-share.jpg" />
+    <meta property="og:url" content="https://map.lifeinlongboatkey.com/" />
+    <meta property="og:image" content="https://map.lifeinlongboatkey.com/images/social-share.jpg" />
     <meta property="og:image:width" content="1920" />
     <meta property="og:image:height" content="1080" />
     <meta property="og:image:alt" content="Aerial view of Longboat Key, Florida — Gulf beachfront condos, golf course, and Sarasota Bay" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Interactive Neighborhoods & Condos Map | Life in Longboat Key" />
     <meta name="twitter:description" content="Explore every neighborhood and condo community on Longboat Key, FL. Filter by price, home type, bedrooms, amenities, and location on the island." />
-    <meta name="twitter:image" content="https://lifeinlongboatkey.web.app/images/social-share.jpg" />
+    <meta name="twitter:image" content="https://map.lifeinlongboatkey.com/images/social-share.jpg" />
     <link rel="icon" type="image/png" href="/lbk-logo.png" />
     <link rel="apple-touch-icon" href="/lbk-logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -43,6 +57,15 @@
         var e = p.get('embed');
         if (e !== null && e !== '0' && e !== 'false') {
           document.documentElement.classList.add('embed');
+          // Embed variants are iframe content on the Wix pages, not pages
+          // in their own right — keep the (100+) thin chrome-less shells
+          // out of the index. Googlebot renders JS and honors a robots
+          // meta injected this early. The canonical above already points
+          // all variants at the clean URL; this is the hard stop.
+          var m = document.createElement('meta');
+          m.name = 'robots';
+          m.content = 'noindex';
+          document.head.appendChild(m);
           // Featured group embed (?embed=<slug> or ?embed=1&group=<slug>)
           // gets the compact full-app chrome. Mirrors getEmbedParams().
           var toggle = ['', '1', 'true', 'yes', 'on'];
@@ -69,7 +92,7 @@
         </a>
         <nav class="site-nav" aria-label="Primary">
           <a class="site-nav-link" href="https://www.lifeinlongboatkey.com/homes-for-sale">Homes for Sale</a>
-          <a class="site-nav-link is-current" href="https://lifeinlongboatkey.web.app" aria-current="page">Compare Neighborhoods</a>
+          <a class="site-nav-link is-current" href="https://map.lifeinlongboatkey.com" aria-current="page">Compare Neighborhoods</a>
           <a class="site-nav-link" href="https://www.lifeinlongboatkey.com/amenities">Amenities</a>
           <a class="site-nav-link" href="https://www.lifeinlongboatkey.com/contact-us">Contact</a>
         </nav>
@@ -165,7 +188,7 @@
             <div id="hoverCard" class="hover-card" aria-hidden="true"></div>
             <!-- Shown only in embed mode (body.embed). Links out to the full
                  interactive map, pre-focused on the embedded community. -->
-            <a id="embedCta" class="embed-cta" href="https://lifeinlongboatkey.web.app" target="_blank" rel="noopener">
+            <a id="embedCta" class="embed-cta" href="https://map.lifeinlongboatkey.com" target="_blank" rel="noopener">
               Explore all neighborhoods on the full map →
             </a>
           </div>
