@@ -128,7 +128,7 @@ button {
 
 /* Mobile-only controls; hidden on desktop. */
 .filters-toggle-btn { display: none; }
-.filters-save-btn { display: none; }
+.filters-footer { display: none; }
 
 /* Main grid */
 .main {

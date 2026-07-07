@@ -118,25 +118,38 @@
     background: var(--bg);
   }
 
-  /* Save button — sticky bottom bar inside the filter overlay. */
-  .filters-save-btn {
-    display: block;
+  /* Bottom action bar — sticky inside the filter overlay. Clear Criteria
+     (secondary) on the left, Save (primary, carries the live result
+     count) on the right. */
+  .filters-footer {
+    display: flex;
     position: sticky;
     bottom: 0;
-    left: 0;
-    right: 0;
     margin: 16px -18px 0;
-    padding: 18px;
-    background: var(--teal);
-    color: white;
+    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+  }
+  .filters-clear-btn,
+  .filters-save-btn {
     border: none;
+    padding: 18px 12px;
     font-family: inherit;
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.08);
+  }
+  .filters-clear-btn {
+    flex: 1;
+    background: var(--bg-card);
+    color: var(--ink-soft);
+    border-top: 1px solid var(--rule);
+  }
+  .filters-clear-btn:hover { color: var(--ink); }
+  .filters-save-btn {
+    flex: 1.5;
+    background: var(--teal);
+    color: white;
   }
   .filters-save-btn:hover { background: var(--teal-hover); }
 

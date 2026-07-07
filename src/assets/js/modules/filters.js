@@ -402,8 +402,10 @@ export function setupStaticControls(communities, { apply, applyNarrowing, setLay
     apply();
   });
 
-  // Clear all
-  document.getElementById('clearBtn')?.addEventListener('click', () => {
+  // Clear all — bound to both the sidebar-header "Clear All" (desktop) and
+  // the drawer footer's "Clear Criteria" (mobile). Resets filters in place;
+  // on mobile the drawer stays open so the user can set fresh criteria.
+  const clearAll = () => {
     resetFilters();
     document.querySelectorAll('.type-pill').forEach((p) => {
       const isAll = p.dataset.type === 'all';
@@ -415,7 +417,9 @@ export function setupStaticControls(communities, { apply, applyNarrowing, setLay
     // doesn't flip (apply() without narrowing).
     renderFilters(communities, applyNarrowing);
     apply();
-  });
+  };
+  document.getElementById('clearBtn')?.addEventListener('click', clearAll);
+  document.getElementById('filtersClear')?.addEventListener('click', clearAll);
 
   // Sort control lived in the old list header (now the details panel);
   // its <select> is gone. Ignore missing element silently.

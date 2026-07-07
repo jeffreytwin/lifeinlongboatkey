@@ -118,11 +118,18 @@
             <div id="locationList" class="checklist"></div>
           </div>
 
-          <!-- Save / close button — only shown on mobile when the
-               filters panel is a full-screen overlay. -->
-          <button id="filtersSave" type="button" class="filters-save-btn">
-            Save
-          </button>
+          <!-- Bottom action bar — only shown on mobile when the filters
+               panel is a full-screen overlay. Clear Criteria resets every
+               filter (same as the sidebar's Clear All); Save closes the
+               drawer and jumps to the results list. -->
+          <div class="filters-footer">
+            <button id="filtersClear" type="button" class="filters-clear-btn">
+              Clear Criteria
+            </button>
+            <button id="filtersSave" type="button" class="filters-save-btn">
+              Save
+            </button>
+          </div>
         </aside>
 
         <!-- Content area: map + list -->
