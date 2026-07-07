@@ -78,11 +78,13 @@ export function hasListingLevelFilters() {
   return state.priceTiers.size > 0 || state.homeTypes.size > 0 || state.bedrooms.size > 0;
 }
 
-/** A vacant-land / lot listing — these come through from the feed with no
- *  home type, no bedrooms, and zero building sqft. Treated as the 'Land'
- *  home type for filtering. */
+/** A vacant-land / lot listing, treated as the 'Land' home type for
+ *  filtering. The feed now tags these explicitly (homeType "Land"); the
+ *  legacy shape had no home type, no bedrooms, and zero building sqft, and
+ *  that heuristic is kept as a fallback in case the feed reverts. */
 export function isLandListing(l) {
   if (!l) return false;
+  if (/^(vacant\s+)?(land|lot)s?$/i.test(String(l.homeType ?? '').trim())) return true;
   const noType = l.homeType == null || String(l.homeType).trim() === '';
   const noBeds = l.beds == null;
   const noSqft = l.sqftText == null || l.sqftText === '' || l.sqftText === '0';
