@@ -62,85 +62,125 @@ function highlight(name) {
 /* Browser-back support for the mobile fullscreen surfaces. On mobile the
    results list, the "Narrow it down" filter drawer, and the community
    details panel each cover the whole viewport, so users habitually press
-   the system back button (or swipe back) expecting to step back one
-   surface — which would otherwise leave the site. Each open surface gets
-   one history entry, stacked map (base) → list → drawer/detail, and back
-   closes the top surface through the same code path as its on-screen
-   button. Closing a surface via its button instead consumes its entry, so
-   a later back press leaves the page as normal. Desktop keeps standard
-   back behavior (the panel is a side column, the drawer doesn't exist),
-   gated by the same 860px breakpoint mobile.css uses; the desktop iframe
-   embeds never run the interactive app at mobile widths, so no iframe
-   history entanglement. */
+   the system back button (or swipe back) expecting to return to the
+   screen they were just on — which would otherwise leave the site.
+
+   The model is temporal, not spatial: each history entry we push stores a
+   snapshot of the UI (view / drawer / community), and back or forward
+   restores whatever the target entry describes — so back can REOPEN a
+   surface, not just close one. Drawer → Save → list, then back, brings
+   the drawer back with the criteria still set. Advancing gestures (open
+   the drawer, open details, enter the list, Save) push an entry;
+   dismissing gestures (the × pill, the Map toggle, locate-on-map, a
+   filtered-out details close) retreat to the matching earlier entry so an
+   on-screen close never leaves a dead back press. Switching communities
+   inside the open details panel replaces its entry in place — one back
+   press always exits to results, not back through every community viewed.
+   Desktop keeps standard back behavior, gated by the same 860px
+   breakpoint mobile.css uses; the desktop iframe embeds never run the
+   interactive app at mobile widths, so no iframe history entanglement. */
 const MOBILE_BACK_MQ = window.matchMedia('(max-width: 860px)');
+const BASE_SNAPSHOT = { view: 'map', drawer: false, detail: null };
 
-let armedStack = [];         // entries we've pushed, bottom → top
-let suppressPopstates = 0;   // popstates caused by our own history.go()
-let inPopstateClose = false; // a back-button close is running
-let syncQueued = false;
+let histChain = [BASE_SNAPSHOT]; // snapshot per entry we occupy, bottom → top
+let suppressPopstates = 0;       // popstates caused by our own history.go()
+let inPopstateApply = false;     // a back/forward restore is running
+let settleQueued = false;
+let forceAdvance = false;        // Save pushes even when retreat would match
 
-/** The fullscreen surfaces currently open, bottom → top. The drawer and
- *  the details panel never coexist — the filters pill is hidden while the
- *  details panel is open, and the drawer covers everything else. */
-function openSurfaces() {
-  if (!MOBILE_BACK_MQ.matches) return [];
-  const s = [];
-  if (state.view === 'list') s.push('list');
-  if (document.body.classList.contains('filters-open')) s.push('drawer');
-  if (state.selectedCommunity) s.push('detail');
-  return s;
+function currentSnapshot() {
+  return {
+    view: state.view === 'list' ? 'list' : 'map',
+    drawer: document.body.classList.contains('filters-open'),
+    detail: state.selectedCommunity?.name ?? null,
+  };
 }
 
-/** Reconcile our pushed history entries with the surfaces currently open.
- *  Runs as a microtask so a compound gesture (Save = close drawer + enter
- *  list) settles into a single history operation — a push, one go(-n), or
- *  an in-place replaceState — instead of racing chained history.back()
- *  calls, which browsers process asynchronously. */
-function syncBackStack() {
-  if (inPopstateClose || syncQueued) return;
-  syncQueued = true;
+const snapEqual = (a, b) =>
+  a.view === b.view && a.drawer === b.drawer && a.detail === b.detail;
+// Same surfaces open, different community — replaces instead of stacking.
+const snapSameShape = (a, b) =>
+  a.view === b.view && a.drawer === b.drawer && !!a.detail && !!b.detail;
+
+/** Reconcile the history stack with the UI after a gesture. Queued as a
+ *  microtask so compound gestures (Save = close drawer + enter list;
+ *  locate-on-map = close details + exit list) settle as ONE history
+ *  operation instead of racing chained async traversals. */
+function settleHistory() {
+  if (inPopstateApply || settleQueued) return;
+  settleQueued = true;
   queueMicrotask(() => {
-    syncQueued = false;
-    const want = openSurfaces();
-    const have = armedStack;
-    let p = 0; // length of the common bottom-of-stack prefix
-    while (p < want.length && p < have.length && want[p] === have[p]) p++;
-    if (want.length === have.length) {
-      // Same depth, different top surface (drawer → list on Save from the
-      // map view): convert the entry in place. No-op when nothing changed.
-      if (p < want.length) {
-        armedStack = want;
-        history.replaceState({ lbkUi: want.join('>') }, '');
+    settleQueued = false;
+    const advance = forceAdvance;
+    forceAdvance = false;
+    // Desktop never holds entries (only reachable if armed pre-rotation).
+    if (!MOBILE_BACK_MQ.matches) {
+      if (histChain.length > 1) {
+        suppressPopstates++;
+        history.go(-(histChain.length - 1));
+        histChain = [histChain[0]];
       }
-    } else if (want.length > have.length && p === have.length) {
-      for (let i = have.length; i < want.length; i++) {
-        history.pushState({ lbkUi: want.slice(0, i + 1).join('>') }, '');
-      }
-      armedStack = want;
-    } else {
-      // Fewer surfaces than entries: unwind to the common prefix in one
-      // traversal. If the remainder also changed (no current gesture does
-      // this), the suppressed popstate re-syncs and pushes the rest.
-      armedStack = have.slice(0, p);
-      suppressPopstates++;
-      history.go(-(have.length - p));
+      return;
     }
+    const snap = currentSnapshot();
+    const top = histChain[histChain.length - 1];
+    if (snapEqual(snap, top)) return;
+    if (!advance) {
+      // Dismissal to a state we've been in: traverse back to it so the
+      // browser stack stays in step with the on-screen close.
+      for (let i = histChain.length - 2; i >= 0; i--) {
+        if (snapEqual(snap, histChain[i])) {
+          suppressPopstates++;
+          history.go(-(histChain.length - 1 - i));
+          histChain = histChain.slice(0, i + 1);
+          return;
+        }
+      }
+      if (snapSameShape(snap, top)) {
+        histChain[histChain.length - 1] = snap;
+        history.replaceState({ lbkUi: snap, d: histChain.length - 1 }, '');
+        return;
+      }
+    }
+    history.pushState({ lbkUi: snap, d: histChain.length }, '');
+    histChain.push(snap);
   });
 }
 
-window.addEventListener('popstate', () => {
+/** Open/close surfaces to match the snapshot a back/forward landed on. */
+function applySnapshot(snap) {
+  inPopstateApply = true;
+  document.body.classList.toggle('filters-open', snap.drawer);
+  const selected = state.selectedCommunity?.name ?? null;
+  if (snap.detail && snap.detail !== selected) {
+    const c = workingSet.find((x) => x.name === snap.detail);
+    if (c) {
+      highlight(c.name);
+      showDetail(c);
+      focusCommunity(c);
+    }
+  } else if (!snap.detail && selected) {
+    hideDetail();
+    highlight(null);
+  }
+  if (state.view !== snap.view) setView(snap.view);
+  invalidateSize();
+  inPopstateApply = false;
+}
+
+window.addEventListener('popstate', (e) => {
   if (suppressPopstates > 0) {
     suppressPopstates--;
-    syncBackStack(); // settle any remainder of a mixed transition
     return;
   }
-  const top = armedStack.pop();
-  if (!top) return;
-  inPopstateClose = true;
-  if (top === 'detail') closeDetail();
-  else if (top === 'drawer') closeFilterDrawer();
-  else if (top === 'list') setView('map');
-  inPopstateClose = false;
+  // Each entry records its own depth, so duplicate-looking snapshots
+  // (e.g. two visits to the list) can't desync our position tracking.
+  const d = e.state?.lbkUi ? e.state.d : 0;
+  const snap = e.state?.lbkUi || BASE_SNAPSHOT;
+  histChain = histChain.slice(0, d);
+  while (histChain.length < d) histChain.push(snap); // forward jump gap-fill
+  histChain.push(snap);
+  applySnapshot(snap);
 });
 
 /**
@@ -151,14 +191,14 @@ function openDetail(community) {
   showDetail(community);
   focusCommunity(community);
   invalidateSize();
-  syncBackStack();
+  settleHistory();
 }
 
 function closeDetail() {
   hideDetail();
   highlight(null);
   invalidateSize();
-  syncBackStack();
+  settleHistory();
 }
 
 /** Dismiss the "Narrow it down" drawer in place (filters apply live, so
@@ -166,7 +206,7 @@ function closeDetail() {
  *  list view — see the filtersSave handler. */
 function closeFilterDrawer() {
   document.body.classList.remove('filters-open');
-  syncBackStack();
+  settleHistory();
 }
 
 // One-shot guard for the desktop "flip to list on first refine" behavior.
@@ -235,7 +275,7 @@ function setView(view) {
   // When switching back to map, the map may have been hidden and its
   // container resized; tell Mapbox to re-measure.
   if (view === 'map') invalidateSize();
-  syncBackStack();
+  settleHistory();
 }
 
 // No layout toggle anymore; setLayout is only called internally by
@@ -263,9 +303,12 @@ function wireInteractiveApp() {
   // browser back button (which dismisses in place, without the list jump).
   document.getElementById('filtersToggle')?.addEventListener('click', () => {
     document.body.classList.add('filters-open');
-    syncBackStack();
+    settleHistory();
   });
   document.getElementById('filtersSave')?.addEventListener('click', () => {
+    // Save ADVANCES to the results rather than dismissing the drawer, so
+    // it pushes a new entry — back from the list reopens the drawer.
+    forceAdvance = true;
     closeFilterDrawer();
     // After narrowing down, jump straight to the list so results are
     // immediately scannable.
