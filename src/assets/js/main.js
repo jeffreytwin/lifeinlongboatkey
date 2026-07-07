@@ -59,6 +59,28 @@ function highlight(name) {
   setHighlightedPolygon(name);
 }
 
+/* Browser-back support for the mobile details overlay. On mobile the panel
+   covers the whole viewport, so users habitually press the system back
+   button (or swipe back) expecting to return to the results — which would
+   otherwise leave the site. One history entry is pushed per excursion into
+   the panel (not per community, so a single back always exits to results),
+   and popstate closes it through the same closeDetail() path as the
+   "Back to results" pill. Desktop keeps normal back behavior — the panel
+   is a side column there, gated by the same 860px breakpoint mobile.css
+   uses. The desktop iframe embeds never open the panel at mobile widths
+   (the featured embed swaps to a poster), so no iframe history weirdness. */
+const MOBILE_BACK_MQ = window.matchMedia('(max-width: 860px)');
+let detailHistoryArmed = false;   // an entry for the open panel is on the stack
+let closingFromPopstate = false;  // close initiated by the back button itself
+
+window.addEventListener('popstate', () => {
+  if (!detailHistoryArmed) return;
+  detailHistoryArmed = false;
+  closingFromPopstate = true;
+  closeDetail();
+  closingFromPopstate = false;
+});
+
 /**
  * Open the details panel for a community and highlight its pin.
  */
@@ -67,12 +89,24 @@ function openDetail(community) {
   showDetail(community);
   focusCommunity(community);
   invalidateSize();
+  if (!detailHistoryArmed && MOBILE_BACK_MQ.matches) {
+    history.pushState({ lbkDetail: true }, '');
+    detailHistoryArmed = true;
+  }
 }
 
 function closeDetail() {
   hideDetail();
   highlight(null);
   invalidateSize();
+  // Closed by the pill / × / a filter change rather than the back button:
+  // consume the history entry we pushed, so the user's next back press
+  // leaves the page as normal instead of silently doing nothing. Disarm
+  // first so the resulting popstate is a no-op.
+  if (detailHistoryArmed && !closingFromPopstate) {
+    detailHistoryArmed = false;
+    history.back();
+  }
 }
 
 // One-shot guard for the desktop "flip to list on first refine" behavior.
