@@ -584,6 +584,8 @@ body.lightbox-open { overflow: hidden; }
    smooth-scrolls the panel here. */
 .detail-listings {
   margin-top: 22px;
+  border-top: 1px solid var(--rule);
+  padding-top: 16px;
   scroll-margin-top: 12px;
 }
 .detail-listings-label {
