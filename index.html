@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Interactive Map | Life in Longboat Key</title>
+    <title>Interactive Map of Longboat Key Neighborhoods & Condos | Life in Longboat Key</title>
+    <!-- One canonical URL for the app. Param variants (?community=…,
+         ?embed=…) consolidate here instead of indexing separately. -->
+    <link rel="canonical" href="https://map.lifeinlongboatkey.com/" />
     <!-- Canonical home is the custom domain. The Firebase-issued hostnames
          can't be disabled, so hop over immediately (query + hash intact —
          deep links and old embeds keep working). replace() keeps the
@@ -54,6 +57,15 @@
         var e = p.get('embed');
         if (e !== null && e !== '0' && e !== 'false') {
           document.documentElement.classList.add('embed');
+          // Embed variants are iframe content on the Wix pages, not pages
+          // in their own right — keep the (100+) thin chrome-less shells
+          // out of the index. Googlebot renders JS and honors a robots
+          // meta injected this early. The canonical above already points
+          // all variants at the clean URL; this is the hard stop.
+          var m = document.createElement('meta');
+          m.name = 'robots';
+          m.content = 'noindex';
+          document.head.appendChild(m);
           // Featured group embed (?embed=<slug> or ?embed=1&group=<slug>)
           // gets the compact full-app chrome. Mirrors getEmbedParams().
           var toggle = ['', '1', 'true', 'yes', 'on'];
