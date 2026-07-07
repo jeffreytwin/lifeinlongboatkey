@@ -59,26 +59,88 @@ function highlight(name) {
   setHighlightedPolygon(name);
 }
 
-/* Browser-back support for the mobile details overlay. On mobile the panel
-   covers the whole viewport, so users habitually press the system back
-   button (or swipe back) expecting to return to the results — which would
-   otherwise leave the site. One history entry is pushed per excursion into
-   the panel (not per community, so a single back always exits to results),
-   and popstate closes it through the same closeDetail() path as the
-   "Back to results" pill. Desktop keeps normal back behavior — the panel
-   is a side column there, gated by the same 860px breakpoint mobile.css
-   uses. The desktop iframe embeds never open the panel at mobile widths
-   (the featured embed swaps to a poster), so no iframe history weirdness. */
+/* Browser-back support for the mobile fullscreen surfaces. On mobile the
+   results list, the "Narrow it down" filter drawer, and the community
+   details panel each cover the whole viewport, so users habitually press
+   the system back button (or swipe back) expecting to step back one
+   surface — which would otherwise leave the site. Each open surface gets
+   one history entry, stacked map (base) → list → drawer/detail, and back
+   closes the top surface through the same code path as its on-screen
+   button. Closing a surface via its button instead consumes its entry, so
+   a later back press leaves the page as normal. Desktop keeps standard
+   back behavior (the panel is a side column, the drawer doesn't exist),
+   gated by the same 860px breakpoint mobile.css uses; the desktop iframe
+   embeds never run the interactive app at mobile widths, so no iframe
+   history entanglement. */
 const MOBILE_BACK_MQ = window.matchMedia('(max-width: 860px)');
-let detailHistoryArmed = false;   // an entry for the open panel is on the stack
-let closingFromPopstate = false;  // close initiated by the back button itself
+
+let armedStack = [];         // entries we've pushed, bottom → top
+let suppressPopstates = 0;   // popstates caused by our own history.go()
+let inPopstateClose = false; // a back-button close is running
+let syncQueued = false;
+
+/** The fullscreen surfaces currently open, bottom → top. The drawer and
+ *  the details panel never coexist — the filters pill is hidden while the
+ *  details panel is open, and the drawer covers everything else. */
+function openSurfaces() {
+  if (!MOBILE_BACK_MQ.matches) return [];
+  const s = [];
+  if (state.view === 'list') s.push('list');
+  if (document.body.classList.contains('filters-open')) s.push('drawer');
+  if (state.selectedCommunity) s.push('detail');
+  return s;
+}
+
+/** Reconcile our pushed history entries with the surfaces currently open.
+ *  Runs as a microtask so a compound gesture (Save = close drawer + enter
+ *  list) settles into a single history operation — a push, one go(-n), or
+ *  an in-place replaceState — instead of racing chained history.back()
+ *  calls, which browsers process asynchronously. */
+function syncBackStack() {
+  if (inPopstateClose || syncQueued) return;
+  syncQueued = true;
+  queueMicrotask(() => {
+    syncQueued = false;
+    const want = openSurfaces();
+    const have = armedStack;
+    let p = 0; // length of the common bottom-of-stack prefix
+    while (p < want.length && p < have.length && want[p] === have[p]) p++;
+    if (want.length === have.length) {
+      // Same depth, different top surface (drawer → list on Save from the
+      // map view): convert the entry in place. No-op when nothing changed.
+      if (p < want.length) {
+        armedStack = want;
+        history.replaceState({ lbkUi: want.join('>') }, '');
+      }
+    } else if (want.length > have.length && p === have.length) {
+      for (let i = have.length; i < want.length; i++) {
+        history.pushState({ lbkUi: want.slice(0, i + 1).join('>') }, '');
+      }
+      armedStack = want;
+    } else {
+      // Fewer surfaces than entries: unwind to the common prefix in one
+      // traversal. If the remainder also changed (no current gesture does
+      // this), the suppressed popstate re-syncs and pushes the rest.
+      armedStack = have.slice(0, p);
+      suppressPopstates++;
+      history.go(-(have.length - p));
+    }
+  });
+}
 
 window.addEventListener('popstate', () => {
-  if (!detailHistoryArmed) return;
-  detailHistoryArmed = false;
-  closingFromPopstate = true;
-  closeDetail();
-  closingFromPopstate = false;
+  if (suppressPopstates > 0) {
+    suppressPopstates--;
+    syncBackStack(); // settle any remainder of a mixed transition
+    return;
+  }
+  const top = armedStack.pop();
+  if (!top) return;
+  inPopstateClose = true;
+  if (top === 'detail') closeDetail();
+  else if (top === 'drawer') closeFilterDrawer();
+  else if (top === 'list') setView('map');
+  inPopstateClose = false;
 });
 
 /**
@@ -89,24 +151,22 @@ function openDetail(community) {
   showDetail(community);
   focusCommunity(community);
   invalidateSize();
-  if (!detailHistoryArmed && MOBILE_BACK_MQ.matches) {
-    history.pushState({ lbkDetail: true }, '');
-    detailHistoryArmed = true;
-  }
+  syncBackStack();
 }
 
 function closeDetail() {
   hideDetail();
   highlight(null);
   invalidateSize();
-  // Closed by the pill / × / a filter change rather than the back button:
-  // consume the history entry we pushed, so the user's next back press
-  // leaves the page as normal instead of silently doing nothing. Disarm
-  // first so the resulting popstate is a no-op.
-  if (detailHistoryArmed && !closingFromPopstate) {
-    detailHistoryArmed = false;
-    history.back();
-  }
+  syncBackStack();
+}
+
+/** Dismiss the "Narrow it down" drawer in place (filters apply live, so
+ *  there's nothing to save or roll back). Save additionally jumps to the
+ *  list view — see the filtersSave handler. */
+function closeFilterDrawer() {
+  document.body.classList.remove('filters-open');
+  syncBackStack();
 }
 
 // One-shot guard for the desktop "flip to list on first refine" behavior.
@@ -175,6 +235,7 @@ function setView(view) {
   // When switching back to map, the map may have been hidden and its
   // container resized; tell Mapbox to re-measure.
   if (view === 'map') invalidateSize();
+  syncBackStack();
 }
 
 // No layout toggle anymore; setLayout is only called internally by
@@ -198,12 +259,14 @@ function wireInteractiveApp() {
   document.getElementById('detailClose')?.addEventListener('click', closeDetail);
   document.getElementById('detailBack')?.addEventListener('click', closeDetail);
 
-  // Filter drawer: open the full-screen overlay, then close it via Save.
+  // Filter drawer: open the full-screen overlay; close via Save or the
+  // browser back button (which dismisses in place, without the list jump).
   document.getElementById('filtersToggle')?.addEventListener('click', () => {
     document.body.classList.add('filters-open');
+    syncBackStack();
   });
   document.getElementById('filtersSave')?.addEventListener('click', () => {
-    document.body.classList.remove('filters-open');
+    closeFilterDrawer();
     // After narrowing down, jump straight to the list so results are
     // immediately scannable.
     setView('list');
