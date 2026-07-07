@@ -2,7 +2,7 @@
  * Embed + deep-link support.
  *
  * The same app powers two surfaces:
- *   - The full interactive map at lifeinlongboatkey.web.app.
+ *   - The full interactive map at map.lifeinlongboatkey.com.
  *   - A focused, chrome-less version embedded in an <iframe> on each Wix
  *     community/location page (`?embed=1`), highlighting that one community.
  *
@@ -24,7 +24,7 @@
  *                       "Website Address" embed — silently truncate.
  */
 
-const FULL_MAP_BASE = 'https://lifeinlongboatkey.web.app/';
+const FULL_MAP_BASE = 'https://map.lifeinlongboatkey.com/';
 
 /**
  * Named community groups for `?group=<slug>` embeds. Each entry is a slug →

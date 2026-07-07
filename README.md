@@ -2,7 +2,7 @@
 
 Production interactive map for **lifeinlongboatkey.com**. Lets prospective buyers filter and browse the 108 neighborhoods and condo communities on Longboat Key, FL. Sibling implementation to [lifeatparish](https://github.com/jeffreytwin/lifeatparish).
 
-Live (after first deploy): https://lifeinlongboatkey.web.app
+Live: https://map.lifeinlongboatkey.com (Firebase's lifeinlongboatkey.web.app redirects there)
 
 ## Stack
 

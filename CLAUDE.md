@@ -30,7 +30,7 @@ The production data source is `src/data/communities.json` — 107 enriched recor
 - **Tailwind CSS v4** + plain CSS files under `src/assets/css/` — same split Parrish uses (`main`, `sidebar`, `map`, `cards`, `details-panel`, `tablet`, `mobile`).
 - **Mapbox GL JS 3** — map engine. Vector tiles, built-in GeoJSON clustering, HTML marker support via `mapboxgl.Marker`. Mockup uses Leaflet; translated to Mapbox to match Parrish.
 - **Tile/basemap** — Mapbox style `mapbox://styles/mapbox/light-v11` by default. Style can be swapped without code changes.
-- **Firebase Hosting** — deploy target, `lifeinlongboatkey.web.app`. GitHub Actions (`.github/workflows/deploy.yml`) deploys on every push to `main`.
+- **Firebase Hosting** — deploy target. Canonical URL is the custom domain **`map.lifeinlongboatkey.com`** (CNAME → `lifeinlongboatkey.web.app`, DNS at GoDaddy); the Firebase-issued hostnames still serve but immediately JS-redirect to the custom domain (inline script in `index.html`). GitHub Actions (`.github/workflows/deploy.yml`) deploys on every push to `main`.
 - **Data** — static `src/data/communities.json` for MVP. Live `@wix/data` fetch (Parrish pattern) is a follow-up. CSV source is preserved in `docs/` so future sync work has a reference shape.
 
 ### Map rendering model
@@ -140,7 +140,7 @@ Each record in `src/data/communities.json` looks like:
 
 ## Deployment
 
-- **Firebase project:** `lifeinlongboatkey` → `lifeinlongboatkey.web.app`
+- **Firebase project:** `lifeinlongboatkey` → canonical domain `map.lifeinlongboatkey.com` (Firebase's `lifeinlongboatkey.web.app` redirects there)
 - **Auto-deploy:** `.github/workflows/deploy.yml` runs on every push to `main`. Requires two GitHub secrets on this repo:
   - `FIREBASE_SERVICE_ACCOUNT` — JSON service-account key (Firebase Console → Project Settings → Service accounts → Generate new private key)
   - `MAPBOX_ACCESS_TOKEN` — public token from mapbox.com
