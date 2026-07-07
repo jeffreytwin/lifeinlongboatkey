@@ -1,6 +1,10 @@
-# Allow everything — indexing control lives in the page itself:
-# the clean URL is indexable with a self-canonical, and embed/param
-# variants carry an injected noindex robots meta. Blocking them here
-# would hide that noindex from crawlers, so don't.
+# PRE-LAUNCH LOCKOUT — remove before submitting to search engines.
+# Blocks all crawling of the map while the site is in final checks.
+#
+# At launch, replace this file's rules with the open version:
+#   User-agent: *
+#   Allow: /
+# (Crawling must be allowed at launch so crawlers can see the page-level
+# noindex on the embed variants — robots.txt blocking would hide it.)
 User-agent: *
-Allow: /
+Disallow: /
