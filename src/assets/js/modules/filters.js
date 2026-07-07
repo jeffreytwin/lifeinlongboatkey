@@ -9,7 +9,7 @@
 
 import { state, resetFilters } from './state.js';
 import { countsBy, escapeHtml } from './utils.js';
-import { matches, priceToTier, mapListingHomeType, isLandListing } from './matches.js';
+import { matches, priceToTier, mapListingHomeType, isLandListing, listingMatchesActiveFilters, BEDROOM_MAX } from './matches.js';
 
 export const LOCATION_OPTIONS = [
   { key: 'north', label: 'North End' },
@@ -71,6 +71,11 @@ let cachedHomeTypeOrder = null;
  * also have this trait." Proper "what would I lose" count for an AND
  * narrowing filter. Pass clearOwn: false in that case.
  *
+ * getValue runs while the facet's own state is still cleared, so accessors
+ * that consult the active filters (the *ForCounting projections below) see
+ * "every filter except this facet" — the exact condition matches.js will
+ * apply if the option is toggled on.
+ *
  * @param {Array<object>} communities
  * @param {string} stateKey  property name on state (e.g. 'locations')
  * @param {(c: object) => any} getValue  returns the field, scalar or array
@@ -82,7 +87,6 @@ function countsExcluding(communities, stateKey, getValue, clearOwn = true) {
     state[stateKey] = stateKey === 'type' ? 'all' : (saved instanceof Set ? new Set() : saved);
   }
   const list = communities.filter(matches);
-  if (clearOwn) state[stateKey] = saved;
   const counts = {};
   for (const c of list) {
     const val = getValue(c);
@@ -92,6 +96,7 @@ function countsExcluding(communities, stateKey, getValue, clearOwn = true) {
       counts[val] = (counts[val] || 0) + 1;
     }
   }
+  if (clearOwn) state[stateKey] = saved;
   return counts;
 }
 
@@ -99,13 +104,26 @@ function countsExcluding(communities, stateKey, getValue, clearOwn = true) {
    per-listing data is available, project active listings into the
    chip-row vocabulary so the "(N)" counts stay in step with what
    matches.js will actually let through. Each one falls back to the
-   community-wide field when listings data isn't available yet. */
+   community-wide field when listings data isn't available yet.
+
+   Because matches.js requires a SINGLE listing to satisfy all active
+   listing-level filters at once, each projection only counts listings
+   that pass listingMatchesActiveFilters(). These accessors run inside
+   countsExcluding's cleared-state window, so the facet's own slot is
+   empty and that check means "matches every filter except this facet"
+   — e.g. with Bedrooms=4 active, a community's 2-bed townhouse no
+   longer credits the Townhomes count when only a 4-bed condo matched. */
 
 function bedTagsForCounting(c) {
   const items = c.activeListings?.items;
   if (state.hasListingsOnly && Array.isArray(items) && items.length) {
     const out = new Set();
-    for (const it of items) if (it.beds != null) out.add(String(it.beds));
+    for (const it of items) {
+      if (it.beds == null || !listingMatchesActiveFilters(it)) continue;
+      // Clamp to the top chip the same way the matcher does, so 6+ bedroom
+      // listings count toward "5+".
+      out.add(String(Math.min(it.beds, BEDROOM_MAX)));
+    }
     return [...out];
   }
   return c.bedTags;
@@ -116,6 +134,7 @@ function priceTiersForCounting(c) {
   if (state.hasListingsOnly && Array.isArray(items) && items.length) {
     const out = new Set();
     for (const it of items) {
+      if (!listingMatchesActiveFilters(it)) continue;
       const tier = priceToTier(it.price);
       if (tier) out.add(tier);
     }
@@ -126,20 +145,20 @@ function priceTiersForCounting(c) {
 
 function homeTypesForCounting(c) {
   const items = c.activeListings?.items;
-  // 'Land' is listing-derived (a lot for sale), so count it whenever the
-  // community has a land listing — in either toggle mode — so the option
-  // never falsely reads zero / disabled.
-  const hasLand = Array.isArray(items) && items.some(isLandListing);
-  const out = new Set();
   if (state.hasListingsOnly && Array.isArray(items) && items.length) {
+    const out = new Set();
     for (const it of items) {
-      const mapped = mapListingHomeType(it.homeType);
+      if (!listingMatchesActiveFilters(it)) continue;
+      // 'Land' is listing-derived (a lot for sale, no home type of its own).
+      const mapped = isLandListing(it) ? 'Land' : mapListingHomeType(it.homeType);
       if (mapped) out.add(mapped);
     }
-  } else {
-    for (const t of c.homeTypes) out.add(t);
+    return [...out];
   }
-  if (hasLand) out.add('Land');
+  // Toggle off: matches.js never excludes a community with active homes on
+  // listing-level filters, so the broader community tags are the right count.
+  const out = new Set(c.homeTypes);
+  if (Array.isArray(items) && items.some(isLandListing)) out.add('Land');
   return [...out];
 }
 

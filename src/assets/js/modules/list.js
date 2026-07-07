@@ -327,7 +327,7 @@ export function showDetail(community) {
       })()}
       <div class="detail-actions">
         ${community.hasListings ? `
-          <button type="button" class="detail-link detail-link-primary" data-scroll-to="detail-listings">
+          <button type="button" class="detail-link detail-link-primary cta-pulse" data-scroll-to="detail-listings">
             ${escapeHtml(homesCta)}
           </button>
           <a class="detail-link detail-link-secondary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
@@ -377,7 +377,13 @@ export function showDetail(community) {
   const content = document.getElementById('content');
   const panel = document.querySelector('.detail-panel');
   if (content) content.className = 'content layout-detail';
-  if (panel) panel.setAttribute('aria-hidden', 'false');
+  if (panel) {
+    panel.setAttribute('aria-hidden', 'false');
+    // The panel is the scroll container; swapping detailContent's innerHTML
+    // doesn't reset it, so a community opened while another was scrolled
+    // down would inherit the old position.
+    panel.scrollTop = 0;
+  }
   state.layout = 'detail';
 }
 

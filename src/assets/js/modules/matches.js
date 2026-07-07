@@ -91,7 +91,7 @@ export function isLandListing(l) {
 
 /** Highest bedroom chip. The top chip is treated as "this many or more", so
  *  a 6-bedroom listing matches a "5" selection (chips are ['1'..'5']). */
-const BEDROOM_MAX = 5;
+export const BEDROOM_MAX = 5;
 
 /** Does ONE listing satisfy ALL active listing-level filters at once?
  *  (Combined, not per-category — a single home must match the chosen price
