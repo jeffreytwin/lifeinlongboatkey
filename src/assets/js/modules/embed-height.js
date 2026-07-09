@@ -21,6 +21,15 @@
 
 const MESSAGE_TYPE = 'lbk-embed-height';
 
+/** The host-visible slice of this iframe, in frame coordinates — streamed
+ *  by the host element (scroll/resize/growth) so overlays can position
+ *  within what's actually on the visitor's screen. Null outside an
+ *  auto-height embed (or before the first report arrives). */
+let hostViewport = null;
+export function getHostViewport() {
+  return hostViewport;
+}
+
 /** Natural (content-driven) height of a scroll container, or 0 when the
  *  element is missing or display:none. */
 function naturalHeight(container) {
@@ -121,8 +130,20 @@ export function startEmbedHeightReporting() {
   // Handshake: the host element pings once its iframe has loaded (and any
   // time it wants a refresh), so a report posted before the host was
   // listening — or lost to any other boot-ordering race — gets re-sent.
+  // It also streams the host-visible slice of the frame (see above).
   window.addEventListener('message', (e) => {
-    if (e.data && e.data.type === `${MESSAGE_TYPE}-request`) reportFresh();
+    const d = e.data;
+    if (!d) return;
+    if (d.type === `${MESSAGE_TYPE}-request`) {
+      reportFresh();
+    } else if (
+      d.type === `${MESSAGE_TYPE}-viewport` &&
+      typeof d.top === 'number' &&
+      typeof d.height === 'number'
+    ) {
+      hostViewport = { top: d.top, height: d.height };
+      window.dispatchEvent(new CustomEvent('lbk-host-viewport', { detail: hostViewport }));
+    }
   });
 
   report();

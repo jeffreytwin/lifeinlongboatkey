@@ -549,6 +549,19 @@ body.view-list .map-wrap { display: none; }
   padding: 56px 72px;
   animation: lightboxIn 0.12s ease-out both;
 }
+/* Auto-height embeds: gallery.js pins the lightbox to the host-visible
+   slice of the frame (inline top/height), with a full-frame backdrop
+   behind it so the rest of the page stays dimmed. */
+.lightbox.is-windowed {
+  bottom: auto;
+}
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1999;
+  background: rgba(0, 0, 0, 0.88);
+  animation: lightboxIn 0.12s ease-out both;
+}
 @keyframes lightboxIn {
   from { opacity: 0; }
   to   { opacity: 1; }
