@@ -13,7 +13,7 @@
  *   Attributes : group="bay-isles"            (featured group embed)
  *                — or —
  *                community="islander-club"    (single-community embed)
- *   Optional   : min-height="480" max-height="3600" (px)
+ *   Optional   : min-height="480" max-height override (px; default cap 10000)
  *
  * Growth is applied immediately; shrinking is delayed half a second so
  * transient layout states (images loading, panel swaps) don't make the
@@ -98,7 +98,10 @@
     }
 
     _max() {
-      return parseInt(this.getAttribute('max-height'), 10) || 3600;
+      // The default cap is a runaway-feedback safety net, not a design
+      // limit — real content (a details panel with 20+ listings) should
+      // always unroll fully rather than scroll inside the frame.
+      return parseInt(this.getAttribute('max-height'), 10) || 10000;
     }
 
     _onMessage(e) {
