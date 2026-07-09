@@ -17,6 +17,13 @@ import { hasListingLevelFilters, listingMatchesActiveFilters, isLandListing } fr
 let onListItemClick = () => {};
 export function setListItemClickHandler(fn) { onListItemClick = fn; }
 
+/** Rich list cards — the group-scoped experience (?group= / ?embed=<group>)
+ *  boots into the list view, so its cards carry the full story: beds, sqft,
+ *  short description, amenities, and action buttons. Enabled once at boot
+ *  by main.js; the standalone map keeps the compact rows. */
+let richCards = false;
+export function setRichListCards(on) { richCards = !!on; }
+
 /** Per-panel toggle: show every listing in the community, or just the ones
  *  matching the active filters. Reset to "matching" each time a community
  *  opens (see showDetail). */
@@ -53,17 +60,62 @@ export function renderMobileList(list) {
           </div>
           <div class="list-view-name">${escapeHtml(c.name)}</div>
           <div class="list-view-price">${escapeHtml(priceRange)}</div>
+          ${richCards ? richCardExtras(c) : ''}
         </div>
       </li>`;
     })
     .join('');
   el.querySelectorAll('.list-view-item').forEach((item) => {
+    const community = () => list.find((x) => x.name === item.dataset.name);
     item.addEventListener('click', () => {
-      const name = item.dataset.name;
-      const c = list.find((x) => x.name === name);
+      const c = community();
       if (c) onListItemClick(c);
     });
+    // Rich-card buttons. The community-page link is a plain anchor — just
+    // keep its click from also opening the details panel. The listings
+    // button opens the panel and scrolls it to the Homes for Sale section.
+    item.querySelector('[data-card-page]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+    item.querySelector('[data-card-listings]')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const c = community();
+      if (!c) return;
+      onListItemClick(c);
+      requestAnimationFrame(() => {
+        document.getElementById('detail-listings')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
   });
+}
+
+/** Extra card content for rich mode: beds/sqft facts, short description,
+ *  amenity roll-up, and the action buttons. */
+function richCardExtras(c) {
+  const bedrooms = displayRange(c, 'bedrooms');
+  const sqft = displayRange(c, 'sqft');
+  const facts = [
+    bedrooms ? `<span class="list-view-fact"><span class="fact-label">Beds</span>${escapeHtml(bedrooms)}</span>` : '',
+    sqft ? `<span class="list-view-fact"><span class="fact-label">Sq Ft</span>${escapeHtml(sqft)}</span>` : '',
+  ].filter(Boolean).join('');
+  const desc = c.shortDescription || '';
+  const amenities = filteredAmenities(c.amenities);
+  const shown = amenities.slice(0, 4);
+  const more = amenities.length - shown.length;
+  const amenityHtml = shown.length
+    ? `<div class="list-view-amenities">${shown.map(escapeHtml).join(' · ')}${more > 0 ? ` · +${more} more` : ''}</div>`
+    : '';
+  const hasHomes = (c.activeListings?.items?.length || c.activeListings?.count || 0) > 0;
+  const pageHref = c.pageUrl ? `https://www.lifeinlongboatkey.com${escapeHtml(c.pageUrl)}` : '';
+  return `
+    ${facts ? `<div class="list-view-facts">${facts}</div>` : ''}
+    ${desc ? `<div class="list-view-desc">${escapeHtml(desc)}</div>` : ''}
+    ${amenityHtml}
+    <div class="list-view-actions">
+      ${hasHomes ? `<button type="button" class="list-view-btn list-view-btn-primary" data-card-listings>${escapeHtml(listingsCtaLabel(c))}</button>` : ''}
+      ${pageHref ? `<a class="list-view-btn list-view-btn-secondary" href="${pageHref}" target="_blank" rel="noopener" data-card-page>View Community Page</a>` : ''}
+    </div>`;
 }
 
 /** Pick a display range (priceRange / bedrooms / sqft) for a community,

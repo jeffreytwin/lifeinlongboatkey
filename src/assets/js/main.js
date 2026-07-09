@@ -17,6 +17,7 @@ import {
   refreshOpenDetailListings,
   setListItemClickHandler,
   setLocateOnMapHandler,
+  setRichListCards,
 } from './modules/list.js';
 import {
   initMap,
@@ -26,6 +27,7 @@ import {
   focusCommunity,
   invalidateSize,
   openPopupFor,
+  closePopup,
   fitToCommunities,
 } from './modules/map.js';
 import {
@@ -50,6 +52,18 @@ const workingSet = group ? filterByGroup(communities, group) : communities;
 
 const totalEl = document.getElementById('totalCount');
 if (totalEl) totalEl.textContent = String(workingSet.length);
+
+// Group-scoped boots (?group=<slug> and the featured embed) are list-first:
+// the detailed card list is the primary surface and the map sits behind the
+// Map/List toggle. Rich cards add beds/sqft, description, amenities, and
+// the action buttons; body.list-rich carries the matching CSS.
+if (group) {
+  setRichListCards(true);
+  document.body.classList.add('list-rich');
+}
+// The map is framed to the group inside a hidden (zero-size) container when
+// the boot view is the list — re-frame it on the first flip to Map.
+let needsGroupRefit = false;
 
 function highlight(name) {
   state.highlightedName = name;
@@ -80,7 +94,9 @@ function highlight(name) {
    breakpoint mobile.css uses; the desktop iframe embeds never run the
    interactive app at mobile widths, so no iframe history entanglement. */
 const MOBILE_BACK_MQ = window.matchMedia('(max-width: 860px)');
-const BASE_SNAPSHOT = { view: 'map', drawer: false, detail: null };
+// Group boots land on the list view, so that's their history baseline too —
+// the first back press exits the page instead of flipping to the map.
+const BASE_SNAPSHOT = { view: group ? 'list' : 'map', drawer: false, detail: null };
 
 let histChain = [BASE_SNAPSHOT]; // snapshot per entry we occupy, bottom → top
 let suppressPopstates = 0;       // popstates caused by our own history.go()
@@ -274,7 +290,14 @@ function setView(view) {
   });
   // When switching back to map, the map may have been hidden and its
   // container resized; tell Mapbox to re-measure.
-  if (view === 'map') invalidateSize();
+  if (view === 'map') {
+    invalidateSize();
+    if (needsGroupRefit) {
+      needsGroupRefit = false;
+      if (state.selectedCommunity) focusCommunity(state.selectedCommunity, { duration: 0 });
+      else fitToCommunities(workingSet);
+    }
+  }
   settleHistory();
 }
 
@@ -359,6 +382,12 @@ function bootFull() {
   });
 
   apply();
+  // Group-scoped visits (incl. the mobile poster's target) open on the
+  // detailed list; the map is one toggle away.
+  if (group) {
+    needsGroupRefit = true;
+    setView('list');
+  }
   // From here on, apply() runs only in response to user refinements, so the
   // desktop "flip to list on first refine" guard can arm.
   appBooted = true;
@@ -407,6 +436,8 @@ function bootFeaturedEmbed() {
   });
 
   apply();
+  needsGroupRefit = true;
+  setView('list');
   appBooted = true;
 }
 
@@ -441,8 +472,10 @@ function showEmbedPoster() {
  * Embed mode — the chrome-less single-community view dropped into a Wix
  * location page via <iframe src="…?embed=1&community=<slug>">. All 107
  * communities still render for spatial context, but one is highlighted and
- * the map flies to it; clicking any pin opens a popup (no side panel), and a
- * CTA links out to the full map pre-focused on the same community.
+ * the map flies to it. The initial focus shows a popup for orientation;
+ * clicking any pin / polygon opens the same details panel as the full app
+ * (photos, Homes for Sale, amenities). A CTA links out to the full map
+ * pre-focused on the same community.
  */
 function bootEmbed() {
   // The inline head script already added this before first paint; mirror it
@@ -452,8 +485,31 @@ function bootEmbed() {
   const cta = document.getElementById('embedCta');
   if (cta) cta.href = fullMapUrl(focusTarget);
 
+  // There's no results list behind the panel in this mode — the mobile
+  // back pill returns to the map.
+  const back = document.getElementById('detailBack');
+  if (back) back.textContent = '‹ Back to map';
+
+  // No settleHistory here: pushState inside the iframe would stack entries
+  // onto the HOST page's history, hijacking the visitor's back button.
+  const openEmbedDetail = (community) => {
+    closePopup();
+    highlight(community.name);
+    showDetail(community);
+    focusCommunity(community);
+    invalidateSize();
+  };
+  const closeEmbedDetail = () => {
+    hideDetail();
+    // Restore the highlight to the page's own community.
+    highlight(focusTarget?.name ?? null);
+    invalidateSize();
+  };
+  document.getElementById('detailClose')?.addEventListener('click', closeEmbedDetail);
+  back?.addEventListener('click', closeEmbedDetail);
+
   initMap(communities, {
-    onSelect: (community) => openPopupFor(community),
+    onSelect: openEmbedDetail,
     neighborhoodPolygons: getNeighborhoodPolygons(),
     // Embedded in a scrollable host page — don't trap the page scroll.
     cooperativeGestures: true,

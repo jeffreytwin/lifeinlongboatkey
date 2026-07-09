@@ -456,6 +456,101 @@ body.view-list .map-wrap { display: none; }
   font-size: 13px;
 }
 
+/* Rich list cards — group-scoped boots (?group= / ?embed=<group>) open on
+   the list, so its cards carry the full story: beds/sqft, description,
+   amenities, and action buttons. body.list-rich is set by main.js. */
+body.list-rich .list-view {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+body.list-rich .list-view-item {
+  max-width: 860px;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 18px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+body.list-rich .list-view-item:hover,
+body.list-rich .list-view-item:active {
+  background: var(--bg-card);
+  border-color: var(--teal);
+}
+body.list-rich .list-view-photo {
+  width: 150px;
+  height: 150px;
+}
+body.list-rich .list-view-body {
+  justify-content: flex-start;
+  gap: 5px;
+}
+body.list-rich .list-view-name { white-space: normal; }
+.list-view-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 18px;
+  font-size: 13px;
+  color: var(--ink);
+}
+.list-view-fact .fact-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  margin-right: 5px;
+}
+.list-view-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.list-view-amenities {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.list-view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 7px;
+}
+.list-view-btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 1px solid var(--teal);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.list-view-btn-primary {
+  background: var(--teal);
+  color: #fff;
+}
+.list-view-btn-primary:hover {
+  background: var(--teal-hover);
+  border-color: var(--teal-hover);
+}
+.list-view-btn-secondary {
+  background: transparent;
+  color: var(--teal-deep);
+}
+.list-view-btn-secondary:hover {
+  background: var(--sand);
+}
+@media (max-width: 560px) {
+  body.list-rich .list-view-photo { width: 104px; height: 104px; }
+  body.list-rich .list-view-item { gap: 12px; padding: 14px; }
+}
+
 /* Shared chip styles used by both the details panel and popup */
 .amenity-chip {
   font-size: 10px;

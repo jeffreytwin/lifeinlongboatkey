@@ -656,6 +656,15 @@ function wireHoverCardTap(communities) {
   });
 }
 
+/** Close the open community popup (if any). The minimal embed calls this
+ *  when a pin click swaps the popup for the details panel. */
+export function closePopup() {
+  if (currentPopup) {
+    currentPopup.remove();
+    currentPopup = null;
+  }
+}
+
 export function openPopupFor(c) {
   if (!map) return;
   if (currentPopup) currentPopup.remove();
