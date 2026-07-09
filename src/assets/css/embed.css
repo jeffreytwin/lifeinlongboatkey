@@ -112,43 +112,6 @@ html.embed.embed-app .list-view {
   padding-top: 18px;
 }
 
-/* Featured embed: the details panel opens as a modal pop-out over the list —
-   dark scrim, centered rounded card, corner × — matching the photo
-   lightbox. (A side column or full-bleed overlay both read as ordinary
-   page content inside a short iframe.) Scrim click and Escape also close
-   it; that's wired in main.js (bootFeaturedEmbed). */
-html.embed.embed-app .content.layout-detail {
-  grid-template-columns: 1fr;
-}
-html.embed.embed-app .content.layout-detail::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 1090;
-  background: rgba(24, 24, 24, 0.6);
-}
-html.embed.embed-app .content.layout-detail .detail-panel {
-  position: fixed;
-  inset: 20px;
-  /* Same width the panel had as a side column, just floating centered. */
-  max-width: 420px;
-  margin-inline: auto;
-  z-index: 1100;
-  border: none;
-  border-radius: 14px;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
-  background: var(--bg);
-  /* The card itself stays put — scrolling moves to .detail-content — so
-     the corner × holds its place and the rounded corners clip the
-     gallery bleed. */
-  overflow: hidden;
-}
-html.embed.embed-app .content.layout-detail .detail-content {
-  height: 100%;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
 /* ========================================================================
    Mobile embed poster. On a narrow screen the featured embed doesn't run the
    interactive app inside the iframe (Wix scales it awkwardly and an iframe
