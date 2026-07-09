@@ -161,7 +161,16 @@
       }
       if (e.origin !== expected) return;
       var d = e.data;
-      if (!d || d.type !== MESSAGE_TYPE || typeof d.height !== 'number') return;
+      if (!d) return;
+      // The app asks for the frame's top when a details panel opens while
+      // the visitor is scrolled deep into the list.
+      if (d.type === MESSAGE_TYPE + '-scrolltop') {
+        try {
+          this.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (_) {}
+        return;
+      }
+      if (d.type !== MESSAGE_TYPE || typeof d.height !== 'number') return;
 
       var target = Math.max(this._min(), Math.min(this._max(), Math.round(d.height)));
       clearTimeout(this._shrinkTimer);

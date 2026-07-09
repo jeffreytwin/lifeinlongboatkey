@@ -30,6 +30,18 @@ export function getHostViewport() {
   return hostViewport;
 }
 
+/**
+ * Ask the auto-height host to bring the frame's top back on screen — used
+ * when the details panel opens while the visitor is scrolled deep into the
+ * list, so they land on the panel's top rather than its middle. No-op
+ * without a listening host, or when the frame's top is already visible.
+ */
+export function scrollHostToTop() {
+  if (window.parent === window) return;
+  if (!hostViewport || hostViewport.top <= 0) return;
+  window.parent.postMessage({ type: `${MESSAGE_TYPE}-scrolltop` }, '*');
+}
+
 /** Natural (content-driven) height of a scroll container, or 0 when the
  *  element is missing or display:none. */
 function naturalHeight(container) {
