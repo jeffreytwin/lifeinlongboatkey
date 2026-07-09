@@ -98,7 +98,32 @@
       requestAnimationFrame(function () {
         self._vpQueued = false;
         self._sendViewport();
+        self._fitWidth();
       });
+    }
+
+    /**
+     * Mobile full-bleed: Wix's mobile layout can give the widget wrapper a
+     * box narrower than the screen (e.g. 300px in a 320px viewport),
+     * leaving a white strip beside the embed that no editor stretching
+     * reliably removes. On small screens, break out of a narrower wrapper
+     * to exactly the viewport width, aligned to the screen's left edge.
+     * Desktop keeps normal in-column behavior.
+     */
+    _fitWidth() {
+      try {
+        var vw = document.documentElement.clientWidth;
+        var wrap = this.parentElement;
+        if (!wrap) return;
+        var r = wrap.getBoundingClientRect();
+        if (vw <= 860 && r.width && vw - r.width > 4) {
+          this.style.width = vw + 'px';
+          this.style.marginLeft = -r.left + 'px';
+        } else {
+          this.style.width = '100%';
+          this.style.marginLeft = '';
+        }
+      } catch (_) {}
     }
 
     _sendViewport() {
@@ -194,10 +219,10 @@
       // overrides the pin, and Wix's layout engine then pushes the content
       // below down to make room.
       this.style.height = h + 'px';
-      // Re-assert full width on every apply — Wix rewrites inline sizes on
-      // its own schedule, and a later fixed-pixel width would shrink the
-      // frame inside its wrapper (seen as a white strip on mobile).
-      this.style.width = '100%';
+      // Re-assert width on every apply — Wix rewrites inline sizes on its
+      // own schedule. _fitWidth picks 100% (desktop, in-column) or a
+      // viewport-wide breakout (mobile, narrow wrapper).
+      this._fitWidth();
       if (this._iframe) this._iframe.style.height = h + 'px';
       // Wix additionally wraps every widget in a fixed-size `comp-…`
       // container that clips its contents. Release the nearest one so the
