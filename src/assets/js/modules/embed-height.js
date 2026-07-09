@@ -86,6 +86,14 @@ function desiredHeight() {
   const detailOpen = document
     .getElementById('content')
     ?.classList.contains('layout-detail');
+  const listVisible = document.body.classList.contains('view-list');
+  // Map view (no list, no panel): a map has no natural height — pick a
+  // pleasant frame from the width instead of inheriting the filter
+  // rail's full height (the rail scrolls internally, as it does in the
+  // standalone app). Width-derived, so no resize feedback.
+  if (!detailOpen && !listVisible) {
+    return Math.min(940, Math.max(520, Math.round(window.innerWidth * 0.58)));
+  }
   const list = naturalHeight(document.querySelector('.list-view'));
   const panel = detailOpen
     ? naturalHeight(document.querySelector('.detail-panel'))
@@ -156,6 +164,9 @@ export function startEmbedHeightReporting() {
     });
   }
   window.addEventListener('load', report);
+  // Width changes move the map-view height and reflow the cards; the
+  // observers only see DOM changes, so listen for resize directly.
+  window.addEventListener('resize', report);
 
   // Handshake: the host element pings once its iframe has loaded (and any
   // time it wants a refresh), so a report posted before the host was

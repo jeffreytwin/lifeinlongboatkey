@@ -478,9 +478,20 @@ body.view-list .map-wrap { display: none; }
     border: 1px solid var(--rule);
     border-radius: 14px;
     overflow: hidden;
-    margin-bottom: 14px;
+    /* Center the card on the PAGE, not the content column — the filter
+       rail sits to the left, so column-centering reads off-center in the
+       embed. 766px = 320px rail + 16px list padding + half the 860px
+       card; the clamp keeps the card inside the column when the viewport
+       is too narrow for true page-centering. */
+    margin: 0 0 14px clamp(0px, calc(50vw - 766px), calc(100% - 860px));
     box-shadow: 0 1px 2px rgba(45, 45, 45, 0.04);
     transition: box-shadow 0.15s;
+  }
+  /* Align the Map/List toggle with the page-centered cards — the max()
+     floor mirrors the card's clamp, so both stop at the column edge
+     together on narrower viewports. */
+  body.list-rich .content:not(.layout-detail) .view-switch {
+    left: max(446px, calc(50vw - 320px));
   }
   body.list-rich .list-view-item:hover,
   body.list-rich .list-view-item:active {
@@ -508,7 +519,7 @@ body.view-list .map-wrap { display: none; }
   body.list-rich .list-view-price {
     font-size: 16px;
     font-weight: 600;
-    color: var(--teal-deep);
+    color: var(--teal);
   }
   /* Corner tag pills — the site's Homes-for-Sale tag art. */
   .list-view-tags {
@@ -566,6 +577,16 @@ body.view-list .map-wrap { display: none; }
   .list-amenity-more {
     font-size: 11px;
     color: var(--ink-muted);
+  }
+}
+/* Tablet-width rail is 280px (tablet.css) — re-derive the page-centering
+   offsets. */
+@media (min-width: 861px) and (max-width: 1100px) {
+  body.list-rich .list-view-item {
+    margin-left: clamp(0px, calc(50vw - 726px), calc(100% - 860px));
+  }
+  body.list-rich .content:not(.layout-detail) .view-switch {
+    left: max(446px, calc(50vw - 280px));
   }
 }
 @media (max-width: 860px) {
