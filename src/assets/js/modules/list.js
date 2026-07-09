@@ -408,10 +408,12 @@ export function showDetail(community) {
   if (content) content.className = 'content layout-detail';
   if (panel) {
     panel.setAttribute('aria-hidden', 'false');
-    // The panel is the scroll container; swapping detailContent's innerHTML
-    // doesn't reset it, so a community opened while another was scrolled
-    // down would inherit the old position.
+    // Swapping detailContent's innerHTML doesn't reset scroll, so a
+    // community opened while another was scrolled down would inherit the
+    // old position. The scroll container is the panel normally, and
+    // detailContent in the featured embed's modal pop-out — reset both.
     panel.scrollTop = 0;
+    el.scrollTop = 0;
   }
   state.layout = 'detail';
 }

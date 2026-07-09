@@ -422,6 +422,21 @@ function bootFeaturedEmbed() {
 
   wireInteractiveApp();
 
+  // The details panel opens as a modal pop-out here (see embed.css), so it
+  // closes like the photo lightbox too: clicking the scrim (a direct hit on
+  // #content — every other click lands on a child) or pressing Escape.
+  const content = document.getElementById('content');
+  content?.addEventListener('click', (e) => {
+    if (e.target === content && content.classList.contains('layout-detail')) closeDetail();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    // Capture phase runs before the lightbox's own Escape handler — leave
+    // an open lightbox to consume the press; the next one closes the panel.
+    if (document.body.classList.contains('lightbox-open')) return;
+    if (content?.classList.contains('layout-detail')) closeDetail();
+  }, true);
+
   initMap(workingSet, {
     onSelect: openDetail,
     neighborhoodPolygons: getNeighborhoodPolygons(),
