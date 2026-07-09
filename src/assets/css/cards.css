@@ -510,49 +510,10 @@ body.view-list .map-wrap { display: none; }
     font-size: 11px;
     color: var(--ink-muted);
   }
-  /* Buttons sit as a stacked column on the card's right. Equal widths
-     (stretch) keep the pair reading as one unit. */
-  .list-view-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: center;
-    gap: 8px;
-    flex-shrink: 0;
-    margin-left: auto;
-  }
-  .list-view-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 7px 14px;
-    border-radius: 999px;
-    text-decoration: none;
-    border: 1px solid var(--teal);
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-  }
-  .list-view-btn-primary {
-    background: var(--teal);
-    color: #fff;
-  }
-  .list-view-btn-primary:hover {
-    background: var(--teal-hover);
-    border-color: var(--teal-hover);
-  }
-  .list-view-btn-secondary {
-    background: transparent;
-    color: var(--teal-deep);
-  }
-  .list-view-btn-secondary:hover {
-    background: var(--sand);
-  }
 }
 @media (max-width: 860px) {
   .list-view-facts,
-  .list-view-amenities,
-  .list-view-actions {
+  .list-view-amenities {
     display: none;
   }
 }
