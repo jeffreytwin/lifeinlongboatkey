@@ -62,6 +62,7 @@ export function renderMobileList(list) {
           <div class="list-view-price">${escapeHtml(priceRange)}</div>
           ${richCards ? richCardExtras(c) : ''}
         </div>
+        ${richCards ? richCardActions(c) : ''}
       </li>`;
     })
     .join('');
@@ -90,32 +91,37 @@ export function renderMobileList(list) {
   });
 }
 
-/** Extra card content for rich mode: beds/sqft facts, short description,
- *  amenity roll-up, and the action buttons. */
+/** Extra card content for rich mode: home type / beds / sqft facts and the
+ *  amenity roll-up. */
 function richCardExtras(c) {
+  const homeTypes = Array.isArray(c.homeTypes) ? c.homeTypes.filter(Boolean).join(', ') : '';
   const bedrooms = displayRange(c, 'bedrooms');
   const sqft = displayRange(c, 'sqft');
   const facts = [
+    homeTypes ? `<span class="list-view-fact"><span class="fact-label">Home Type</span>${escapeHtml(homeTypes)}</span>` : '',
     bedrooms ? `<span class="list-view-fact"><span class="fact-label">Beds</span>${escapeHtml(bedrooms)}</span>` : '',
     sqft ? `<span class="list-view-fact"><span class="fact-label">Sq Ft</span>${escapeHtml(sqft)}</span>` : '',
   ].filter(Boolean).join('');
-  const desc = c.shortDescription || '';
   const amenities = filteredAmenities(c.amenities);
   const shown = amenities.slice(0, 4);
   const more = amenities.length - shown.length;
   const amenityHtml = shown.length
     ? `<div class="list-view-amenities">${shown.map(escapeHtml).join(' · ')}${more > 0 ? ` · +${more} more` : ''}</div>`
     : '';
-  const hasHomes = (c.activeListings?.items?.length || c.activeListings?.count || 0) > 0;
-  const pageHref = c.pageUrl ? `https://www.lifeinlongboatkey.com${escapeHtml(c.pageUrl)}` : '';
   return `
     ${facts ? `<div class="list-view-facts">${facts}</div>` : ''}
-    ${desc ? `<div class="list-view-desc">${escapeHtml(desc)}</div>` : ''}
-    ${amenityHtml}
-    <div class="list-view-actions">
-      ${hasHomes ? `<button type="button" class="list-view-btn list-view-btn-primary" data-card-listings>${escapeHtml(listingsCtaLabel(c))}</button>` : ''}
-      ${pageHref ? `<a class="list-view-btn list-view-btn-secondary" href="${pageHref}" target="_blank" rel="noopener" data-card-page>View Community Page</a>` : ''}
-    </div>`;
+    ${amenityHtml}`;
+}
+
+/** Action buttons for rich mode — a stacked column on the card's right. */
+function richCardActions(c) {
+  const hasHomes = (c.activeListings?.items?.length || c.activeListings?.count || 0) > 0;
+  const pageHref = c.pageUrl ? `https://www.lifeinlongboatkey.com${escapeHtml(c.pageUrl)}` : '';
+  const buttons = [
+    hasHomes ? `<button type="button" class="list-view-btn list-view-btn-primary" data-card-listings>${escapeHtml(listingsCtaLabel(c))}</button>` : '',
+    pageHref ? `<a class="list-view-btn list-view-btn-secondary" href="${pageHref}" target="_blank" rel="noopener" data-card-page>View Community Page</a>` : '',
+  ].filter(Boolean).join('');
+  return buttons ? `<div class="list-view-actions">${buttons}</div>` : '';
 }
 
 /** Pick a display range (priceRange / bedrooms / sqft) for a community,
