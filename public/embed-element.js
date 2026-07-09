@@ -1,0 +1,136 @@
+/**
+ * <lbk-map-embed> — Wix Custom Element wrapper for the interactive map.
+ *
+ * Hosts the embed iframe and auto-sizes it: the app inside posts
+ * { type: 'lbk-embed-height', height } messages (see
+ * src/assets/js/modules/embed-height.js) and this element grows/shrinks
+ * the iframe to match, so the host page extends with the content instead
+ * of trapping it behind an inner scrollbar.
+ *
+ * Wix setup (Editor → Add Elements → Embed Code → Custom Element):
+ *   Script URL : https://map.lifeinlongboatkey.com/embed-element.js
+ *   Tag name   : lbk-map-embed
+ *   Attributes : group="bay-isles"            (featured group embed)
+ *                — or —
+ *                community="islander-club"    (single-community embed)
+ *   Optional   : min-height="480" max-height="2400" (px)
+ *
+ * Growth is applied immediately; shrinking is delayed half a second so
+ * transient layout states (images loading, panel swaps) don't make the
+ * page pump up and down.
+ */
+(function () {
+  'use strict';
+
+  var TAG = 'lbk-map-embed';
+  var DEFAULT_BASE = 'https://map.lifeinlongboatkey.com/';
+  var MESSAGE_TYPE = 'lbk-embed-height';
+
+  if (!window.customElements || customElements.get(TAG)) return;
+
+  class LbkMapEmbed extends HTMLElement {
+    constructor() {
+      super();
+      this._iframe = null;
+      this._height = 0;
+      this._shrinkTimer = null;
+      this._onMessage = this._onMessage.bind(this);
+    }
+
+    static get observedAttributes() {
+      return ['group', 'community', 'base'];
+    }
+
+    connectedCallback() {
+      if (!this._iframe) {
+        this.style.display = 'block';
+        this.style.width = '100%';
+        var f = document.createElement('iframe');
+        f.src = this._src();
+        f.title = 'Longboat Key interactive map';
+        f.loading = 'lazy';
+        f.style.cssText =
+          'display:block;width:100%;border:0;transition:height 0.25s ease;';
+        f.style.height = this._min() + 'px';
+        this._height = this._min();
+        // Ask for the current height once the app is up — closes any
+        // boot-ordering race where its first report predates our listener.
+        f.addEventListener('load', function () {
+          try {
+            var origin = new URL(f.src, location.href).origin;
+            f.contentWindow.postMessage({ type: MESSAGE_TYPE + '-request' }, origin);
+          } catch (_) {}
+        });
+        this._iframe = f;
+        this.appendChild(f);
+      }
+      window.addEventListener('message', this._onMessage);
+    }
+
+    disconnectedCallback() {
+      window.removeEventListener('message', this._onMessage);
+      clearTimeout(this._shrinkTimer);
+    }
+
+    attributeChangedCallback() {
+      if (this._iframe && this._iframe.src !== this._src()) {
+        this._iframe.src = this._src();
+      }
+    }
+
+    _src() {
+      var url = new URL(this.getAttribute('base') || DEFAULT_BASE);
+      var group = this.getAttribute('group');
+      var community = this.getAttribute('community');
+      if (group) {
+        // Single-param shorthand (?embed=<group>) — see modules/embed.js.
+        url.searchParams.set('embed', group);
+      } else {
+        url.searchParams.set('embed', '1');
+        if (community) url.searchParams.set('community', community);
+      }
+      return url.toString();
+    }
+
+    _min() {
+      return parseInt(this.getAttribute('min-height'), 10) || 480;
+    }
+
+    _max() {
+      return parseInt(this.getAttribute('max-height'), 10) || 2400;
+    }
+
+    _onMessage(e) {
+      if (!this._iframe || e.source !== this._iframe.contentWindow) return;
+      // Only trust the origin we ourselves pointed the iframe at.
+      var expected;
+      try {
+        expected = new URL(this._iframe.src, location.href).origin;
+      } catch (_) {
+        return;
+      }
+      if (e.origin !== expected) return;
+      var d = e.data;
+      if (!d || d.type !== MESSAGE_TYPE || typeof d.height !== 'number') return;
+
+      var target = Math.max(this._min(), Math.min(this._max(), Math.round(d.height)));
+      clearTimeout(this._shrinkTimer);
+      if (target >= this._height) {
+        this._apply(target);
+      } else {
+        // Shrink lazily so transient states don't pump the page height.
+        var self = this;
+        this._shrinkTimer = setTimeout(function () {
+          self._apply(target);
+        }, 500);
+      }
+    }
+
+    _apply(h) {
+      this._height = h;
+      if (this._iframe) this._iframe.style.height = h + 'px';
+    }
+  }
+
+  customElements.define(TAG, LbkMapEmbed);
+})();

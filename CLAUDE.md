@@ -151,6 +151,7 @@ Each record in `src/data/communities.json` looks like:
 - **Community photos** — two stand-in photos live at `public/images/placeholder-condo.jpg` and `public/images/placeholder-neighborhood.jpg`. `communityPhotoUrl()` in `utils.js` returns `c.imageUrl` if set, otherwise the type-appropriate placeholder — so dropping in per-community overrides later is a data-only change.
 - **Real geocoding (condos)** — all 77 have user-supplied real coords. `scripts/place-condos.mjs` holds the table as source-of-truth; re-run it to re-apply.
 - **Real geocoding (neighborhoods)** — 30 of 30 remaining neighborhoods have polygons. `scripts/import-neighborhood-polygons.mjs` normalizes a user-drawn GeoJSON (from geojson.io or similar), dedupes, maps feature names to `communities.json` canonical names, and stamps each match with the polygon centroid + `coordSource: "polygon"`.
+- **Embed auto-height** — the `<lbk-map-embed>` Wix Custom Element (`public/embed-element.js`) hosts the embed iframe and auto-sizes it from `lbk-embed-height` postMessages emitted by `src/assets/js/modules/embed-height.js`, so the Wix page grows with the content instead of scrolling inside a fixed frame. Setup steps in `docs/wix-embed-snippet.md`. Plain fixed-height iframe snippets keep working unchanged.
 
 ## Open decisions (tracked; follow-up plans)
 
