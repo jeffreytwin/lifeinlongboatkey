@@ -8,7 +8,7 @@
  */
 
 import { locationLabel, escapeHtml, communityThumbUrl, wixImageUrl, IMG_SIZES, youtubeEmbedUrl, staticMapUrl } from './utils.js';
-import { AMENITY_ICONS, filteredAmenities } from './amenityIcons.js';
+import { AMENITY_ICONS, filteredAmenities, communityTags } from './amenityIcons.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
 import { hasListingLevelFilters, listingMatchesActiveFilters, isLandListing } from './matches.js';
@@ -59,9 +59,10 @@ export function renderMobileList(list) {
             ${c.type === 'condo' ? 'Condominiums' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}
           </div>
           <div class="list-view-name">${escapeHtml(c.name)}</div>
-          <div class="list-view-price">${escapeHtml(priceRange)}</div>
+          <div class="list-view-price">${escapeHtml(priceRange)}${richCards ? richCardHomesCount(c) : ''}</div>
           ${richCards ? richCardExtras(c) : ''}
         </div>
+        ${richCards ? richCardTags(c) : ''}
       </li>`;
     })
     .join('');
@@ -73,8 +74,9 @@ export function renderMobileList(list) {
   });
 }
 
-/** Extra card content for rich mode: home type / beds / sqft facts and the
- *  amenity roll-up. */
+/** Extra card content for rich mode: home type / beds / sqft facts, a
+ *  hairline rule, and the amenity chips (skipping amenities already shown
+ *  as corner tags). */
 function richCardExtras(c) {
   const homeTypes = Array.isArray(c.homeTypes) ? c.homeTypes.filter(Boolean).join(', ') : '';
   const bedrooms = displayRange(c, 'bedrooms');
@@ -84,15 +86,36 @@ function richCardExtras(c) {
     bedrooms ? `<span class="list-view-fact"><span class="fact-label">Beds</span>${escapeHtml(bedrooms)}</span>` : '',
     sqft ? `<span class="list-view-fact"><span class="fact-label">Sq Ft</span>${escapeHtml(sqft)}</span>` : '',
   ].filter(Boolean).join('');
-  const amenities = filteredAmenities(c.amenities);
-  const shown = amenities.slice(0, 4);
-  const more = amenities.length - shown.length;
-  const amenityHtml = shown.length
-    ? `<div class="list-view-amenities">${shown.map(escapeHtml).join(' · ')}${more > 0 ? ` · +${more} more` : ''}</div>`
+  const { used } = communityTags(c);
+  const rest = filteredAmenities(c.amenities).filter((a) => !used.has(a));
+  const shown = rest.slice(0, 3);
+  const chips = shown
+    .map((a) => `<span class="list-amenity-chip">${escapeHtml(a)}</span>`)
+    .join('');
+  const more = rest.length - shown.length;
+  const amenityHtml = chips
+    ? `<div class="list-view-amenities">${chips}${more > 0 ? `<span class="list-amenity-more">+${more} more</span>` : ''}</div>`
     : '';
   return `
     ${facts ? `<div class="list-view-facts">${facts}</div>` : ''}
-    ${amenityHtml}`;
+    ${amenityHtml ? `<div class="list-view-sep"></div>${amenityHtml}` : ''}`;
+}
+
+/** "N homes for sale" accent beside the price (rich mode; hidden when 0). */
+function richCardHomesCount(c) {
+  const items = c.activeListings?.items;
+  const n = Array.isArray(items) && items.length ? items.length : (c.activeListings?.count || 0);
+  if (!n) return '';
+  return `<span class="list-view-homes">${n === 1 ? '1 home for sale' : `${n} homes for sale`}</span>`;
+}
+
+/** The corner tag pills (rich mode) — the site's Homes-for-Sale tag art. */
+function richCardTags(c) {
+  const { tags } = communityTags(c);
+  if (!tags.length) return '';
+  return `<div class="list-view-tags">${tags
+    .map((t) => `<img src="${escapeHtml(t.src)}" alt="${escapeHtml(t.label)}" title="${escapeHtml(t.label)}" loading="lazy" decoding="async" />`)
+    .join('')}</div>`;
 }
 
 /** Pick a display range (priceRange / bedrooms / sqft) for a community,

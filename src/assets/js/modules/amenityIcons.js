@@ -77,6 +77,58 @@ export function filteredAmenities(amenities) {
 }
 
 /**
+ * Site tag pills (public/images/tags/*) — the same colored pill art used
+ * on the live site's Homes for Sale pages, reused on the rich embed list
+ * cards. `communityTags` picks a card's corner tags by priority:
+ * waterfront view first, then 55+, then the amenity list below in order.
+ * Amenities consumed as tags are reported back (`used`) so the card's
+ * chip row can skip them.
+ */
+const TAG_DIR = '/images/tags/';
+/** [data value, image file, label] in corner-tag priority order. */
+const AMENITY_TAG_PRIORITY = [
+  ['Gated', 'gated.png', 'Gated'],
+  ['Private Beach', 'private-beach.png', 'Private Beach'],
+  ['Beach Club Access', 'beach-club.png', 'Beach Club'],
+  ['Boat Slips', 'boat-slips.png', 'Boat Slips'],
+  ['Golf Nearby', 'golf.png', 'Golf Nearby'],
+  ['Tennis', 'tennis.png', 'Tennis'],
+  ['Pickleball', 'pickleball.png', 'Pickleball'],
+  ['Community Pool', 'community-pool.png', 'Community Pool'],
+  ['Fitness Center', 'fitness-center.png', 'Fitness Center'],
+  ['Clubhouse', 'clubhouse.png', 'Clubhouse'],
+  ['Walking Paths', 'walking-paths.png', 'Walking Paths'],
+  ['Lifestyle Activities', 'social-events.png', 'Social Events'],
+];
+
+/**
+ * Up to `max` corner tags for a community.
+ * @returns {{ tags: Array<{src: string, label: string}>, used: Set<string> }}
+ */
+export function communityTags(community, max = 3) {
+  const tags = [];
+  const used = new Set();
+  const wf = community.waterfront || [];
+  if (wf.includes('Gulf-front')) {
+    tags.push({ src: `${TAG_DIR}gulf-view.png`, label: 'Gulf View' });
+  } else if (wf.includes('Bay-front')) {
+    tags.push({ src: `${TAG_DIR}bay-view.png`, label: 'Bay View' });
+  }
+  if (community.is55plus) {
+    tags.push({ src: `${TAG_DIR}55-plus.png`, label: '55+' });
+  }
+  const amenities = new Set(community.amenities || []);
+  for (const [value, file, label] of AMENITY_TAG_PRIORITY) {
+    if (tags.length >= max) break;
+    if (amenities.has(value)) {
+      tags.push({ src: TAG_DIR + file, label });
+      used.add(value);
+    }
+  }
+  return { tags: tags.slice(0, max), used };
+}
+
+/**
  * Convert a community pageUrl (e.g. "/neighborhood/aquarius-club") to
  * the matching homes-for-sale URL on the live site
  * ("/neighborhood-homes-for-sale/aquarius-club"). Same slug, different
