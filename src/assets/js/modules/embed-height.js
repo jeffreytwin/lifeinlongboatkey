@@ -61,19 +61,23 @@ function naturalHeight(container) {
   return Math.max(0, bottom - cRect.top + container.scrollTop + padBottom);
 }
 
-/** The height the embed wants: the tallest of the filter rail and the
- *  active surface (details panel when open, otherwise the list). The
- *  map has no natural height — a map-only report of 0 lets the host
- *  element fall back to its min-height. */
+/** The height the embed wants: the tallest of ALL visible surfaces — the
+ *  filter rail, the list, and the details panel when open. The list stays
+ *  in the measurement while a panel is open because it remains on screen
+ *  beside it (desktop layout-detail): a short panel must not shrink the
+ *  frame under the list and hand it back an internal scrollbar. Hidden
+ *  surfaces measure 0, and the map has no natural height — a map-only
+ *  report of 0 lets the host element fall back to its min-height. */
 function desiredHeight() {
   const detailOpen = document
     .getElementById('content')
     ?.classList.contains('layout-detail');
-  const surface = detailOpen
+  const list = naturalHeight(document.querySelector('.list-view'));
+  const panel = detailOpen
     ? naturalHeight(document.querySelector('.detail-panel'))
-    : naturalHeight(document.querySelector('.list-view'));
+    : 0;
   const filters = naturalHeight(document.querySelector('.filters'));
-  const h = Math.ceil(Math.max(surface, filters));
+  const h = Math.ceil(Math.max(list, panel, filters));
   // Small allowance for nested trailing margins (e.g. the last list card's
   // margin-bottom inside the ul), which rect walks can't see.
   return h > 0 ? h + 20 : 0;
