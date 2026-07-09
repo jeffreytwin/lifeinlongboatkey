@@ -71,6 +71,32 @@ the same list-first experience full-screen at
 Groups are defined in `src/assets/js/modules/embed.js` (`GROUPS`) — adding
 a new cluster is a one-line change there.
 
+## Auto-height: the `<lbk-map-embed>` Custom Element (recommended)
+
+A fixed-height iframe forces tall content (a details panel with 12
+listings) to scroll inside the frame. The Custom Element wrapper solves
+this: the app measures its content and posts
+`{ type: 'lbk-embed-height', height }` to the host, and the element
+resizes the iframe so the Wix page grows with the content instead.
+
+**Wix setup** (works on premium plans with a connected domain):
+
+1. In the editor: **Add Elements → Embed Code → Custom Element**.
+2. In the element's settings choose **Server URL** and enter
+   `https://map.lifeinlongboatkey.com/embed-element.js`.
+3. Set **Tag name** to `lbk-map-embed`.
+4. Under **Set Attributes**, add either
+   `group="bay-isles"` (featured group embed) **or**
+   `community="islander-club"` (single-community embed).
+   Optional: `min-height="480"`, `max-height="2400"` (px).
+5. Stretch the element to full section width. Its height is managed at
+   runtime — it grows/shrinks as panels open and close (growth is
+   instant, shrinking is delayed 0.5s to avoid pumping).
+
+Implementation lives in `public/embed-element.js` (host side) and
+`src/assets/js/modules/embed-height.js` (app side). Plain iframe embeds
+keep working unchanged — they just stay fixed-height.
+
 ## Notes / follow-ups
 
 - All 107 communities still render in the single-community embed for

@@ -39,6 +39,7 @@ import {
   groupMapUrl,
 } from './modules/embed.js';
 import { staticMapForGroup } from './modules/utils.js';
+import { startEmbedHeightReporting } from './modules/embed-height.js';
 
 const communities = getCommunities();
 const { embed, communitySlug, groupSlug } = getEmbedParams();
@@ -439,6 +440,10 @@ function bootFeaturedEmbed() {
   needsGroupRefit = true;
   setView('list');
   appBooted = true;
+
+  // Tell an auto-sizing host (the <lbk-map-embed> custom element) how tall
+  // the content is, so the iframe grows instead of scrolling internally.
+  startEmbedHeightReporting();
 }
 
 /**
@@ -526,6 +531,11 @@ function bootEmbed() {
       openPopupFor(focusTarget);
     },
   });
+
+  // Height reports for an auto-sizing host. Map-only reports 0 (a map has
+  // no natural height) and the host element falls back to its min-height;
+  // an open details panel reports its content height so the frame grows.
+  startEmbedHeightReporting();
 }
 
 if (embed && group) bootFeaturedEmbed();
