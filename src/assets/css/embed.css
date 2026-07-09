@@ -112,6 +112,49 @@ html.embed.embed-app .list-view {
   padding-top: 18px;
 }
 
+/* Featured embed: the details panel opens as a full-frame overlay (same
+   treatment as the photo lightbox and the mobile app) instead of a side
+   column — a 420px column inside a short iframe was cramped and its
+   scrolling fought the host page. The list keeps full width underneath. */
+html.embed.embed-app .content.layout-detail {
+  grid-template-columns: 1fr;
+}
+html.embed.embed-app .content.layout-detail .detail-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  border-left: none;
+  background: var(--bg);
+}
+/* The absolute corner × scrolls away with the overlay's content — swap it
+   for the fixed "Back to results" pill, mirroring mobile.css. */
+html.embed.embed-app .content.layout-detail .detail-close {
+  display: none;
+}
+html.embed.embed-app .content.layout-detail .detail-back-mobile {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  position: fixed;
+  top: 10px;
+  left: 12px;
+  z-index: 1200;
+  padding: 9px 16px 9px 12px;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+html.embed.embed-app .content.layout-detail .detail-back-mobile:hover,
+html.embed.embed-app .content.layout-detail .detail-back-mobile:active {
+  background: var(--teal-hover);
+}
+
 /* ========================================================================
    Mobile embed poster. On a narrow screen the featured embed doesn't run the
    interactive app inside the iframe (Wix scales it awkwardly and an iframe
