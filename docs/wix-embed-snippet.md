@@ -88,7 +88,7 @@ resizes the iframe so the Wix page grows with the content instead.
 4. Under **Set Attributes**, add either
    `group="bay-isles"` (featured group embed) **or**
    `community="islander-club"` (single-community embed).
-   Optional: `min-height="480"`, `max-height="2400"` (px).
+   Optional: `min-height="480"`, `max-height="3600"` (px).
 5. Stretch the element to full section width. Its height is managed at
    runtime — it grows/shrinks as panels open and close (growth is
    instant, shrinking is delayed 0.5s to avoid pumping).

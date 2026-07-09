@@ -13,7 +13,7 @@
  *   Attributes : group="bay-isles"            (featured group embed)
  *                — or —
  *                community="islander-club"    (single-community embed)
- *   Optional   : min-height="480" max-height="2400" (px)
+ *   Optional   : min-height="480" max-height="3600" (px)
  *
  * Growth is applied immediately; shrinking is delayed half a second so
  * transient layout states (images loading, panel swaps) don't make the
@@ -98,7 +98,7 @@
     }
 
     _max() {
-      return parseInt(this.getAttribute('max-height'), 10) || 2400;
+      return parseInt(this.getAttribute('max-height'), 10) || 3600;
     }
 
     _onMessage(e) {
@@ -137,6 +137,22 @@
       // below down to make room.
       this.style.height = h + 'px';
       if (this._iframe) this._iframe.style.height = h + 'px';
+      // Wix additionally wraps every widget in a fixed-size `comp-…`
+      // container that clips its contents. Release the nearest one so the
+      // grown element can actually extend the section.
+      try {
+        var p = this.parentElement;
+        for (var i = 0; p && i < 3; i++) {
+          if (p.id && p.id.indexOf('comp-') === 0) {
+            p.style.height = 'auto';
+            p.style.minHeight = h + 'px';
+            break;
+          }
+          p = p.parentElement;
+        }
+        // Nudge layouters that only re-measure on resize.
+        window.dispatchEvent(new Event('resize'));
+      } catch (_) {}
     }
   }
 
