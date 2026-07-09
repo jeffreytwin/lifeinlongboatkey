@@ -39,7 +39,11 @@ import {
   groupMapUrl,
 } from './modules/embed.js';
 import { staticMapForGroup } from './modules/utils.js';
-import { startEmbedHeightReporting, scrollHostToTop } from './modules/embed-height.js';
+import {
+  startEmbedHeightReporting,
+  scrollHostToTop,
+  reportEmbedHeight,
+} from './modules/embed-height.js';
 
 const communities = getCommunities();
 const { embed, communitySlug, groupSlug } = getEmbedParams();
@@ -95,9 +99,12 @@ function highlight(name) {
    breakpoint mobile.css uses; the desktop iframe embeds never run the
    interactive app at mobile widths, so no iframe history entanglement. */
 const MOBILE_BACK_MQ = window.matchMedia('(max-width: 860px)');
-// Group boots land on the list view, so that's their history baseline too —
-// the first back press exits the page instead of flipping to the map.
-const BASE_SNAPSHOT = { view: group ? 'list' : 'map', drawer: false, detail: null };
+// Group boots land on the detailed list on desktop; on mobile (the poster's
+// full-screen target) the map is the better first impression, with the
+// list one toggle away. The history baseline matches the boot view so the
+// first back press exits the page instead of flipping views.
+const GROUP_BOOTS_TO_LIST = !!group && !MOBILE_BACK_MQ.matches;
+const BASE_SNAPSHOT = { view: GROUP_BOOTS_TO_LIST ? 'list' : 'map', drawer: false, detail: null };
 
 let histChain = [BASE_SNAPSHOT]; // snapshot per entry we occupy, bottom → top
 let suppressPopstates = 0;       // popstates caused by our own history.go()
@@ -387,9 +394,9 @@ function bootFull() {
   });
 
   apply();
-  // Group-scoped visits (incl. the mobile poster's target) open on the
-  // detailed list; the map is one toggle away.
-  if (group) {
+  // Desktop group visits open on the detailed list; mobile ones (the
+  // poster's target) keep the default map view, list one toggle away.
+  if (GROUP_BOOTS_TO_LIST) {
     needsGroupRefit = true;
     setView('list');
   }
@@ -459,6 +466,13 @@ function bootFeaturedEmbed() {
  */
 function showEmbedPoster() {
   document.documentElement.classList.add('embed-poster');
+  // The poster has no natural height (the image fills whatever it gets, at
+  // 100vh) — give an auto-height host a pleasing portrait proportion
+  // derived from the frame's width. Width-driven, so no resize feedback.
+  const posterHeight = () =>
+    Math.round(Math.min(Math.max(window.innerWidth * 1.3, 420), 820));
+  reportEmbedHeight(posterHeight());
+  window.addEventListener('resize', () => reportEmbedHeight(posterHeight()));
   const poster = document.getElementById('embedPoster');
   if (!poster) return;
   poster.href = groupMapUrl(groupSlug);
