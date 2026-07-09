@@ -17,6 +17,7 @@
  */
 
 import { escapeHtml, communityPhotoUrl, wixImageUrl, IMG_SIZES } from './utils.js';
+import { getHostViewport } from './embed-height.js';
 
 const CAN_HOVER =
   typeof window !== 'undefined' &&
@@ -220,6 +221,28 @@ function openLightbox(images, startIndex) {
   document.body.appendChild(box);
   document.body.classList.add('lightbox-open');
 
+  // Auto-height embed: the iframe is as tall as the page content, so
+  // `position: fixed` would center the lightbox in the middle of a
+  // several-thousand-pixel frame — far off the visitor's screen. The host
+  // element streams the frame's visible slice; pin the lightbox to it
+  // (tracking host scrolls live) and keep a full-frame backdrop behind it
+  // so the rest of the page stays dimmed.
+  let backdrop = null;
+  const applyHostViewport = (v) => {
+    if (!v || v.height <= 0) return;
+    box.classList.add('is-windowed');
+    box.style.top = v.top + 'px';
+    box.style.height = v.height + 'px';
+  };
+  const onHostViewport = (e) => applyHostViewport(e.detail);
+  if (getHostViewport()) {
+    backdrop = document.createElement('div');
+    backdrop.className = 'lightbox-backdrop';
+    document.body.insertBefore(backdrop, box);
+    applyHostViewport(getHostViewport());
+    window.addEventListener('lbk-host-viewport', onHostViewport);
+  }
+
   const img = box.querySelector('.lightbox-img');
   const counter = box.querySelector('.lightbox-count');
 
@@ -277,6 +300,8 @@ function openLightbox(images, startIndex) {
 
   const close = () => {
     box.remove();
+    if (backdrop) backdrop.remove();
+    window.removeEventListener('lbk-host-viewport', onHostViewport);
     document.body.classList.remove('lightbox-open');
     document.removeEventListener('keydown', onKey);
   };

@@ -39,7 +39,7 @@ import {
   groupMapUrl,
 } from './modules/embed.js';
 import { staticMapForGroup } from './modules/utils.js';
-import { startEmbedHeightReporting } from './modules/embed-height.js';
+import { startEmbedHeightReporting, scrollHostToTop } from './modules/embed-height.js';
 
 const communities = getCommunities();
 const { embed, communitySlug, groupSlug } = getEmbedParams();
@@ -208,6 +208,10 @@ function openDetail(community) {
   showDetail(community);
   focusCommunity(community);
   invalidateSize();
+  // Auto-height embeds: the panel renders from the frame's top — if the
+  // visitor opened it from deep in the list, bring the top on screen.
+  // No-op outside a listening host.
+  scrollHostToTop();
   settleHistory();
 }
 
@@ -503,6 +507,7 @@ function bootEmbed() {
     showDetail(community);
     focusCommunity(community);
     invalidateSize();
+    scrollHostToTop();
   };
   const closeEmbedDetail = () => {
     hideDetail();

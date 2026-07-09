@@ -21,6 +21,27 @@
 
 const MESSAGE_TYPE = 'lbk-embed-height';
 
+/** The host-visible slice of this iframe, in frame coordinates — streamed
+ *  by the host element (scroll/resize/growth) so overlays can position
+ *  within what's actually on the visitor's screen. Null outside an
+ *  auto-height embed (or before the first report arrives). */
+let hostViewport = null;
+export function getHostViewport() {
+  return hostViewport;
+}
+
+/**
+ * Ask the auto-height host to bring the frame's top back on screen — used
+ * when the details panel opens while the visitor is scrolled deep into the
+ * list, so they land on the panel's top rather than its middle. No-op
+ * without a listening host, or when the frame's top is already visible.
+ */
+export function scrollHostToTop() {
+  if (window.parent === window) return;
+  if (!hostViewport || hostViewport.top <= 0) return;
+  window.parent.postMessage({ type: `${MESSAGE_TYPE}-scrolltop` }, '*');
+}
+
 /** Natural (content-driven) height of a scroll container, or 0 when the
  *  element is missing or display:none. */
 function naturalHeight(container) {
@@ -40,19 +61,23 @@ function naturalHeight(container) {
   return Math.max(0, bottom - cRect.top + container.scrollTop + padBottom);
 }
 
-/** The height the embed wants: the tallest of the filter rail and the
- *  active surface (details panel when open, otherwise the list). The
- *  map has no natural height — a map-only report of 0 lets the host
- *  element fall back to its min-height. */
+/** The height the embed wants: the tallest of ALL visible surfaces — the
+ *  filter rail, the list, and the details panel when open. The list stays
+ *  in the measurement while a panel is open because it remains on screen
+ *  beside it (desktop layout-detail): a short panel must not shrink the
+ *  frame under the list and hand it back an internal scrollbar. Hidden
+ *  surfaces measure 0, and the map has no natural height — a map-only
+ *  report of 0 lets the host element fall back to its min-height. */
 function desiredHeight() {
   const detailOpen = document
     .getElementById('content')
     ?.classList.contains('layout-detail');
-  const surface = detailOpen
+  const list = naturalHeight(document.querySelector('.list-view'));
+  const panel = detailOpen
     ? naturalHeight(document.querySelector('.detail-panel'))
-    : naturalHeight(document.querySelector('.list-view'));
+    : 0;
   const filters = naturalHeight(document.querySelector('.filters'));
-  const h = Math.ceil(Math.max(surface, filters));
+  const h = Math.ceil(Math.max(list, panel, filters));
   // Small allowance for nested trailing margins (e.g. the last list card's
   // margin-bottom inside the ul), which rect walks can't see.
   return h > 0 ? h + 20 : 0;
@@ -121,8 +146,20 @@ export function startEmbedHeightReporting() {
   // Handshake: the host element pings once its iframe has loaded (and any
   // time it wants a refresh), so a report posted before the host was
   // listening — or lost to any other boot-ordering race — gets re-sent.
+  // It also streams the host-visible slice of the frame (see above).
   window.addEventListener('message', (e) => {
-    if (e.data && e.data.type === `${MESSAGE_TYPE}-request`) reportFresh();
+    const d = e.data;
+    if (!d) return;
+    if (d.type === `${MESSAGE_TYPE}-request`) {
+      reportFresh();
+    } else if (
+      d.type === `${MESSAGE_TYPE}-viewport` &&
+      typeof d.top === 'number' &&
+      typeof d.height === 'number'
+    ) {
+      hostViewport = { top: d.top, height: d.height };
+      window.dispatchEvent(new CustomEvent('lbk-host-viewport', { detail: hostViewport }));
+    }
   });
 
   report();

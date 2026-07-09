@@ -43,6 +43,8 @@ Use Wix's **HTML iframe (Embed HTML)** element and paste, replacing the slug:
   title="Islander Club on the Longboat Key interactive map"
   style="width:100%; height:480px; border:0; border-radius:12px; overflow:hidden;"
   loading="lazy"
+  allowfullscreen
+  allow="fullscreen *; picture-in-picture *; autoplay"
   referrerpolicy="no-referrer-when-downgrade">
 </iframe>
 ```
