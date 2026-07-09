@@ -45,6 +45,7 @@
       if (!this._iframe) {
         this.style.display = 'block';
         this.style.width = '100%';
+        this.style.height = this._min() + 'px';
         var f = document.createElement('iframe');
         f.src = this._src();
         f.title = 'Longboat Key interactive map';
@@ -128,6 +129,13 @@
 
     _apply(h) {
       this._height = h;
+      // Size the HOST element, not just the iframe. Wix pins an explicit
+      // height on the custom element (the size drawn in the editor); if
+      // only the inner iframe grew, it would be clipped inside that pinned
+      // box and the page would never reflow. An inline height set here
+      // overrides the pin, and Wix's layout engine then pushes the content
+      // below down to make room.
+      this.style.height = h + 'px';
       if (this._iframe) this._iframe.style.height = h + 'px';
     }
   }
