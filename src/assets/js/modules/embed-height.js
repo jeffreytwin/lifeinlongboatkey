@@ -31,6 +31,20 @@ export function getHostViewport() {
 }
 
 /**
+ * Post one explicit height to the host — used by surfaces with no natural
+ * content height, like the mobile poster (an image that fills whatever it
+ * gets). Width-derived values are safe; never derive from vh, which would
+ * feed back through the resize.
+ */
+export function reportEmbedHeight(height) {
+  if (window.parent === window) return;
+  window.parent.postMessage(
+    { type: MESSAGE_TYPE, height: Math.round(height) },
+    '*'
+  );
+}
+
+/**
  * Ask the auto-height host to bring the frame's top back on screen — used
  * when the details panel opens while the visitor is scrolled deep into the
  * list, so they land on the panel's top rather than its middle. No-op
