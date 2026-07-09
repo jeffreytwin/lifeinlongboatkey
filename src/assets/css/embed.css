@@ -101,6 +101,17 @@ html.embed .detail-map {
   display: none;
 }
 
+/* The featured embed is a list-first surface inside a host page — drop the
+   Map/List toggle so the iframe stays on the detailed list. (The standalone
+   group page at ?group=<slug>, which the mobile poster opens, keeps it.) */
+html.embed.embed-app .view-switch {
+  display: none !important;
+}
+/* …and reclaim the top padding the list reserves to clear the toggle. */
+html.embed.embed-app .list-view {
+  padding-top: 18px;
+}
+
 /* ========================================================================
    Mobile embed poster. On a narrow screen the featured embed doesn't run the
    interactive app inside the iframe (Wix scales it awkwardly and an iframe
