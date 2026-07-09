@@ -508,7 +508,7 @@ body.view-list .map-wrap { display: none; }
   body.list-rich .list-view-price {
     font-size: 16px;
     font-weight: 600;
-    color: var(--teal-deep);
+    color: var(--teal);
   }
   /* Corner tag pills — the site's Homes-for-Sale tag art. */
   .list-view-tags {
