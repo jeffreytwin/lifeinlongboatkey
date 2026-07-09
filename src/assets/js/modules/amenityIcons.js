@@ -101,6 +101,22 @@ const AMENITY_TAG_PRIORITY = [
   ['Lifestyle Activities', 'social-events.png', 'Social Events'],
 ];
 
+const AMENITY_TAG_BY_VALUE = new Map(
+  AMENITY_TAG_PRIORITY.map(([value, file, label]) => [value, { file, label }]),
+);
+
+/**
+ * Per-community tag adjustments, keyed by community name: `prefer` jumps
+ * those amenity tags to the front of the corner row; `suppress` keeps
+ * those out of it (they fall back to the chip row). Editorial calls —
+ * e.g. golf communities lead with Golf Nearby rather than the (near
+ * universal in Bay Isles) Gated.
+ */
+const TAG_OVERRIDES = {
+  'Grand Bay (Bay Isles)': { prefer: ['Golf Nearby'], suppress: ['Gated'] },
+  'Weston Pointe (Bay Isles)': { prefer: ['Golf Nearby'], suppress: ['Gated'] },
+};
+
 /**
  * Up to `max` corner tags for a community.
  * @returns {{ tags: Array<{src: string, label: string}>, used: Set<string> }}
@@ -118,8 +134,17 @@ export function communityTags(community, max = 3) {
     tags.push({ src: `${TAG_DIR}55-plus.png`, label: '55+' });
   }
   const amenities = new Set(community.amenities || []);
+  const override = TAG_OVERRIDES[community.name] || {};
+  const suppress = new Set(override.suppress || []);
+  for (const value of override.prefer || []) {
+    const t = AMENITY_TAG_BY_VALUE.get(value);
+    if (!t || tags.length >= max || !amenities.has(value)) continue;
+    tags.push({ src: TAG_DIR + t.file, label: t.label });
+    used.add(value);
+  }
   for (const [value, file, label] of AMENITY_TAG_PRIORITY) {
     if (tags.length >= max) break;
+    if (used.has(value) || suppress.has(value)) continue;
     if (amenities.has(value)) {
       tags.push({ src: TAG_DIR + file, label });
       used.add(value);
