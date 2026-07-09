@@ -26,24 +26,32 @@ html.embed .app {
 }
 
 /* ========================================================================
-   Minimal embed (no group) — strip every interactive surface; map only,
-   single full-bleed column. The featured embed (.embed-app) is excluded so
-   it keeps the app's normal responsive sidebar / list / detail layout.
+   Minimal embed (no group) — strip the filter / list chrome; the map fills
+   a single full-bleed column. The details panel is KEPT: clicking a pin
+   opens the same panel as the full app (its normal .layout-detail grid
+   applies on desktop; mobile's fullscreen overlay inside the iframe).
+   The featured embed (.embed-app) is excluded so it keeps the app's normal
+   responsive sidebar / list / detail layout.
    ===================================================================== */
 html.embed:not(.embed-app) .main {
   grid-template-columns: 1fr;
 }
-html.embed:not(.embed-app) .content,
-html.embed:not(.embed-app) .content.layout-map,
-html.embed:not(.embed-app) .content.layout-detail {
+html.embed:not(.embed-app) .content:not(.layout-detail) {
   grid-template-columns: 1fr !important;
 }
 html.embed:not(.embed-app) .filters,
 html.embed:not(.embed-app) .view-switch,
 html.embed:not(.embed-app) .list-view,
-html.embed:not(.embed-app) .filters-toggle-btn,
-html.embed:not(.embed-app) .detail-panel {
+html.embed:not(.embed-app) .filters-toggle-btn {
   display: none !important;
+}
+/* The view-switch above the map is hidden, so give the map the 60px back
+   on narrow screens (mobile.css sizes .map-wrap around the toggle). */
+@media (max-width: 860px) {
+  html.embed:not(.embed-app) .map-wrap {
+    height: 100vh;
+    min-height: 0;
+  }
 }
 
 /* CTA pill — only the minimal embed shows it (the featured app is
@@ -86,10 +94,10 @@ html.embed:not(.embed-app) .embed-cta:hover {
   }
 }
 
-/* Drop the detail overlay's "Location on Longboat Key" reference map in the
-   featured embed — the host community page already provides location
-   context. (All widths; the standalone app keeps it.) */
-html.embed-app .detail-map {
+/* Drop the detail panel's "Location on Longboat Key" reference map in every
+   embed — the host page already provides location context, and the minimal
+   embed's own map IS the location. (The standalone app keeps it.) */
+html.embed .detail-map {
   display: none;
 }
 
