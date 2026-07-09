@@ -194,6 +194,10 @@
       // overrides the pin, and Wix's layout engine then pushes the content
       // below down to make room.
       this.style.height = h + 'px';
+      // Re-assert full width on every apply — Wix rewrites inline sizes on
+      // its own schedule, and a later fixed-pixel width would shrink the
+      // frame inside its wrapper (seen as a white strip on mobile).
+      this.style.width = '100%';
       if (this._iframe) this._iframe.style.height = h + 'px';
       // Wix additionally wraps every widget in a fixed-size `comp-…`
       // container that clips its contents. Release the nearest one so the
