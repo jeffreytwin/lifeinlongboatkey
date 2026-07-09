@@ -130,7 +130,8 @@ html.embed.embed-app .content.layout-detail::before {
 html.embed.embed-app .content.layout-detail .detail-panel {
   position: fixed;
   inset: 20px;
-  max-width: 920px;
+  /* Same width the panel had as a side column, just floating centered. */
+  max-width: 420px;
   margin-inline: auto;
   z-index: 1100;
   border: none;
