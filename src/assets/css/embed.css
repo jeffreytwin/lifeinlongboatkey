@@ -101,6 +101,15 @@ html.embed .detail-map {
   display: none;
 }
 
+/* The auto-height host grows the frame until the details panel fits, so
+   the panel never scrolls internally — but the standalone app's
+   overscroll-behavior: contain (an iOS rubber-band fix) then swallows
+   wheel events over the non-scrolling panel instead of letting them chain
+   out to the host page, leaving a scroll dead-zone. Embeds chain. */
+html.embed .detail-panel {
+  overscroll-behavior: auto;
+}
+
 /* The featured embed is a list-first surface inside a host page — drop the
    Map/List toggle so the iframe stays on the detailed list. (The standalone
    group page at ?group=<slug>, which the mobile poster opens, keeps it.) */
