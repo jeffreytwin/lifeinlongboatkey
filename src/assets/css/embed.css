@@ -51,6 +51,14 @@ a.embed-poster {
 html.embed-poster .app {
   display: none;
 }
+/* The poster is a single full-frame tap target — nothing in the document
+   ever scrolls. Without this, any transient overflow makes classic
+   (Windows) scrollbars reserve a ~17px track that steals width from the
+   poster and reads as a white strip down the right edge. */
+html.embed-poster,
+html.embed-poster body {
+  overflow: hidden;
+}
 html.embed-poster .embed-poster {
   display: flex;
   align-items: center;
