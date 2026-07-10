@@ -73,6 +73,11 @@
           self._sendViewport();
         });
         this._iframe = f;
+        // Size host + iframe BEFORE the iframe attaches: iOS doesn't
+        // reliably re-layout an already-loaded iframe when its width
+        // changes, so the inner document must get its final width on its
+        // very first layout (intermittent white-strip race otherwise).
+        this._fitWidth();
         this.appendChild(f);
       }
       window.addEventListener('message', this._onMessage);
@@ -115,13 +120,18 @@
         var vw = document.documentElement.clientWidth;
         var wrap = this.parentElement;
         if (!wrap) return;
-        var r = wrap.getBoundingClientRect();
-        if (vw <= 860 && r.width && vw - r.width > 4) {
+        if (vw <= 860) {
+          // Mobile is always full-bleed, sized in px (not %) so the value
+          // is final before the iframe's first layout, and the iframe is
+          // sized explicitly too — % chains resolve late on iOS.
+          var r = wrap.getBoundingClientRect();
           this.style.width = vw + 'px';
-          this.style.marginLeft = -r.left + 'px';
+          this.style.marginLeft = r.width ? -r.left + 'px' : '';
+          if (this._iframe) this._iframe.style.width = vw + 'px';
         } else {
           this.style.width = '100%';
           this.style.marginLeft = '';
+          if (this._iframe) this._iframe.style.width = '100%';
         }
       } catch (_) {}
     }
