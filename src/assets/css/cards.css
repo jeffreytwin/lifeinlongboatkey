@@ -512,6 +512,12 @@ body.view-list .map-wrap { display: none; }
     gap: 6px;
     padding: 18px 22px;
   }
+  /* The Home Type fact row already says condo/neighborhood — the kicker
+     above the title keeps only the island location. (Mobile's compact
+     rows keep the full line; they have no facts row.) */
+  body.list-rich .list-view-meta-type {
+    display: none;
+  }
   body.list-rich .list-view-name {
     white-space: normal;
     font-size: 20px;

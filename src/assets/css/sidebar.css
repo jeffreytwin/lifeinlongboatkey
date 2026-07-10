@@ -5,6 +5,23 @@
   overflow-y: auto;
   padding: 20px 22px 30px;
 }
+/* One-time entrance: the rail slides in from the left on load so visitors
+   notice the filters exist. Desktop only — on mobile the rail is a
+   drawer with its own choreography. `backwards` keeps it offscreen
+   during the start delay; transform doesn't affect layout, so the map
+   and the embed's height reporting are undisturbed. */
+@media (min-width: 861px) {
+  @keyframes filters-slide-in {
+    from { transform: translateX(-105%); opacity: 0.3; }
+    to   { transform: translateX(0);     opacity: 1; }
+  }
+  .filters {
+    animation: filters-slide-in 0.55s cubic-bezier(0.22, 0.9, 0.35, 1) 0.25s backwards;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .filters { animation: none !important; }
+}
 .filters::-webkit-scrollbar { width: 6px; }
 .filters::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
 
