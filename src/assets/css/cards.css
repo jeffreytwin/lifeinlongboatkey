@@ -594,6 +594,15 @@ body.view-list .map-wrap { display: none; }
     color: var(--ink-muted);
   }
 }
+/* Narrow desktop: the tag pills crowd the card once it compresses below
+   its full 860px width (rail + padding + card ≈ 1210px viewport). Hide
+   them on that band — the facts row and amenity chips still carry the
+   information; wide screens keep the pills. */
+@media (min-width: 861px) and (max-width: 1209px) {
+  .list-view-tags {
+    display: none;
+  }
+}
 /* Tablet-width rail is 280px (tablet.css) — re-derive the page-centering
    offsets. */
 @media (min-width: 861px) and (max-width: 1100px) {
