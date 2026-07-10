@@ -17,7 +17,7 @@ params drive the scoping:
 
 | Param | Value | Effect |
 |---|---|---|
-| `embed` | `1` | Full-app embed, island-wide. With `community`, boots on the map focused on that community with its details panel open. |
+| `embed` | `1` | Full-app embed, island-wide, booting into the list view. With `community`, boots on the map focused on that community with its details panel open. |
 | `community` | a **slug** | The community to focus + open. (`focus` works as an alias.) |
 
 The details panel is the same as the full app — photos, price/beds/sqft,

@@ -435,8 +435,10 @@ function bootEmbedApp() {
   });
 
   apply();
-  if (group) {
-    // Groups boot on the detailed list; community embeds stay on the map.
+  // Group and generic (unscoped) embeds boot on the detailed list — the
+  // browsing surface. Only community embeds stay on the map, focused on
+  // their community with its panel open.
+  if (group || !focusTarget) {
     needsGroupRefit = true;
     setView('list');
   }
