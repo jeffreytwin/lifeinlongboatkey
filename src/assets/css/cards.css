@@ -603,6 +603,13 @@ body.view-list .map-wrap { display: none; }
     display: none;
   }
 }
+/* Same crowding math when the details panel is open: its 420px column
+   steals card width, shifting the compression point up to ~1630px. */
+@media (min-width: 861px) and (max-width: 1631px) {
+  .content.layout-detail .list-view-tags {
+    display: none;
+  }
+}
 /* Tablet-width rail is 280px (tablet.css) — re-derive the page-centering
    offsets. */
 @media (min-width: 861px) and (max-width: 1100px) {
