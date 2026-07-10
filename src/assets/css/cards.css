@@ -527,13 +527,22 @@ body.view-list .map-wrap { display: none; }
     font-weight: 600;
     color: var(--teal);
   }
-  /* Corner tag pills — the site's Homes-for-Sale tag art. */
-  .list-view-tags {
-    position: absolute;
-    top: 16px;
-    right: 20px;
+  /* Kicker + tag pills share an in-flow row: on wide cards the tags sit
+     top-right; when the card narrows they WRAP onto their own line
+     instead of overlapping the text (they were absolutely positioned
+     once, which reserved no space and collided at 861–1200px widths). */
+  body.list-rich .list-view-toprow {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+  .list-view-tags {
+    display: flex;
+    flex-wrap: wrap;
     gap: 6px;
+    margin-left: auto;
   }
   .list-view-tags img {
     height: 26px;

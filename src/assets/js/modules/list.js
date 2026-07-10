@@ -55,14 +55,16 @@ export function renderMobileList(list) {
           <img src="${escapeHtml(communityThumbUrl(c))}" alt="" loading="lazy" decoding="async" />
         </div>
         <div class="list-view-body">
-          <div class="list-view-meta">
-            <span class="list-view-meta-type">${c.type === 'condo' ? 'Condominiums' : 'Neighborhood'} · </span>${escapeHtml(locationLabel(c.location))}
+          <div class="list-view-toprow">
+            <div class="list-view-meta">
+              <span class="list-view-meta-type">${c.type === 'condo' ? 'Condominiums' : 'Neighborhood'} · </span>${escapeHtml(locationLabel(c.location))}
+            </div>
+            ${richCards ? richCardTags(c) : ''}
           </div>
           <div class="list-view-name">${escapeHtml(c.name)}</div>
           <div class="list-view-price">${escapeHtml(priceRange)}${richCards ? richCardHomesCount(c) : ''}</div>
           ${richCards ? richCardExtras(c) : ''}
         </div>
-        ${richCards ? richCardTags(c) : ''}
       </li>`;
     })
     .join('');
