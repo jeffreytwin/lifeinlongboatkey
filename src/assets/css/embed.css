@@ -1,16 +1,10 @@
 /* Embed mode — served at ?embed=… and dropped into a Wix page via <iframe>.
    Everything here is scoped under html.embed, so the standalone app is
-   untouched. There are two flavors:
-
-     html.embed              — minimal embed: a chrome-less map (the single-
-                               community / context view). Filters, list, view
-                               toggle, and the detail panel are stripped; a
-                               single CTA links out to the full map.
-     html.embed.embed-app    — featured group embed: the full filter / list /
-                               details experience, scoped to a group. It reuses
-                               the app's own responsive layout (desktop sidebar
-                               + map when wide; mobile drawer when narrow) — the
-                               only embed-specific change is the hidden header. */
+   untouched. Every embed runs the full filter / list / details experience
+   (html.embed.embed-app) reusing the app's own responsive layout; the only
+   embed-specific change is the hidden header. Group embeds boot list-first;
+   community embeds boot on the map with their community's panel open
+   (main.js). */
 
 /* The site header is external-site nav — hidden in every embed mode. */
 html.embed .header {
@@ -23,75 +17,6 @@ html.embed .header {
    Collapse to a single 1fr row so .main fills the full viewport height. */
 html.embed .app {
   grid-template-rows: 1fr;
-}
-
-/* ========================================================================
-   Minimal embed (no group) — strip the filter / list chrome; the map fills
-   a single full-bleed column. The details panel is KEPT: clicking a pin
-   opens the same panel as the full app (its normal .layout-detail grid
-   applies on desktop; mobile's fullscreen overlay inside the iframe).
-   The featured embed (.embed-app) is excluded so it keeps the app's normal
-   responsive sidebar / list / detail layout.
-   ===================================================================== */
-html.embed:not(.embed-app) .main {
-  grid-template-columns: 1fr;
-}
-html.embed:not(.embed-app) .content:not(.layout-detail) {
-  grid-template-columns: 1fr !important;
-}
-html.embed:not(.embed-app) .filters,
-html.embed:not(.embed-app) .view-switch,
-html.embed:not(.embed-app) .list-view,
-html.embed:not(.embed-app) .filters-toggle-btn {
-  display: none !important;
-}
-/* The view-switch above the map is hidden, so give the map the 60px back
-   on narrow screens (mobile.css sizes .map-wrap around the toggle). */
-@media (max-width: 860px) {
-  html.embed:not(.embed-app) .map-wrap {
-    height: 100vh;
-    min-height: 0;
-  }
-}
-
-/* CTA pill — only the minimal embed shows it (the featured app is
-   self-sufficient). Anchored to the map-wrap, bottom-center. */
-.embed-cta {
-  display: none;
-}
-html.embed:not(.embed-app) .embed-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  position: absolute;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  z-index: 5;
-  background: var(--teal);
-  color: #fff;
-  font-family: 'Manrope', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-decoration: none;
-  padding: 10px 18px;
-  border-radius: 999px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
-  transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
-  white-space: nowrap;
-  max-width: calc(100% - 28px);
-}
-html.embed:not(.embed-app) .embed-cta:hover {
-  background: var(--teal-deep);
-  transform: translateX(-50%) translateY(-1px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
-}
-@media (max-width: 420px) {
-  html.embed:not(.embed-app) .embed-cta {
-    font-size: 12px;
-    padding: 9px 14px;
-  }
 }
 
 /* Drop the detail panel's "Location on Longboat Key" reference map in every

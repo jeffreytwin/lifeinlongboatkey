@@ -11,18 +11,20 @@ next page load.
 
 ## How it works
 
-Two URL params drive it:
+Every embed runs the FULL app experience (filter rail, Map/List toggle,
+rich list cards, details panel) with the site header hidden. Two URL
+params drive the scoping:
 
 | Param | Value | Effect |
 |---|---|---|
-| `embed` | `1` | Collapses the header, filter rail, and list so the map fills the iframe. Shows the "Explore all neighborhoods on the full map →" CTA. |
-| `community` | a **slug** | The community to highlight + fly to. (`focus` works as an alias.) |
+| `embed` | `1` | Full-app embed, island-wide. With `community`, boots on the map focused on that community with its details panel open. |
+| `community` | a **slug** | The community to focus + open. (`focus` works as an alias.) |
 
-Clicking any pin or polygon opens the **same details panel as the full
-app** — photos, price/beds/sqft, amenities, and the Homes for Sale
-listings. (The panel's "Location on Longboat Key" reference map is dropped
-in embeds; the embed's own map is the location context.) The mobile back
-pill reads "Back to map".
+The details panel is the same as the full app — photos, price/beds/sqft,
+amenities, and the Homes for Sale listings. (The panel's "Location on
+Longboat Key" reference map is dropped in embeds; the embed's own map is
+the location context.) On narrow screens the embed shows a poster that
+opens the focused full app in a new tab instead.
 
 The **slug is the last segment of the community's page URL.** For example a
 community whose `pageUrl` is `/neighborhood/islander-club` has the slug
@@ -66,9 +68,9 @@ Page" buttons — and the map is one toggle away. "View Homes for Sale"
 opens the details panel scrolled to that community's listings; "View
 Community Page" opens the community's page on the main site in a new tab.
 
-On narrow screens the iframe shows a poster image instead; tapping it opens
-the same list-first experience full-screen at
-`map.lifeinlongboatkey.com/?group=<slug>`.
+On narrow screens every embed (group and community alike) shows a poster
+image instead; tapping it opens the full experience as a top-level page
+(`?group=<slug>` for groups, `?community=<slug>` for communities).
 
 Groups are defined in `src/assets/js/modules/embed.js` (`GROUPS`) — adding
 a new cluster is a one-line change there.
@@ -101,9 +103,9 @@ keep working unchanged — they just stay fixed-height.
 
 ## Notes / follow-ups
 
-- All 107 communities still render in the single-community embed for
-  spatial context; the embedded one is highlighted and the map opens zoomed
-  in on it.
+- All communities still render in the single-community embed for spatial
+  context (island-wide filters and list); the embedded one is highlighted,
+  focused, and opens with its details panel.
 - A future enhancement (Open decision #3) is to drive the slug via
   `postMessage` from the Wix page (`send-url-to-iframe.js`) so the snippet
   doesn't hard-code it — useful if Wix can template the page URL but not the
