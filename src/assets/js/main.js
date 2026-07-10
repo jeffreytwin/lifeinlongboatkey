@@ -58,14 +58,12 @@ const workingSet = group ? filterByGroup(communities, group) : communities;
 const totalEl = document.getElementById('totalCount');
 if (totalEl) totalEl.textContent = String(workingSet.length);
 
-// Group-scoped boots (?group=<slug> and the featured embed) are list-first:
-// the detailed card list is the primary surface and the map sits behind the
-// Map/List toggle. Rich cards add beds/sqft, description, amenities, and
-// the action buttons; body.list-rich carries the matching CSS.
-if (group) {
-  setRichListCards(true);
-  document.body.classList.add('list-rich');
-}
+// Rich list cards everywhere the interactive app runs (standalone map and
+// group embeds alike): corner tag pills, homes-for-sale count, facts row,
+// and amenity chips on desktop widths. body.list-rich carries the CSS;
+// mobile keeps the compact rows (rich extras hide below the breakpoint).
+setRichListCards(true);
+document.body.classList.add('list-rich');
 // The map is framed to the group inside a hidden (zero-size) container when
 // the boot view is the list — re-frame it on the first flip to Map.
 let needsGroupRefit = false;
