@@ -125,21 +125,24 @@ export function matches(c) {
   //  - 'Currently for sale' ON: the community must have at least one active
   //    listing matching ALL active listing-level filters combined. No match
   //    (or no active homes) → excluded.
-  //  - 'Currently for sale' OFF: a community with active homes is never
-  //    excluded by these filters — it's surfaced and filtered inside the
-  //    detail panel instead. Communities with no active homes fall back to
-  //    their broader community-level tags.
+  //  - 'Currently for sale' OFF: the community qualifies through EITHER a
+  //    matching active listing (same single-listing rule as ON) OR its
+  //    broader community-level tags (historic price band / home types /
+  //    bedrooms) — so inventory-less communities stay browsable, but the
+  //    filters still filter. (An earlier rule blanket-included every
+  //    community with any active listing here, which made these facets
+  //    no-ops with the toggle off and contradicted the option counts.)
   if (hasListingLevelFilters()) {
     const items = c.activeListings?.items;
-    const hasActiveHomes = Array.isArray(items) && items.length > 0;
+    const listingHit =
+      Array.isArray(items) && items.length > 0 && items.some(listingMatchesActiveFilters);
     if (state.hasListingsOnly) {
-      if (!hasActiveHomes || !items.some(listingMatchesActiveFilters)) return false;
-    } else if (!hasActiveHomes) {
+      if (!listingHit) return false;
+    } else if (!listingHit) {
       if (state.priceTiers.size && !c.priceTiers.some((t) => state.priceTiers.has(t))) return false;
       if (state.homeTypes.size && !c.homeTypes.some((t) => state.homeTypes.has(t))) return false;
       if (state.bedrooms.size && !c.bedTags.some((t) => state.bedrooms.has(t))) return false;
     }
-    // OFF + has active homes → always included.
   }
   // Amenities use AND: a community must have every checked amenity.
   // All other multi-select filters are OR (a property can only be in one

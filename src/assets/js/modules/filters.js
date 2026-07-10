@@ -9,7 +9,7 @@
 
 import { state, resetFilters } from './state.js';
 import { countsBy, escapeHtml } from './utils.js';
-import { matches, priceToTier, mapListingHomeType, isLandListing, listingMatchesActiveFilters, BEDROOM_MAX } from './matches.js';
+import { matches, isLandListing } from './matches.js';
 
 export const LOCATION_OPTIONS = [
   { key: 'north', label: 'North End' },
@@ -100,66 +100,26 @@ function countsExcluding(communities, stateKey, getValue, clearOwn = true) {
   return counts;
 }
 
-/* Accessors for countsExcluding — when 'Currently for sale' is on AND
-   per-listing data is available, project active listings into the
-   chip-row vocabulary so the "(N)" counts stay in step with what
-   matches.js will actually let through. Each one falls back to the
-   community-wide field when listings data isn't available yet.
-
-   Because matches.js requires a SINGLE listing to satisfy all active
-   listing-level filters at once, each projection only counts listings
-   that pass listingMatchesActiveFilters(). These accessors run inside
-   countsExcluding's cleared-state window, so the facet's own slot is
-   empty and that check means "matches every filter except this facet"
-   — e.g. with Bedrooms=4 active, a community's 2-bed townhouse no
-   longer credits the Townhomes count when only a 4-bed condo matched. */
-
-function bedTagsForCounting(c) {
-  const items = c.activeListings?.items;
-  if (state.hasListingsOnly && Array.isArray(items) && items.length) {
-    const out = new Set();
-    for (const it of items) {
-      if (it.beds == null || !listingMatchesActiveFilters(it)) continue;
-      // Clamp to the top chip the same way the matcher does, so 6+ bedroom
-      // listings count toward "5+".
-      out.add(String(Math.min(it.beds, BEDROOM_MAX)));
-    }
-    return [...out];
+/**
+ * Exact cross-filter counts for the listing-level facets (price, home
+ * type, bedrooms): for each candidate option, run the REAL matcher with
+ * the facet set to exactly that option on top of every other active
+ * filter. The number next to an option is then definitionally the result
+ * count you get by clicking it — no hand-maintained projection can drift
+ * from matches.js's semantics (single-listing AND when 'Currently for
+ * sale' is on; listing-or-community-tags union when it's off).
+ */
+function exactOptionCounts(communities, stateKey, options) {
+  const saved = state[stateKey];
+  const counts = {};
+  for (const opt of options) {
+    state[stateKey] = new Set([opt]);
+    let n = 0;
+    for (const c of communities) if (matches(c)) n++;
+    counts[opt] = n;
   }
-  return c.bedTags;
-}
-
-function priceTiersForCounting(c) {
-  const items = c.activeListings?.items;
-  if (state.hasListingsOnly && Array.isArray(items) && items.length) {
-    const out = new Set();
-    for (const it of items) {
-      if (!listingMatchesActiveFilters(it)) continue;
-      const tier = priceToTier(it.price);
-      if (tier) out.add(tier);
-    }
-    return [...out];
-  }
-  return c.priceTiers;
-}
-
-function homeTypesForCounting(c) {
-  const items = c.activeListings?.items;
-  if (state.hasListingsOnly && Array.isArray(items) && items.length) {
-    const out = new Set();
-    for (const it of items) {
-      if (!listingMatchesActiveFilters(it)) continue;
-      // 'Land' is listing-derived (a lot for sale, no home type of its own).
-      const mapped = isLandListing(it) ? 'Land' : mapListingHomeType(it.homeType);
-      if (mapped) out.add(mapped);
-    }
-    return [...out];
-  }
-  // Toggle off: matches.js never excludes a community with active homes on
-  // listing-level filters, so the broader community tags are the right count.
-  const out = new Set(c.homeTypes);
-  if (Array.isArray(items) && items.some(isLandListing)) out.add('Land');
-  return [...out];
+  state[stateKey] = saved;
+  return counts;
 }
 
 export const PRICE_TIERS = [
@@ -286,12 +246,9 @@ export function renderFilters(communities, onChange) {
   // others in the same group.
   const locationCounts   = countsExcluding(communities, 'locations',  (c) => c.location);
   const waterfrontCounts = countsExcluding(communities, 'waterfronts', (c) => c.waterfront);
-  const homeTypeCounts   = countsExcluding(communities, 'homeTypes',  homeTypesForCounting);
   // Amenities use AND, so leave state.amenities in effect — each count
   // is "of my current matches, how many also have this amenity."
   const amenityCounts    = countsExcluding(communities, 'amenities',  (c) => c.amenities, false);
-  const priceTierCounts  = countsExcluding(communities, 'priceTiers', priceTiersForCounting);
-  const bedCounts        = countsExcluding(communities, 'bedrooms',   bedTagsForCounting);
 
   // Option order is cached on first render (from the full dataset) so
   // positions stay stable even as counts shift with filter state.
@@ -304,6 +261,9 @@ export function renderFilters(communities, onChange) {
     }
     cachedHomeTypeOrder = keys.sort((a, b) => a.localeCompare(b));
   }
+  const homeTypeCounts  = exactOptionCounts(communities, 'homeTypes', cachedHomeTypeOrder);
+  const priceTierCounts = exactOptionCounts(communities, 'priceTiers', PRICE_TIERS);
+  const bedCounts       = exactOptionCounts(communities, 'bedrooms', BEDROOM_OPTIONS);
   if (!cachedAmenityOrder) {
     const full = countsBy(communities, 'amenities', true);
     const priorityIndex = new Map(AMENITIES_PRIORITY.map((a, i) => [a, i]));
