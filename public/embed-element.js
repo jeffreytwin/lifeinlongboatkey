@@ -228,14 +228,29 @@
       // container that clips its contents. Release the nearest one so the
       // grown element can actually extend the section.
       try {
+        var wrapper = null;
         var p = this.parentElement;
         for (var i = 0; p && i < 3; i++) {
           if (p.id && p.id.indexOf('comp-') === 0) {
+            wrapper = p;
             p.style.height = 'auto';
             p.style.minHeight = h + 'px';
             break;
           }
           p = p.parentElement;
+        }
+        // Wix's generated layout CSS records the section's high-water
+        // mark (a min-height on its mesh grid) and never lowers it, so
+        // shrinking left dead space under the embed. Release the layers
+        // between our wrapper and the page grid — verified live: they
+        // re-derive their height from content once the recorded
+        // min-height is cleared. Re-applied on every apply because Wix
+        // regenerates these styles on its own schedule.
+        var q = wrapper ? wrapper.parentElement : null;
+        for (var j = 0; q && q !== document.body && j < 5; j++) {
+          q.style.setProperty('min-height', '0', 'important');
+          q.style.setProperty('height', 'auto', 'important');
+          q = q.parentElement;
         }
         // Nudge layouters that only re-measure on resize.
         window.dispatchEvent(new Event('resize'));

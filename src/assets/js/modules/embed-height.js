@@ -87,18 +87,18 @@ function desiredHeight() {
     .getElementById('content')
     ?.classList.contains('layout-detail');
   const listVisible = document.body.classList.contains('view-list');
+  const filters = naturalHeight(document.querySelector('.filters'));
   // Map view (no list, no panel): a map has no natural height — pick a
-  // pleasant frame from the width instead of inheriting the filter
-  // rail's full height (the rail scrolls internally, as it does in the
-  // standalone app). Width-derived, so no resize feedback.
+  // pleasant frame from the width (feedback-free), but never shorter
+  // than the filter rail, which would otherwise scroll internally.
   if (!detailOpen && !listVisible) {
-    return Math.min(940, Math.max(520, Math.round(window.innerWidth * 0.58)));
+    const ideal = Math.min(940, Math.max(520, Math.round(window.innerWidth * 0.58)));
+    return Math.max(ideal, filters > 0 ? Math.ceil(filters) + 20 : 0);
   }
   const list = naturalHeight(document.querySelector('.list-view'));
   const panel = detailOpen
     ? naturalHeight(document.querySelector('.detail-panel'))
     : 0;
-  const filters = naturalHeight(document.querySelector('.filters'));
   const h = Math.ceil(Math.max(list, panel, filters));
   // Small allowance for nested trailing margins (e.g. the last list card's
   // margin-bottom inside the ul), which rect walks can't see.
