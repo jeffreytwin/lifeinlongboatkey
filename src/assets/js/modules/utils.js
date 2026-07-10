@@ -150,9 +150,14 @@ export function staticMapForGroup(communities, { width = 640, height = 900 } = {
   const overlays = pts
     .map((c) => `pin-s+${c.type === 'condo' ? '1F6B5A' : 'E07A1A'}(${c.lng},${c.lat})`)
     .join(',');
+  // A single point gives `auto` framing nothing to work with — use an
+  // explicit neighborhood-scale center/zoom for one-community posters.
+  const framing =
+    pts.length === 1 ? `${pts[0].lng},${pts[0].lat},13.2` : 'auto';
   return (
     `https://api.mapbox.com/styles/v1/mapbox/light-v11/static/` +
-    `${overlays}/auto/${width}x${height}` +
-    `?access_token=${encodeURIComponent(token)}&padding=50`
+    `${overlays}/${framing}/${width}x${height}` +
+    `?access_token=${encodeURIComponent(token)}` +
+    (framing === 'auto' ? '&padding=50' : '')
   );
 }

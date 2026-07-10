@@ -56,28 +56,23 @@
         var p = new URLSearchParams(location.search);
         var e = p.get('embed');
         if (e !== null && e !== '0' && e !== 'false') {
-          document.documentElement.classList.add('embed');
+          // Every embed runs the full-app chrome (header hidden); group and
+          // community variants differ only in scoping/boot (main.js).
+          document.documentElement.classList.add('embed', 'embed-app');
           // Embed variants are iframe content on the Wix pages, not pages
-          // in their own right — keep the (100+) thin chrome-less shells
-          // out of the index. Googlebot renders JS and honors a robots
-          // meta injected this early. The canonical above already points
-          // all variants at the clean URL; this is the hard stop.
+          // in their own right — keep the (100+) shells out of the index.
+          // Googlebot renders JS and honors a robots meta injected this
+          // early. The canonical above already points all variants at the
+          // clean URL; this is the hard stop.
           var m = document.createElement('meta');
           m.name = 'robots';
           m.content = 'noindex';
           document.head.appendChild(m);
-          // Featured group embed (?embed=<slug> or ?embed=1&group=<slug>)
-          // gets the compact full-app chrome. Mirrors getEmbedParams().
-          var toggle = ['', '1', 'true', 'yes', 'on'];
-          var grp = p.get('group') || (toggle.indexOf(e.toLowerCase()) === -1 ? e : null);
-          if (grp) {
-            document.documentElement.classList.add('embed-app');
-            // On mobile the featured embed shows a poster (the app is opened
-            // full-screen in a new tab instead). Flag it pre-paint so the app
-            // shell never flashes before main.js swaps in the poster.
-            if (window.matchMedia && window.matchMedia('(max-width: 860px)').matches) {
-              document.documentElement.classList.add('embed-poster');
-            }
+          // On mobile every embed shows a poster (the app opens full-screen
+          // in a new tab instead). Flag it pre-paint so the app shell never
+          // flashes before main.js swaps in the poster.
+          if (window.matchMedia && window.matchMedia('(max-width: 860px)').matches) {
+            document.documentElement.classList.add('embed-poster');
           }
         }
       } catch (_) {}
@@ -186,11 +181,6 @@
               <span class="legend-item"><span class="legend-dot legend-nbhd"></span>Neighborhood</span>
             </div>
             <div id="hoverCard" class="hover-card" aria-hidden="true"></div>
-            <!-- Shown only in embed mode (body.embed). Links out to the full
-                 interactive map, pre-focused on the embedded community. -->
-            <a id="embedCta" class="embed-cta" href="https://map.lifeinlongboatkey.com" target="_blank" rel="noopener">
-              Explore all neighborhoods on the full map →
-            </a>
           </div>
 
           <div class="list-view" aria-label="Community list">

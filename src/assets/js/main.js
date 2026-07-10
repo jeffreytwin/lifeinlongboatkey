@@ -26,8 +26,6 @@ import {
   setHighlightedPolygon,
   focusCommunity,
   invalidateSize,
-  openPopupFor,
-  closePopup,
   fitToCommunities,
 } from './modules/map.js';
 import {
@@ -385,26 +383,20 @@ function bootFull() {
 }
 
 /**
- * Featured group embed (`?embed=bay-isles` or `?embed=1&group=<slug>`) — the
- * full filter / list / details experience, scoped to the group and dropped
- * into a community landing page via <iframe>. It reuses the standalone app's
- * responsive layout verbatim (desktop filter sidebar + map when the iframe is
- * wide; the mobile drawer / view toggle / fullscreen detail when it's narrow),
- * just with the site header hidden. The map fits the group's bounds and
- * suppresses the island-wide zone bubbles.
+ * Embed boot — the full filter / list / details experience inside a host
+ * page iframe (same app as the standalone map, site header hidden).
+ * Group embeds (`?embed=bay-isles`) scope everything to the cluster and
+ * boot list-first with the map fitted to the group. Community embeds
+ * (`?embed=1&community=<slug>`) keep the island-wide set and boot on the
+ * map, focused on their community with its details panel open. On mobile
+ * both show a poster that opens the full app as a top-level page instead
+ * (iframes can't go full-screen on iOS and Wix scales them awkwardly).
  */
-function bootFeaturedEmbed() {
+function bootEmbedApp() {
   // The inline head script adds both classes pre-paint; mirror here so the
-  // mode is self-contained even if that script is removed. `embed-app`
-  // distinguishes the featured embed (keeps the chrome) from the minimal,
-  // chrome-less embed (`html.embed` alone).
+  // mode is self-contained even if that script is removed.
   document.documentElement.classList.add('embed', 'embed-app');
 
-  // Mobile: an iframe can't go truly full-screen on iOS, and a Wix mobile
-  // page scales it awkwardly. So instead of cramming the interactive app into
-  // the frame, show a poster that opens the full app (scoped to the group) as
-  // its own top-level page — native full-screen, no iframe scaling. Desktop
-  // keeps the inline interactive experience.
   const isMobile = window.matchMedia && window.matchMedia('(max-width: 860px)').matches;
   if (isMobile) {
     showEmbedPoster();
@@ -416,19 +408,38 @@ function bootFeaturedEmbed() {
   initMap(workingSet, {
     onSelect: openDetail,
     neighborhoodPolygons: getNeighborhoodPolygons(),
-    zones: false,
+    // Group embeds suppress the island-wide zone bubbles (no point
+    // collapsing a small cluster); island-wide embeds keep them.
+    zones: group ? false : undefined,
     // Embedded in a scrollable host page — don't trap the page scroll.
     cooperativeGestures: true,
     onReady: () => {
-      fitToCommunities(workingSet);
-      // Honor a community deep-link inside the group if one was passed.
-      if (focusTarget) openDetail(focusTarget);
+      if (group) {
+        fitToCommunities(workingSet);
+        // Honor a community deep-link inside the group if one was passed.
+        if (focusTarget) openDetail(focusTarget);
+      } else if (focusTarget) {
+        // The page's own community: focus tight and open its panel.
+        // (openDetail's own flyTo would land at a looser zoom.)
+        highlight(focusTarget.name);
+        showDetail(focusTarget);
+        focusCommunity(focusTarget, {
+          // Neighborhoods read as areas — pull back so the polygon is in
+          // frame; condos are points, so go in tighter.
+          zoom: focusTarget.type === 'neighborhood' ? 14.5 : 15.5,
+          duration: 0,
+        });
+        invalidateSize();
+      }
     },
   });
 
   apply();
-  needsGroupRefit = true;
-  setView('list');
+  if (group) {
+    // Groups boot on the detailed list; community embeds stay on the map.
+    needsGroupRefit = true;
+    setView('list');
+  }
 
   // Tell an auto-sizing host (the <lbk-map-embed> custom element) how tall
   // the content is, so the iframe grows instead of scrolling internally.
@@ -436,11 +447,11 @@ function bootFeaturedEmbed() {
 }
 
 /**
- * Mobile embed poster — a map image of the group with a "Click here to
- * explore <Group>" CTA. Tapping opens the full app (scoped + focused on the
- * group) in a new tab, giving a native full-screen experience instead of the
- * scaled-down iframe. The static poster element lives in index.html so it
- * paints immediately; here we fill in the live map image, link, and label.
+ * Mobile embed poster — a map image with a "Find your home in <X>" CTA.
+ * Tapping opens the full app (scoped to the group, or focused on the
+ * community) in a new tab — a native full-screen experience instead of
+ * the scaled-down iframe. The static poster element lives in index.html
+ * so it paints immediately; here we fill in the image, link, and label.
  */
 function showEmbedPoster() {
   document.documentElement.classList.add('embed-poster');
@@ -453,12 +464,14 @@ function showEmbedPoster() {
   window.addEventListener('resize', () => reportEmbedHeight(posterHeight()));
   const poster = document.getElementById('embedPoster');
   if (!poster) return;
-  poster.href = groupMapUrl(groupSlug);
-  const label = group?.label || 'the map';
+  poster.href = group ? groupMapUrl(groupSlug) : fullMapUrl(focusTarget);
+  const label = group?.label || focusTarget?.name || 'Longboat Key';
   const cta = poster.querySelector('.embed-poster-cta');
   if (cta) cta.textContent = `Find your home in ${label}`;
   poster.setAttribute('aria-label', `Find your home in ${label}`);
-  const img = staticMapForGroup(workingSet);
+  const img = staticMapForGroup(
+    group ? workingSet : focusTarget ? [focusTarget] : workingSet,
+  );
   if (img) {
     const el = document.createElement('img');
     el.className = 'embed-poster-img';
@@ -469,72 +482,5 @@ function showEmbedPoster() {
   }
 }
 
-/**
- * Embed mode — the chrome-less single-community view dropped into a Wix
- * location page via <iframe src="…?embed=1&community=<slug>">. All 107
- * communities still render for spatial context, but one is highlighted and
- * the map flies to it. The initial focus shows a popup for orientation;
- * clicking any pin / polygon opens the same details panel as the full app
- * (photos, Homes for Sale, amenities). A CTA links out to the full map
- * pre-focused on the same community.
- */
-function bootEmbed() {
-  // The inline head script already added this before first paint; mirror it
-  // here so embed mode is self-contained even if that script is removed.
-  document.documentElement.classList.add('embed');
-
-  const cta = document.getElementById('embedCta');
-  if (cta) cta.href = fullMapUrl(focusTarget);
-
-  // There's no results list behind the panel in this mode — the mobile
-  // back pill returns to the map.
-  const back = document.getElementById('detailBack');
-  if (back) back.textContent = '‹ Back to map';
-
-  // No settleHistory here: pushState inside the iframe would stack entries
-  // onto the HOST page's history, hijacking the visitor's back button.
-  const openEmbedDetail = (community) => {
-    closePopup();
-    highlight(community.name);
-    showDetail(community);
-    focusCommunity(community);
-    invalidateSize();
-    scrollHostToTop();
-  };
-  const closeEmbedDetail = () => {
-    hideDetail();
-    // Restore the highlight to the page's own community.
-    highlight(focusTarget?.name ?? null);
-    invalidateSize();
-  };
-  document.getElementById('detailClose')?.addEventListener('click', closeEmbedDetail);
-  back?.addEventListener('click', closeEmbedDetail);
-
-  initMap(communities, {
-    onSelect: openEmbedDetail,
-    neighborhoodPolygons: getNeighborhoodPolygons(),
-    // Embedded in a scrollable host page — don't trap the page scroll.
-    cooperativeGestures: true,
-    onReady: () => {
-      if (!focusTarget) return;
-      focusCommunity(focusTarget, {
-        // Neighborhoods read as areas — pull back a touch so the whole
-        // polygon is in frame; condos are points, so go in tighter.
-        zoom: focusTarget.type === 'neighborhood' ? 14.5 : 15.5,
-        duration: 0,
-      });
-      setHighlightedPin(focusTarget.name);
-      setHighlightedPolygon(focusTarget.name);
-      openPopupFor(focusTarget);
-    },
-  });
-
-  // Height reports for an auto-sizing host. Map-only reports 0 (a map has
-  // no natural height) and the host element falls back to its min-height;
-  // an open details panel reports its content height so the frame grows.
-  startEmbedHeightReporting();
-}
-
-if (embed && group) bootFeaturedEmbed();
-else if (embed) bootEmbed();
+if (embed) bootEmbedApp();
 else bootFull();
