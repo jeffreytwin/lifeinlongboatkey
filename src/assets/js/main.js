@@ -235,19 +235,14 @@ function closeFilterDrawer() {
   settleHistory();
 }
 
-// One-shot guard for the desktop "flip to list on first refine" behavior.
-// appBooted gates out the initial render's apply() call.
-let appBooted = false;
-let didAutoFlipToList = false;
-
-/** apply() variant used by the actual narrowing filters (Community Type +
- *  the facets). Only these trigger the desktop flip-to-list — Clear All,
- *  Sort, and the Currently-for-sale toggle call apply() directly and don't. */
+/** apply() alias the narrowing filters call. (It used to arm a desktop
+ *  "flip to list on first refine" — removed as too jarring; the alias
+ *  stays so the filter wiring is unchanged.) */
 function applyNarrowing() {
-  apply(true);
+  apply();
 }
 
-function apply(narrowing = false) {
+function apply() {
   const filtered = getFiltered(workingSet);
   const resultCount = document.getElementById('resultCount');
   if (resultCount) resultCount.textContent = String(filtered.length);
@@ -275,17 +270,6 @@ function apply(narrowing = false) {
     closeDetail();
   } else if (state.selectedCommunity) {
     refreshOpenDetailListings();
-  }
-
-  // Desktop: the first time the user changes a narrowing filter (after the
-  // initial boot render), flip to the list view so they immediately see
-  // their narrowed results — mirroring mobile, where Save jumps to the list.
-  // One-shot, so a later manual switch back to Map is respected. Excludes
-  // Clear All / Sort / Currently-for-sale, which call apply() without narrowing.
-  if (narrowing && appBooted && !didAutoFlipToList && state.view !== 'list'
-      && window.matchMedia('(min-width: 861px)').matches) {
-    didAutoFlipToList = true;
-    setView('list');
   }
 }
 
@@ -398,9 +382,6 @@ function bootFull() {
     needsGroupRefit = true;
     setView('list');
   }
-  // From here on, apply() runs only in response to user refinements, so the
-  // desktop "flip to list on first refine" guard can arm.
-  appBooted = true;
 }
 
 /**
@@ -448,7 +429,6 @@ function bootFeaturedEmbed() {
   apply();
   needsGroupRefit = true;
   setView('list');
-  appBooted = true;
 
   // Tell an auto-sizing host (the <lbk-map-embed> custom element) how tall
   // the content is, so the iframe grows instead of scrolling internally.
