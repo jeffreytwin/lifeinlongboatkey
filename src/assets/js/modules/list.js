@@ -56,7 +56,7 @@ export function renderMobileList(list) {
         </div>
         <div class="list-view-body">
           <div class="list-view-meta">
-            ${c.type === 'condo' ? 'Condominiums' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}
+            <span class="list-view-meta-type">${c.type === 'condo' ? 'Condominiums' : 'Neighborhood'} · </span>${escapeHtml(locationLabel(c.location))}
           </div>
           <div class="list-view-name">${escapeHtml(c.name)}</div>
           <div class="list-view-price">${escapeHtml(priceRange)}${richCards ? richCardHomesCount(c) : ''}</div>
