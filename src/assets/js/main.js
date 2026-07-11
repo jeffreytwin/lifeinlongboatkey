@@ -42,6 +42,7 @@ import {
   scrollHostToTop,
   reportEmbedHeight,
 } from './modules/embed-height.js';
+import { saveFilterState, restoreFilterState } from './modules/persist.js';
 
 const communities = getCommunities();
 const { embed, communitySlug, groupSlug } = getEmbedParams();
@@ -269,6 +270,10 @@ function apply() {
   } else if (state.selectedCommunity) {
     refreshOpenDetailListings();
   }
+
+  // Session filter memory — clicking a listing navigates the page away
+  // (target=_top); when bfcache misses on the way back, boot restores this.
+  saveFilterState();
 }
 
 /** Switch between map and list view on mobile. */
@@ -290,7 +295,25 @@ function setView(view) {
       else fitToCommunities(workingSet);
     }
   }
+  saveFilterState();
   settleHistory();
+}
+
+/** Restore session filter memory (if any) and sync the static controls
+ *  (type pills + 'Currently for sale' toggle) that renderFilters doesn't
+ *  own. Returns the saved snapshot so boots can restore the view too. */
+function restoreSessionFilters() {
+  const saved = restoreFilterState();
+  if (!saved) return null;
+  document.querySelectorAll('.type-pill').forEach((p) => {
+    const active = p.dataset.type === state.type;
+    p.classList.toggle('active', active);
+    p.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+  document
+    .getElementById('forSaleToggle')
+    ?.setAttribute('aria-pressed', state.hasListingsOnly ? 'true' : 'false');
+  return saved;
 }
 
 // No layout toggle anymore; setLayout is only called internally by
@@ -357,6 +380,7 @@ function wireInteractiveApp() {
  * Filters, list, view toggle, and the details panel.
  */
 function bootFull() {
+  const saved = restoreSessionFilters();
   wireInteractiveApp();
 
   initMap(workingSet, {
@@ -374,9 +398,12 @@ function bootFull() {
   });
 
   apply();
-  // Desktop group visits open on the detailed list; mobile ones (the
-  // poster's target) keep the default map view, list one toggle away.
-  if (GROUP_BOOTS_TO_LIST) {
+  // Boot view: a restored session view wins on desktop; otherwise group
+  // visits open on the detailed list and mobile keeps the map (the
+  // poster's target), list one toggle away.
+  const bootList =
+    saved && !MOBILE_BACK_MQ.matches ? saved.view === 'list' : GROUP_BOOTS_TO_LIST;
+  if (bootList) {
     needsGroupRefit = true;
     setView('list');
   }
@@ -402,6 +429,8 @@ function bootEmbedApp() {
     showEmbedPoster();
     return;
   }
+
+  const saved = restoreSessionFilters();
 
   wireInteractiveApp();
 
@@ -435,10 +464,12 @@ function bootEmbedApp() {
   });
 
   apply();
-  // Group and generic (unscoped) embeds boot on the detailed list — the
-  // browsing surface. Only community embeds stay on the map, focused on
-  // their community with its panel open.
-  if (group || !focusTarget) {
+  // Boot view: a restored session view wins. Otherwise group and generic
+  // (unscoped) embeds boot on the detailed list — the browsing surface —
+  // and only community embeds stay on the map, focused on their
+  // community with its panel open.
+  const bootList = saved ? saved.view === 'list' : group || !focusTarget;
+  if (bootList) {
     needsGroupRefit = true;
     setView('list');
   }

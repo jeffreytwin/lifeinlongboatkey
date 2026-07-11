@@ -192,7 +192,10 @@ function renderListingCard(l, baseHost) {
     </div>`;
   return `<li class="listing-card">${
     href
-      ? `<a class="listing-card-link" href="${escapeHtml(href)}" target="_blank" rel="noopener">${inner}</a>`
+      // _top: navigate the page itself (and in an embed, the HOST page —
+      // not the little iframe). Filter memory for the trip back is covered
+      // by bfcache + the sessionStorage persistence in persist.js.
+      ? `<a class="listing-card-link" href="${escapeHtml(href)}" target="_top">${inner}</a>`
       : inner
   }</li>`;
 }
