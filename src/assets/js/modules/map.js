@@ -693,7 +693,7 @@ export function openPopupFor(c) {
     <div class="popup-sub">${c.type === 'condo' ? 'Condo Community' : 'Neighborhood'} · ${escapeHtml(locationLabel(c.location))}</div>
     <div class="popup-price">${escapeHtml(c.priceRange || '—')}</div>
     <div class="popup-desc">${escapeHtml(c.subtitle || '')}</div>
-    <a class="popup-link" href="https://www.lifeinlongboatkey.com${escapeHtml(c.pageUrl)}" target="_blank" rel="noopener">View community →</a>`;
+    <a class="popup-link" href="https://www.lifeinlongboatkey.com${escapeHtml(c.pageUrl)}" target="_top">View community →</a>`;
   currentPopup = new mapboxgl.Popup({ offset: 32, maxWidth: '280px', closeOnClick: false })
     .setLngLat([c.lng, c.lat])
     .setHTML(html)
