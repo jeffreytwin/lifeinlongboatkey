@@ -387,11 +387,11 @@ export function showDetail(community) {
           <button type="button" class="detail-link detail-link-primary cta-pulse" data-scroll-to="detail-listings">
             ${escapeHtml(homesCta)}
           </button>
-          <a class="detail-link detail-link-secondary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
+          <a class="detail-link detail-link-secondary" href="${escapeHtml(baseHost + page)}" target="_top">
             View<br>Community Page
           </a>
         ` : `
-          <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + page)}" target="_blank" rel="noopener">
+          <a class="detail-link detail-link-primary" href="${escapeHtml(baseHost + page)}" target="_top">
             View<br>Community Page
           </a>
         `}
