@@ -14,6 +14,7 @@
  */
 
 import { state } from './state.js';
+import { findGroup } from './embed.js';
 
 const key = () => `lbk-filters:${location.pathname}${location.search}`;
 
@@ -31,6 +32,10 @@ export function saveFilterState() {
         amenities: [...state.amenities],
         age55: state.age55,
         hasListingsOnly: state.hasListingsOnly,
+        // The cluster criterion persists by slug (match is a function);
+        // restore re-resolves it, so a cleared group stays cleared on the
+        // way back from a listing.
+        group: state.group?.slug ?? null,
         sort: state.sort,
         view: state.view === 'list' ? 'list' : 'map',
       }),
@@ -60,6 +65,8 @@ export function restoreFilterState() {
     state.amenities = new Set(s.amenities || []);
     state.age55 = !!s.age55;
     state.hasListingsOnly = s.hasListingsOnly !== false;
+    const g = s.group ? findGroup(s.group) : null;
+    state.group = g ? { slug: s.group, ...g } : null;
     state.sort = s.sort || state.sort;
     return s;
   } catch (_) {

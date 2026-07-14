@@ -11,10 +11,13 @@
  *                       pageUrl, e.g. "islander-club" from
  *                       "/neighborhood/islander-club"). `?focus=` is accepted
  *                       as an alias.
- *   ?group=<slug>       restrict the embed to a named cluster of communities
- *                       (e.g. "bay-isles"). Only the group's members render
- *                       and the map fits its bounds — for a community-specific
- *                       landing page that wants a pre-filtered mini-map.
+ *   ?group=<slug>       a named cluster of communities (e.g. "bay-isles").
+ *                       In an EMBED it hard-scopes the experience: only the
+ *                       group's members render and the map fits its bounds —
+ *                       for a community-specific landing page's mini-map.
+ *                       On the FULL map it arrives as a clearable filter
+ *                       instead (a "Showing: <cluster>" chip in the rail;
+ *                       its ✕ or Clear All reveals the whole island).
  *   ?embed=1            collapse the chrome (header / filters / list) so the
  *                       map fills the frame and a single CTA links out to the
  *                       full map.

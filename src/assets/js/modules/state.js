@@ -25,6 +25,16 @@ export const state = {
   /** @type {boolean} */
   age55: false,
   /**
+   * Community-cluster filter seeded by a full-map ?group= visit (e.g. the
+   * "Bay Isles" email button): { slug, label, match }. Behaves like any
+   * other criterion — shown as a dismissible chip in the filter rail and
+   * released by Clear All — unlike the embed's hard working-set scoping,
+   * which is invisible to the filter machinery on purpose (the Bay Isles
+   * page's embed should stay Bay Isles).
+   * @type {{ slug: string, label: string, match: (c: object) => boolean }|null}
+   */
+  group: null,
+  /**
    * When true, hides communities with no homes/condos currently for sale.
    * Defaults to ON so prospective buyers see only actionable inventory.
    * Until the Wix CMS is wired up, every community is flagged
@@ -61,4 +71,5 @@ export function resetFilters() {
   state.amenities.clear();
   state.age55 = false;
   state.hasListingsOnly = true;
+  state.group = null;
 }

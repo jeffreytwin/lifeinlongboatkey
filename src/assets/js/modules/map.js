@@ -823,7 +823,10 @@ export function focusCommunity(community, { zoom, duration = 650 } = {}) {
  * single pin. Uses each community's stored coordinate (polygon centroids for
  * neighborhoods); padding absorbs the slack so polygon edges aren't clipped.
  */
-export function fitToCommunities(list, { padding = 56, maxZoom = 15.5, duration = 0 } = {}) {
+export function fitToCommunities(
+  list,
+  { padding = 56, maxZoom = 15.5, duration = 0, ensurePinView = false } = {},
+) {
   if (!map || !Array.isArray(list) || !list.length) return;
   const bounds = new mapboxgl.LngLatBounds();
   let count = 0;
@@ -834,6 +837,21 @@ export function fitToCommunities(list, { padding = 56, maxZoom = 15.5, duration 
     }
   }
   if (!count) return;
+  // ensurePinView floors the zoom above the bubble threshold — a group
+  // arrival on a zones-enabled map (full-map ?group= visit) must land on
+  // pins, not have its cluster swallowed into a single zone bubble on a
+  // small viewport. Group embeds don't need it (their bubbles are off).
+  if (ensurePinView) {
+    const cam = map.cameraForBounds(bounds, { padding, maxZoom });
+    if (cam) {
+      map.flyTo({
+        center: cam.center,
+        zoom: Math.max(cam.zoom, ZONE_ZOOM_THRESHOLD + 0.05),
+        duration,
+      });
+      return;
+    }
+  }
   map.fitBounds(bounds, { padding, maxZoom, duration });
 }
 

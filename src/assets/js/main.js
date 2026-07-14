@@ -52,10 +52,13 @@ const { embed, communitySlug, groupSlug } = getEmbedParams();
 const focusTarget = findCommunityBySlug(communities, communitySlug);
 const group = findGroup(groupSlug);
 
-// The set the interactive app operates on. A group embed scopes the whole
-// experience — filters, counts, list, and map — to that cluster; every other
-// surface sees the full dataset.
-const workingSet = group ? filterByGroup(communities, group) : communities;
+// The set the interactive app operates on. A group EMBED hard-scopes the
+// whole experience — filters, counts, list, and map — to that cluster (the
+// Bay Isles page's embed should stay Bay Isles). On the full map a ?group=
+// visit is instead a clearable filter (state.group, seeded in bootFull):
+// arrival looks identical, but the chip's ✕ or Clear All releases it and
+// the rest of the island appears — matching how the ?area= links behave.
+const workingSet = embed && group ? filterByGroup(communities, group) : communities;
 
 const totalEl = document.getElementById('totalCount');
 if (totalEl) totalEl.textContent = String(workingSet.length);
@@ -69,6 +72,15 @@ document.body.classList.add('list-rich');
 // The map is framed to the group inside a hidden (zero-size) container when
 // the boot view is the list — re-frame it on the first flip to Map.
 let needsGroupRefit = false;
+
+/** Frame the map on the active cluster criterion (full-map ?group= visits).
+ *  ensurePinView because zone bubbles stay enabled on the full map, and a
+ *  small-viewport fit landing below the bubble threshold would swallow the
+ *  whole cluster into a single zone bubble. */
+function fitToGroupCluster(opts = {}) {
+  if (!state.group) return;
+  fitToCommunities(communities.filter(state.group.match), { ensurePinView: true, ...opts });
+}
 
 function highlight(name) {
   state.highlightedName = name;
@@ -295,6 +307,7 @@ function setView(view) {
     if (needsGroupRefit) {
       needsGroupRefit = false;
       if (state.selectedCommunity) focusCommunity(state.selectedCommunity, { duration: 0 });
+      else if (state.group) fitToGroupCluster();
       else fitToCommunities(workingSet);
     }
   }
@@ -392,27 +405,33 @@ function bootFull() {
   const deepLink = getDeepLinkParams();
   const backForward =
     performance.getEntriesByType?.('navigation')?.[0]?.type === 'back_forward';
-  const applyDeepLink = deepLink.any && !backForward;
+  // A ?group= visit is fresh intent too: on the full map the group is a
+  // clearable filter (state.group), and a fresh click on the link must
+  // re-apply it even if the visitor cleared it earlier in this tab.
+  const applyDeepLink = (deepLink.any || !!group) && !backForward;
   const saved = applyDeepLink ? null : restoreSessionFilters();
   if (applyDeepLink) {
+    if (group) state.group = { slug: groupSlug, ...group };
     if (deepLink.area) state.locations.add(deepLink.area);
     for (const a of resolveAmenities(workingSet, deepLink.amenitySlugs)) {
       state.amenities.add(a);
     }
+  } else if (group && !saved) {
+    // Back/forward return with no session record (storage unavailable):
+    // arrive scoped, same as a fresh visit.
+    state.group = { slug: groupSlug, ...group };
   }
   wireInteractiveApp();
 
   initMap(workingSet, {
     onSelect: openDetail,
     neighborhoodPolygons: getNeighborhoodPolygons(),
-    // When scoped to a group (?group=<slug>), open focused on that cluster
-    // and skip the island-wide zone bubbles — this is the full-screen target
-    // the mobile embed poster opens. Otherwise the normal island view.
-    zones: group ? false : undefined,
     onReady: () => {
-      if (group) fitToCommunities(workingSet);
-      // ?area= lands inside the zone (pin view, framed on its filtered
+      // A group arrival frames its cluster. Zone bubbles stay enabled —
+      // clearing the chip reveals the normal island experience. ?area=
+      // lands inside the zone (pin view, framed on its filtered
       // communities) instead of the island overview.
+      if (state.group) fitToGroupCluster();
       else if (applyDeepLink && deepLink.area) focusZone(deepLink.area, { duration: 0 });
       // Deep-link: ?community=<slug> opens that community's detail panel.
       if (focusTarget) openDetail(focusTarget);
@@ -420,12 +439,15 @@ function bootFull() {
   });
 
   apply();
-  // Boot view: a deep link lands on the map unless it says ?view=list;
-  // otherwise a restored session view wins on desktop, then group visits
+  // Boot view: an explicit ?view= wins; a viewless deep link lands on the
+  // map, except group visits, which keep their desktop list-first default.
+  // Otherwise a restored session view wins on desktop, then group visits
   // open on the detailed list and mobile keeps the map (the poster's
   // target), list one toggle away.
   const bootList = applyDeepLink
-    ? deepLink.view === 'list'
+    ? deepLink.view
+      ? deepLink.view === 'list'
+      : GROUP_BOOTS_TO_LIST
     : saved && !MOBILE_BACK_MQ.matches
       ? saved.view === 'list'
       : GROUP_BOOTS_TO_LIST;

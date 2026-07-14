@@ -239,7 +239,36 @@ function renderPriceChips(counts, onChange) {
  * @param {Array<object>} communities
  * @param {() => void} onChange
  */
+/**
+ * Dismissible "Showing: <cluster>" chip at the top of the filter rail —
+ * rendered only when a full-map ?group= visit seeded the cluster criterion.
+ * It explains why the results are a small subset and gives the cluster the
+ * same release affordance as every other filter (the ✕ here, or Clear All).
+ */
+function renderScopeChip(onChange) {
+  const host = document.getElementById('scopeChip');
+  if (!host) return;
+  if (!state.group) {
+    host.innerHTML = '';
+    host.hidden = true;
+    return;
+  }
+  host.hidden = false;
+  host.innerHTML = `
+    <div class="scope-chip">
+      <span class="scope-chip-label">Showing: <strong>${escapeHtml(state.group.label)}</strong></span>
+      <button type="button" class="scope-chip-x"
+        aria-label="Clear ${escapeHtml(state.group.label)} — browse all of Longboat Key"
+        title="Browse all of Longboat Key">✕</button>
+    </div>`;
+  host.querySelector('.scope-chip-x').addEventListener('click', () => {
+    state.group = null;
+    onChange();
+  });
+}
+
 export function renderFilters(communities, onChange) {
+  renderScopeChip(onChange);
   // Cross-filter counts: each facet computes what the count WOULD be if
   // that option were added to the current filter state. Excludes the
   // facet's own filter slot so checking one option doesn't zero out the
