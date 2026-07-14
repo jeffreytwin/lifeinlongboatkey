@@ -22,6 +22,22 @@
  *                       (e.g. ?embed=bay-isles). Avoids a second '&'-joined
  *                       param, which some CMS URL fields — notably Wix's
  *                       "Website Address" embed — silently truncate.
+ *
+ * Campaign deep links (email buttons, social posts) — full map only:
+ *   ?area=<zone>        pre-check that Location-on-Island filter and land
+ *                       the map framed on the zone's pins. Zones: north /
+ *                       mid / south, with north-end / mid-key / south-end
+ *                       accepted as aliases.
+ *   ?amenity=<slug>     pre-check amenity filter(s); slugified amenity
+ *                       names, comma-separated for more than one
+ *                       (e.g. ?amenity=beach-club-access).
+ *   ?view=map|list      explicit arrival view; otherwise deep links land
+ *                       on the map. Also lets a ?group= link pick its
+ *                       arrival view (group visits default to the list).
+ *
+ * A deep link states fresh intent: on a normal navigation it overrides the
+ * visitor's saved session filters. Back/forward returns still restore the
+ * session (see main.js bootFull).
  */
 
 const FULL_MAP_BASE = 'https://map.lifeinlongboatkey.com/';
@@ -80,6 +96,53 @@ export function getEmbedParams() {
     communitySlug: community ? norm(community) : null,
     groupSlug: group ? norm(group) : null,
   };
+}
+
+/** Zone-id lookup for the ?area= deep link, aliases included. */
+const AREA_ALIASES = {
+  north: 'north',
+  'north-end': 'north',
+  northend: 'north',
+  mid: 'mid',
+  'mid-key': 'mid',
+  midkey: 'mid',
+  south: 'south',
+  'south-end': 'south',
+  southend: 'south',
+};
+
+/**
+ * Read the campaign deep-link params off the current URL.
+ * @returns {{ area: string|null, amenitySlugs: string[],
+ *             view: string|null, any: boolean }}
+ *   `area` is a canonical zone id (north/mid/south); `any` is true when the
+ *   URL carries at least one deep-link param, i.e. it states fresh intent.
+ */
+export function getDeepLinkParams() {
+  const p = new URLSearchParams(window.location.search);
+  const area = AREA_ALIASES[norm(p.get('area'))] || null;
+  const amenitySlugs = (p.get('amenity') || p.get('amenities') || '')
+    .split(',')
+    .map(norm)
+    .filter(Boolean);
+  const rawView = norm(p.get('view'));
+  const view = rawView === 'map' || rawView === 'list' ? rawView : null;
+  return { area, amenitySlugs, view, any: !!(area || amenitySlugs.length || view) };
+}
+
+/**
+ * Resolve amenity slugs to the dataset's canonical amenity names, so a
+ * deep link like ?amenity=beach-club-access seeds the same value the
+ * filter checkboxes use. Unknown slugs are dropped silently — a stale
+ * campaign link degrades to "no filter," never to zero results.
+ */
+export function resolveAmenities(communities, slugs) {
+  if (!slugs || !slugs.length) return [];
+  const bySlug = new Map();
+  for (const c of communities) {
+    for (const a of c.amenities || []) bySlug.set(slugifyName(a), a);
+  }
+  return slugs.map((s) => bySlug.get(s)).filter(Boolean);
 }
 
 /**
