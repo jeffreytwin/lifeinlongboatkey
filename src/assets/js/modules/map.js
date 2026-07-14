@@ -521,30 +521,40 @@ function buildZoneBubble(zone) {
     <div class="zone-bubble-label">${zone.label}</div>`;
   el.addEventListener('click', (e) => {
     e.stopPropagation();
-    // Frame the zone's actual (filtered) communities rather than a fixed
-    // zoom at the bubble anchor — a fixed 14 cropped edge-of-zone results.
-    // maxZoom keeps a sparse zone from over-zooming; the threshold floor
-    // guarantees we land in pin view (never back in bubble view) even on
-    // maps too small to fit the whole zone.
-    const pts = currentList.filter(
-      (c) => c.location === zone.id && typeof c.lat === 'number' && typeof c.lng === 'number',
-    );
-    if (pts.length) {
-      const bounds = new mapboxgl.LngLatBounds();
-      pts.forEach((c) => bounds.extend([c.lng, c.lat]));
-      const cam = map.cameraForBounds(bounds, { padding: 70, maxZoom: 14.5 });
-      if (cam) {
-        map.flyTo({
-          center: cam.center,
-          zoom: Math.max(cam.zoom, ZONE_ZOOM_THRESHOLD + 0.05),
-          duration: 900,
-        });
-        return;
-      }
-    }
-    map.flyTo({ center: [zone.lng, zone.lat], zoom: 14, duration: 900 });
+    focusZone(zone.id);
   });
   return new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([zone.lng, zone.lat]);
+}
+
+/**
+ * Fly into a zone, framed on its actual (filtered) communities rather than
+ * a fixed zoom at the zone anchor — a fixed 14 cropped edge-of-zone
+ * results. maxZoom keeps a sparse zone from over-zooming; the threshold
+ * floor guarantees we land in pin view (never back in bubble view) even on
+ * maps too small to fit the whole zone. Used by the zone-bubble clicks and
+ * by ?area= deep links (which pass duration 0 to land there instantly).
+ */
+export function focusZone(zoneId, { duration = 900 } = {}) {
+  if (!map) return;
+  const zone = ZONES.find((z) => z.id === zoneId);
+  if (!zone) return;
+  const pts = currentList.filter(
+    (c) => c.location === zone.id && typeof c.lat === 'number' && typeof c.lng === 'number',
+  );
+  if (pts.length) {
+    const bounds = new mapboxgl.LngLatBounds();
+    pts.forEach((c) => bounds.extend([c.lng, c.lat]));
+    const cam = map.cameraForBounds(bounds, { padding: 70, maxZoom: 14.5 });
+    if (cam) {
+      map.flyTo({
+        center: cam.center,
+        zoom: Math.max(cam.zoom, ZONE_ZOOM_THRESHOLD + 0.05),
+        duration,
+      });
+      return;
+    }
+  }
+  map.flyTo({ center: [zone.lng, zone.lat], zoom: 14, duration });
 }
 
 function buildMarker(c) {

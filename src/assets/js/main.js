@@ -25,11 +25,14 @@ import {
   setHighlightedPin,
   setHighlightedPolygon,
   focusCommunity,
+  focusZone,
   invalidateSize,
   fitToCommunities,
 } from './modules/map.js';
 import {
   getEmbedParams,
+  getDeepLinkParams,
+  resolveAmenities,
   findCommunityBySlug,
   findGroup,
   filterByGroup,
@@ -380,7 +383,23 @@ function wireInteractiveApp() {
  * Filters, list, view toggle, and the details panel.
  */
 function bootFull() {
-  const saved = restoreSessionFilters();
+  // Campaign deep links (?area= / ?amenity= / ?view=) state fresh intent:
+  // on a normal navigation the URL wins over session memory — clicking a
+  // "South End" email button must show the South End, not whatever the
+  // visitor had filtered last time. Back/forward returns (a listing click,
+  // then the browser Back button) still restore the session, which is the
+  // whole point of the memory.
+  const deepLink = getDeepLinkParams();
+  const backForward =
+    performance.getEntriesByType?.('navigation')?.[0]?.type === 'back_forward';
+  const applyDeepLink = deepLink.any && !backForward;
+  const saved = applyDeepLink ? null : restoreSessionFilters();
+  if (applyDeepLink) {
+    if (deepLink.area) state.locations.add(deepLink.area);
+    for (const a of resolveAmenities(workingSet, deepLink.amenitySlugs)) {
+      state.amenities.add(a);
+    }
+  }
   wireInteractiveApp();
 
   initMap(workingSet, {
@@ -392,17 +411,24 @@ function bootFull() {
     zones: group ? false : undefined,
     onReady: () => {
       if (group) fitToCommunities(workingSet);
+      // ?area= lands inside the zone (pin view, framed on its filtered
+      // communities) instead of the island overview.
+      else if (applyDeepLink && deepLink.area) focusZone(deepLink.area, { duration: 0 });
       // Deep-link: ?community=<slug> opens that community's detail panel.
       if (focusTarget) openDetail(focusTarget);
     },
   });
 
   apply();
-  // Boot view: a restored session view wins on desktop; otherwise group
-  // visits open on the detailed list and mobile keeps the map (the
-  // poster's target), list one toggle away.
-  const bootList =
-    saved && !MOBILE_BACK_MQ.matches ? saved.view === 'list' : GROUP_BOOTS_TO_LIST;
+  // Boot view: a deep link lands on the map unless it says ?view=list;
+  // otherwise a restored session view wins on desktop, then group visits
+  // open on the detailed list and mobile keeps the map (the poster's
+  // target), list one toggle away.
+  const bootList = applyDeepLink
+    ? deepLink.view === 'list'
+    : saved && !MOBILE_BACK_MQ.matches
+      ? saved.view === 'list'
+      : GROUP_BOOTS_TO_LIST;
   if (bootList) {
     needsGroupRefit = true;
     setView('list');
