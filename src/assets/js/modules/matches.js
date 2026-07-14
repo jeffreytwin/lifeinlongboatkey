@@ -117,6 +117,9 @@ export function listingMatchesActiveFilters(l) {
 }
 
 export function matches(c) {
+  // Community-cluster criterion (full-map ?group= visits). A filter like
+  // any other: cleared by the rail chip's ✕ or Clear All.
+  if (state.group && !state.group.match(c)) return false;
   if (state.type !== 'all' && c.type !== state.type) return false;
   if (state.locations.size && !state.locations.has(c.location)) return false;
   if (state.waterfronts.size && !c.waterfront.some((w) => state.waterfronts.has(w))) return false;

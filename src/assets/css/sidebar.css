@@ -41,6 +41,36 @@
   text-transform: uppercase;
   color: var(--ink);
 }
+/* "Showing: <cluster>" chip — full-map ?group= visits only (renderScopeChip). */
+#scopeChip { margin-bottom: 16px; }
+.scope-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px 8px 12px;
+  border: 1px solid var(--teal);
+  border-radius: 10px;
+  background: rgba(77, 192, 169, 0.10);
+  font-size: 13px;
+  color: var(--ink);
+}
+.scope-chip-label strong { color: var(--teal-deep); font-weight: 700; }
+.scope-chip-x {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--teal-deep);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.scope-chip-x:hover { background: rgba(77, 192, 169, 0.25); }
+
 .clear-btn {
   font-size: 11px;
   color: var(--coral);
