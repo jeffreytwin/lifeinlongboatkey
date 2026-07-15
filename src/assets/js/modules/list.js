@@ -9,7 +9,7 @@
 
 import { locationLabel, escapeHtml, communityThumbUrl, wixImageUrl, IMG_SIZES, youtubeEmbedUrl, staticMapUrl } from './utils.js';
 import { AMENITY_ICONS, filteredAmenities, communityTags } from './amenityIcons.js';
-import { BEACH_CLUB_AMENITY, openBeachClubOverlay } from './beach-club.js';
+import { EXPLAINERS, openExplainer } from './explainers.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
 import { hasListingLevelFilters, listingMatchesActiveFilters, isLandListing } from './matches.js';
@@ -348,15 +348,15 @@ export function showDetail(community) {
       const iconHtml = icon
         ? `<img class="amenity-icon" src="${escapeHtml(icon)}" alt="" loading="lazy" />`
         : '<span class="amenity-icon amenity-icon-empty" aria-hidden="true"></span>';
-      // Beach Club Access gets a tiny explainer link — opens the Bay
-      // Isles Beach Club overlay (beach-club.js).
-      const whatsThis =
-        a === BEACH_CLUB_AMENITY
-          ? ` <button type="button" class="amenity-whatsthis" data-beach-club-info>what’s this?</button>`
-          : '';
+      // Story-worthy amenities get a tiny explainer link — "what's
+      // this?" / "how can I play?" — opening their overlay (explainers.js).
+      const explainer = EXPLAINERS[a];
+      const explainerLink = explainer
+        ? ` <button type="button" class="amenity-whatsthis" data-explainer="${escapeHtml(a)}">${escapeHtml(explainer.linkLabel)}</button>`
+        : '';
       return `<div class="amenity-item">
         ${iconHtml}
-        <span class="amenity-label">${escapeHtml(a)}${whatsThis}</span>
+        <span class="amenity-label">${escapeHtml(a)}${explainerLink}</span>
       </div>`;
     })
     .join('');
@@ -421,10 +421,12 @@ export function showDetail(community) {
   wireGallery(el);
   wireListingsToggle(el, community);
 
-  el.querySelector('[data-beach-club-info]')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openBeachClubOverlay();
-  });
+  el.querySelectorAll('[data-explainer]').forEach((btn) =>
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openExplainer(btn.dataset.explainer);
+    }),
+  );
 
   // Reference-map click — flies the main map to this community's
   // location. On mobile the onLocateOnMap handler also switches to
