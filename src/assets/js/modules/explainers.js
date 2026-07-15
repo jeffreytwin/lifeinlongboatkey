@@ -78,7 +78,7 @@ export const EXPLAINERS = {
       ],
     ],
     footnote: 'And much more',
-    cta: { label: 'Learn More', href: 'https://www.lifeinlongboatkey.com/amenities' },
+    cta: { label: 'Learn More', href: 'https://www.lifeinlongboatkey.com/the-longboat-key-club' },
   },
 };
 
