@@ -914,7 +914,16 @@ body.lightbox-open { overflow: hidden; }
 }
 @media (max-width: 560px) {
   .bc-card { padding: 30px 20px 24px; }
-  .bc-amenities { grid-template-columns: 1fr; }
+  /* Center the stacked list as ONE block while keeping every icon ranged
+     on a single straight edge (max-content + auto margins on the grid —
+     centering the columns independently would jog the icon column at the
+     seam, and per-row centering would stagger it on uneven labels). */
+  .bc-amenities {
+    grid-template-columns: 1fr;
+    width: max-content;
+    max-width: 100%;
+    margin: 0 auto;
+  }
   .bc-amenities-col { padding: 0 4px; }
   .bc-amenities-col + .bc-amenities-col { border-left: none; }
   .bc-amenity { margin-bottom: 14px; }
