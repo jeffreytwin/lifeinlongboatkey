@@ -823,16 +823,23 @@ body.lightbox-open { overflow: hidden; }
   padding: 6px;
 }
 .bc-close:hover { color: var(--ink); }
+.bc-topicon {
+  display: block;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  margin: 0 auto 10px;
+}
 .bc-title {
   font-family: 'Fraunces', serif;
   font-style: italic;
   font-weight: 500;
   font-size: 26px;
   line-height: 1.2;
-  color: var(--teal);
   margin-bottom: 8px;
 }
-.bc-title em { color: var(--coral); font-style: italic; }
+.bc-t-teal { color: var(--teal); }
+.bc-t-coral { color: var(--coral); }
 .bc-subtitle {
   font-size: 14px;
   color: var(--ink);
@@ -863,9 +870,26 @@ body.lightbox-open { overflow: hidden; }
 .bc-amenities-label {
   font-size: 15px;
   font-weight: 700;
-  color: var(--teal-deep);
+  color: var(--teal);
   margin-bottom: 16px;
 }
+.bc-footnote {
+  font-size: 14px;
+  color: var(--teal);
+  margin: 20px 0 18px;
+}
+.bc-cta {
+  display: inline-block;
+  background: var(--coral);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 52px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.bc-cta:hover { background: var(--coral-deep); }
 .bc-amenities {
   display: grid;
   grid-template-columns: 1fr 1fr;
