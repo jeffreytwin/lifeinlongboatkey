@@ -474,7 +474,7 @@ for (const raw of all) {
       ['Clubhouse', ['clubhouseTextYesOrNo', 'clubhouse']],
       ['Walking Paths', ['walkingPathsTextYesOrNo', 'walkingPaths']],
       ['Lifestyle Activities', ['lifestyleActivitiesTextYesOrNo', 'lifestyleActivities']],
-      ['Lawn Maintenance Included', ['maintenanceIncludedTextYesOrNo', 'maintenanceIncluded']],
+      ['Maintenance Included', ['maintenanceIncludedTextYesOrNo', 'maintenanceIncluded']],
     ];
     for (const [label, keys] of PAIRS) {
       if (isYes(field(item, ...keys))) amenities.push(label);
