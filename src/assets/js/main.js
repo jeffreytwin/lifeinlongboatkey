@@ -437,8 +437,24 @@ function bootFull() {
       // communities) instead of the island overview.
       if (state.group) fitToGroupCluster();
       else if (applyDeepLink && deepLink.area) focusZone(deepLink.area, { duration: 0 });
-      // Deep-link: ?community=<slug> opens that community's detail panel.
-      if (focusTarget) openDetail(focusTarget);
+      // Deep-link: ?community=<slug>. Desktop opens the community's detail
+      // panel beside the map. On mobile that panel is a fullscreen overlay
+      // that would bury the map — and the link promises "see it on the
+      // MAP" — so land on the map flown to the community instead, pin
+      // highlighted, details one tap away.
+      if (focusTarget) {
+        if (MOBILE_BACK_MQ.matches) {
+          highlight(focusTarget.name);
+          focusCommunity(focusTarget, {
+            // Same framing the community embeds use: polygons read as
+            // areas — pull back to keep them in frame; condos are points.
+            zoom: focusTarget.type === 'neighborhood' ? 14.5 : 15.5,
+            duration: 0,
+          });
+        } else {
+          openDetail(focusTarget);
+        }
+      }
     },
   });
 

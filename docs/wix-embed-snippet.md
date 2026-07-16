@@ -93,6 +93,9 @@ $w.onReady(function () {
 - A `?community=` arrival counts as fresh intent: it overrides any saved
   session filters, so the community is never filtered out of its own
   deep link. An unknown/stale slug degrades to the plain full map.
+- On desktop the details panel opens alongside the map. On phones (where
+  that panel is a fullscreen overlay) the link lands on the map itself,
+  flown to the community with its pin highlighted — details one tap away.
 
 ## Featured group embed (e.g. Bay Isles)
 
