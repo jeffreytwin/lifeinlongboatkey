@@ -408,7 +408,11 @@ function bootFull() {
   // A ?group= visit is fresh intent too: on the full map the group is a
   // clearable filter (state.group), and a fresh click on the link must
   // re-apply it even if the visitor cleared it earlier in this tab.
-  const applyDeepLink = (deepLink.any || !!group) && !backForward;
+  // So is ?community= (the Wix pages' "See It On The Map" buttons and the
+  // embed CTA): the visitor must land on that community, not find it
+  // hidden behind whatever they filtered last session. An unresolvable
+  // slug leaves focusTarget null and degrades to a normal visit.
+  const applyDeepLink = (deepLink.any || !!group || !!focusTarget) && !backForward;
   const saved = applyDeepLink ? null : restoreSessionFilters();
   if (applyDeepLink) {
     if (group) state.group = { slug: groupSlug, ...group };

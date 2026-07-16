@@ -58,6 +58,42 @@ Use Wix's **HTML iframe (Embed HTML)** element and paste, replacing the slug:
   redirects, params intact), but new/updated pages should use
   `map.lifeinlongboatkey.com` directly — it skips the redirect hop.
 
+## "See It On The Map" button on the dynamic community pages
+
+The dynamic Neighborhoods & Condos pages can carry a button that jumps to
+the full map pre-focused on that community — the map opens with the pin
+highlighted, the camera flown to it, and its details panel open. The link
+target is:
+
+```
+https://map.lifeinlongboatkey.com/?community=<slug>
+```
+
+The slug is the last segment of the community page's own URL (the Wix
+item slug), so on a dynamic page it can be read straight off the address —
+no CMS field or dataset connection needed. In the page code for the
+dynamic page template (Dev Mode on):
+
+```js
+import wixLocation from 'wix-location';
+
+$w.onReady(function () {
+  // Dynamic page URL ends in the item slug, e.g. /neighborhood/aquarius-club
+  const path = wixLocation.path;
+  const slug = path[path.length - 1];
+  $w('#button4').link = `https://map.lifeinlongboatkey.com/?community=${slug}`;
+  $w('#button4').target = '_blank'; // '_self' to navigate in place instead
+});
+```
+
+- Replace `#button4` with the button's actual ID (shown in the floating
+  toolbar when the button is selected — right-click → View Properties).
+- Leave the button's Link setting in the editor as **None**; the code sets
+  it at runtime on every dynamic page from one template.
+- A `?community=` arrival counts as fresh intent: it overrides any saved
+  session filters, so the community is never filtered out of its own
+  deep link. An unknown/stale slug degrades to the plain full map.
+
 ## Featured group embed (e.g. Bay Isles)
 
 `?embed=<group-slug>` (e.g. `?embed=bay-isles`) embeds the full
