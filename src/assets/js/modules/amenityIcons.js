@@ -25,7 +25,7 @@ export const STANDARD_AMENITIES = [
   'Clubhouse',
   'Walking Paths',
   'Lifestyle Activities',
-  'Lawn Maintenance Included',
+  'Maintenance Included',
 ];
 
 export const AMENITY_ICONS = {
@@ -43,7 +43,7 @@ export const AMENITY_ICONS = {
   'Clubhouse':                 'https://static.wixstatic.com/media/d0be81_702628a4c0cb4fcfb1f3ea2513790259~mv2.png',
   'Walking Paths':             'https://static.wixstatic.com/media/d0be81_e00728427f0c47da8eed2bcb159ae24e~mv2.png',
   'Lifestyle Activities':      'https://static.wixstatic.com/media/d0be81_b1dde2a14e27418a8aeea0a59d16c896~mv2.png',
-  'Lawn Maintenance Included': 'https://static.wixstatic.com/media/d0be81_8ac323e2678f458e8a3a38bea253c260~mv2.png',
+  'Maintenance Included':      'https://static.wixstatic.com/media/d0be81_8ac323e2678f458e8a3a38bea253c260~mv2.png',
 };
 
 /**
