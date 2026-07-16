@@ -96,6 +96,11 @@ $w.onReady(function () {
 - On desktop the details panel opens alongside the map. On phones (where
   that panel is a fullscreen overlay) the link lands on the map itself,
   flown to the community with its pin highlighted — details one tap away.
+- If the map's active filters would hide the community — most commonly the
+  default **Currently for sale** toggle, when it has no active listings —
+  it still renders as a temporarily highlighted pin/polygon. The filters
+  themselves aren't changed, and counts/list stay strictly filtered; the
+  exception lapses once the visitor moves on to another community.
 
 ## Featured group embed (e.g. Bay Isles)
 

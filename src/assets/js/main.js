@@ -60,6 +60,12 @@ const group = findGroup(groupSlug);
 // the rest of the island appears — matching how the ?area= links behave.
 const workingSet = embed && group ? filterByGroup(communities, group) : communities;
 
+// A "See It On The Map" / embed arrival must find its community on the map
+// even when the active filters exclude it — most commonly the default
+// 'Currently for sale' toggle hiding a community with no active listings.
+// Mark it as a map-render exception (see withFocusException / highlight).
+if (focusTarget) state.focusException = focusTarget.name;
+
 const totalEl = document.getElementById('totalCount');
 if (totalEl) totalEl.textContent = String(workingSet.length);
 
@@ -83,6 +89,14 @@ function fitToGroupCluster(opts = {}) {
 }
 
 function highlight(name) {
+  // The focus-exception pin is temporary: once attention moves to another
+  // community (or the highlight clears — closing its panel, Clear All while
+  // it's filtered out), the exception lapses and the map returns to strictly
+  // filtered pins.
+  if (state.focusException && name !== state.focusException) {
+    state.focusException = null;
+    renderMap(getFiltered(workingSet));
+  }
   state.highlightedName = name;
   // A community is either a marker (condo / polygon-less neighborhood) or a
   // polygon — drive both; each is a no-op for the type it doesn't apply to.
@@ -256,11 +270,23 @@ function applyNarrowing() {
   apply();
 }
 
+/** The map's render list: the filtered set, plus the deep-linked focus
+ *  community while its exception is active — it renders as a (highlighted)
+ *  pin or polygon even when the filters exclude it. Map-only: the result
+ *  count and the list stay strictly filtered, and 'Currently for sale'
+ *  keeps meaning what it says for every other community. */
+function withFocusException(filtered) {
+  if (!state.focusException) return filtered;
+  if (filtered.some((c) => c.name === state.focusException)) return filtered;
+  const exception = workingSet.find((c) => c.name === state.focusException);
+  return exception ? [...filtered, exception] : filtered;
+}
+
 function apply() {
   const filtered = getFiltered(workingSet);
   const resultCount = document.getElementById('resultCount');
   if (resultCount) resultCount.textContent = String(filtered.length);
-  renderMap(filtered);
+  renderMap(withFocusException(filtered));
   renderMobileList(filtered);
 
   // Refresh filter counts — each option shows how many communities would
@@ -381,7 +407,16 @@ function wireInteractiveApp() {
   // would hide the flyTo entirely, so close it first.
   const IS_TOUCH = !(window.matchMedia && window.matchMedia('(hover: hover)').matches);
   setLocateOnMapHandler((community) => {
-    if (IS_TOUCH) closeDetail();
+    if (IS_TOUCH) {
+      // Close the fullscreen panel but keep the community highlighted —
+      // it's the flight destination, and dropping the highlight would
+      // also lapse a focus-exception pin mid-locate (closeDetail clears
+      // the highlight, which retires the exception).
+      hideDetail();
+      highlight(community.name);
+      invalidateSize();
+      settleHistory();
+    }
     if (state.view !== 'map') setView('map');
     // Let the map container remeasure from the view swap before flying.
     // Zoom near the maximum (18) so the user lands almost-fully-zoomed

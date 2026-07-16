@@ -57,6 +57,15 @@ export const state = {
   sort: 'name',
   /** @type {string|null} */
   highlightedName: null,
+  /**
+   * Name of a deep-linked (?community=) community allowed to render on the
+   * map even when the active filters exclude it — most commonly the default
+   * 'Currently for sale' toggle hiding a community with no active listings.
+   * Map-only: result counts and the list stay strictly filtered. Lapses when
+   * the highlight moves to another community (see highlight() in main.js).
+   * @type {string|null}
+   */
+  focusException: null,
   /** @type {object|null} — the community currently shown in the details panel */
   selectedCommunity: null,
 };
