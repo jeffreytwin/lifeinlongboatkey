@@ -419,10 +419,11 @@ function wireInteractiveApp() {
     }
     if (state.view !== 'map') setView('map');
     // Let the map container remeasure from the view swap before flying.
-    // Zoom near the maximum (18) so the user lands almost-fully-zoomed
-    // on the community, and give the animation a slightly longer arc
-    // since we may be traveling a greater zoom distance.
-    setTimeout(() => focusCommunity(community, { zoom: 17, duration: 850 }), 140);
+    // Same framing as the ?community= deep link: polygons read as areas —
+    // pull back to keep them in frame; condos are points, so go tighter.
+    setTimeout(() => focusCommunity(community, {
+      zoom: community.type === 'neighborhood' ? 14.5 : 15.5,
+    }), 140);
   });
 }
 
