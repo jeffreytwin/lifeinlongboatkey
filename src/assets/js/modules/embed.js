@@ -8,8 +8,8 @@
  *
  * Both are driven by URL params:
  *   ?community=<slug>   focus this community (slug = the last segment of its
- *                       pageUrl, e.g. "islander-club" from
- *                       "/neighborhood/islander-club"). `?focus=` is accepted
+ *                       pageUrl, e.g. "the-islander-club" from
+ *                       "/neighborhood/the-islander-club"). `?focus=` is accepted
  *                       as an alias.
  *   ?group=<slug>       a named cluster of communities (e.g. "bay-isles").
  *                       In an EMBED it hard-scopes the experience: only the

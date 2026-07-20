@@ -99,7 +99,7 @@ Each record in `src/data/communities.json` looks like:
 
 ```json
 {
-  "name": "Islander Club",
+  "name": "The Islander Club",
   "type": "condo",
   "subtitle": "Expansive beachfront residences",
   "shortDescription": "...",
@@ -116,7 +116,7 @@ Each record in `src/data/communities.json` looks like:
   "lat": 27.346483,
   "lng": -82.603849,
   "coordSource": "placed",
-  "pageUrl": "/neighborhood/islander-club"
+  "pageUrl": "/neighborhood/the-islander-club"
 }
 ```
 

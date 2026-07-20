@@ -12,7 +12,7 @@
  *   Tag name   : lbk-map-embed
  *   Attributes : group="bay-isles"            (featured group embed)
  *                — or —
- *                community="islander-club"    (single-community embed)
+ *                community="the-islander-club"  (single-community embed)
  *   Optional   : min-height="480" max-height override (px; default cap 10000)
  *
  * Growth is applied immediately; shrinking is delayed half a second so
