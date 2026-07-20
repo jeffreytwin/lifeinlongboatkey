@@ -27,8 +27,8 @@ the location context.) On narrow screens the embed shows a poster that
 opens the focused full app in a new tab instead.
 
 The **slug is the last segment of the community's page URL.** For example a
-community whose `pageUrl` is `/neighborhood/islander-club` has the slug
-`islander-club`. If a slug doesn't match a page URL, a slugified community
+community whose `pageUrl` is `/neighborhood/the-islander-club` has the slug
+`the-islander-club`. If a slug doesn't match a page URL, a slugified community
 name is tried as a fallback.
 
 The CTA opens `map.lifeinlongboatkey.com/?community=<slug>` in a new tab —
@@ -41,8 +41,8 @@ Use Wix's **HTML iframe (Embed HTML)** element and paste, replacing the slug:
 
 ```html
 <iframe
-  src="https://map.lifeinlongboatkey.com/?embed=1&community=islander-club"
-  title="Islander Club on the Longboat Key interactive map"
+  src="https://map.lifeinlongboatkey.com/?embed=1&community=the-islander-club"
+  title="The Islander Club on the Longboat Key interactive map"
   style="width:100%; height:480px; border:0; border-radius:12px; overflow:hidden;"
   loading="lazy"
   allowfullscreen
@@ -51,7 +51,7 @@ Use Wix's **HTML iframe (Embed HTML)** element and paste, replacing the slug:
 </iframe>
 ```
 
-- Swap `islander-club` for the slug of the community whose page you're on.
+- Swap `the-islander-club` for the slug of the community whose page you're on.
 - `height` is up to you; ~420–520px reads well in a Wix content column.
 - A `border-radius` on the iframe matches the site's rounded cards.
 - Old snippets pointing at `lifeinlongboatkey.web.app` still work (the app
@@ -135,7 +135,7 @@ resizes the iframe so the Wix page grows with the content instead.
 3. Set **Tag name** to `lbk-map-embed`.
 4. Under **Set Attributes**, add either
    `group="bay-isles"` (featured group embed) **or**
-   `community="islander-club"` (single-community embed).
+   `community="the-islander-club"` (single-community embed).
    Optional: `min-height="480"`, `max-height` override (px).
 5. Stretch the element to full section width. Its height is managed at
    runtime — it grows/shrinks as panels open and close (growth is
