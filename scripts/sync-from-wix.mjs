@@ -62,6 +62,9 @@ const WIX_NAME_OVERRIDES = {
  */
 const WIX_SKIP_NAMES = new Set([
   'Harris Bayou',
+  // Merged into Buttonwood Harbor (one polygon, one record) — skip the
+  // old Wix item so it can't re-add itself before it's deleted in Wix.
+  'Longboat Shores',
 ]);
 
 const { WIX_SITE_ID, WIX_API_KEY, WIX_COLLECTION_ID } = process.env;
