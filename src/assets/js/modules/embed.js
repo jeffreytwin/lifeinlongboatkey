@@ -65,9 +65,16 @@ function norm(s) {
   return (s || '').toLowerCase().replace(/^\/+|\/+$/g, '');
 }
 
-/** Last path segment of a pageUrl, normalized — the canonical embed slug. */
+/** Last path segment of a pageUrl, normalized — the canonical embed slug.
+ * Percent-decoded so a stored "pelican-harbour-%26-beach-club" compares
+ * equal to the decoded "&" form URLSearchParams hands us. */
 function slugFromPageUrl(pageUrl) {
-  return norm(pageUrl).split('/').pop() || '';
+  const seg = norm(pageUrl).split('/').pop() || '';
+  try {
+    return decodeURIComponent(seg);
+  } catch {
+    return seg;
+  }
 }
 
 /** Slugify a community name as a fallback join key. */
@@ -175,9 +182,24 @@ export function filterByGroup(communities, group) {
  */
 export function findCommunityBySlug(communities, slug) {
   if (!slug) return null;
+  // Decode a double-encoded arrival (literal "%26" surviving in the
+  // param) before the loose comparison.
+  let decoded = slug;
+  try {
+    decoded = decodeURIComponent(slug);
+  } catch {
+    /* keep as-is */
+  }
+  const loose = slugifyName(decoded);
   return (
     communities.find((c) => slugFromPageUrl(c.pageUrl) === slug) ||
     communities.find((c) => slugifyName(c.name) === slug) ||
+    // Punctuation-tolerant fallback: collapse everything non-alphanumeric
+    // on both sides so slugs carrying literal '&' (or other punctuation
+    // Wix allows in page URLs) still resolve, e.g.
+    // "pelican-harbour-&-beach-club" -> "pelican-harbour-beach-club".
+    communities.find((c) => slugifyName(slugFromPageUrl(c.pageUrl)) === loose) ||
+    communities.find((c) => slugifyName(c.name) === loose) ||
     null
   );
 }
