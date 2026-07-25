@@ -18,6 +18,24 @@
           + location.pathname + location.search + location.hash);
       }
     </script>
+    <!-- Google tag (gtag.js) — same GA4 property as www.lifeinlongboatkey.com,
+         so www ↔ map visits share one session (same root domain = shared
+         cookie). Armed only on the canonical host: local dev and the
+         redirecting Firebase hostnames define gtag() but never load the
+         library, so dev sessions and redirect flashes don't pollute the
+         property while gtag('event', …) calls stay safe to make anywhere. -->
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      if (location.hostname === 'map.lifeinlongboatkey.com') {
+        var ga = document.createElement('script');
+        ga.async = true;
+        ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-F4XCCCJTWW';
+        document.head.appendChild(ga);
+        gtag('js', new Date());
+        gtag('config', 'G-F4XCCCJTWW');
+      }
+    </script>
     <meta name="description" content="Explore every neighborhood and condo community on Longboat Key, FL. Filter by price, home type, bedrooms, amenities, and location on the island — then browse homes currently for sale." />
     <!-- Social link previews (Open Graph + Twitter Card). og:image must be
          an absolute URL; scrapers don't resolve relative paths. -->
