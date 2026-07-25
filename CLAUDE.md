@@ -145,6 +145,7 @@ Each record in `src/data/communities.json` looks like:
   - `FIREBASE_SERVICE_ACCOUNT` — JSON service-account key (Firebase Console → Project Settings → Service accounts → Generate new private key)
   - `MAPBOX_ACCESS_TOKEN` — public token from mapbox.com
 - **Local development:** copy `config.example.js` → `config.js` (gitignored), paste a Mapbox public token, then `npm install && npm run dev`.
+- **Analytics:** Google Analytics 4, same property as the main Wix site (Google tag `G-F4XCCCJTWW`, inline in `index.html`). The tag only arms on `map.lifeinlongboatkey.com` — local dev and the redirecting Firebase hostnames define `gtag()` but never load the library, so they can't pollute the property. Because `www.` and `map.` share the root domain, the GA cookie is shared and cross-site visits count as one session. Embed iframes fire page_views too (hostname `map.…` + `?embed=` in the URL distinguishes them in reports).
 
 ## Resolved (moved out of Open decisions)
 
