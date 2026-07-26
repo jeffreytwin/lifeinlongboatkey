@@ -341,17 +341,24 @@ function setView(view) {
   settleHistory();
 }
 
+/** Sync the static Community Type pills to state.type — needed whenever
+ *  state.type is set programmatically (session restore, ?type= deep link)
+ *  rather than by a pill click. */
+function syncTypePills() {
+  document.querySelectorAll('.type-pill').forEach((p) => {
+    const active = p.dataset.type === state.type;
+    p.classList.toggle('active', active);
+    p.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+}
+
 /** Restore session filter memory (if any) and sync the static controls
  *  (type pills + 'Currently for sale' toggle) that renderFilters doesn't
  *  own. Returns the saved snapshot so boots can restore the view too. */
 function restoreSessionFilters() {
   const saved = restoreFilterState();
   if (!saved) return null;
-  document.querySelectorAll('.type-pill').forEach((p) => {
-    const active = p.dataset.type === state.type;
-    p.classList.toggle('active', active);
-    p.setAttribute('aria-checked', active ? 'true' : 'false');
-  });
+  syncTypePills();
   document
     .getElementById('forSaleToggle')
     ?.setAttribute('aria-pressed', state.hasListingsOnly ? 'true' : 'false');
@@ -432,7 +439,7 @@ function wireInteractiveApp() {
  * Filters, list, view toggle, and the details panel.
  */
 function bootFull() {
-  // Campaign deep links (?area= / ?amenity= / ?view=) state fresh intent:
+  // Campaign deep links (?type= / ?area= / ?amenity= / ?view=) state fresh intent:
   // on a normal navigation the URL wins over session memory — clicking a
   // "South End" email button must show the South End, not whatever the
   // visitor had filtered last time. Back/forward returns (a listing click,
@@ -452,6 +459,10 @@ function bootFull() {
   const saved = applyDeepLink ? null : restoreSessionFilters();
   if (applyDeepLink) {
     if (group) state.group = { slug: groupSlug, ...group };
+    if (deepLink.type) {
+      state.type = deepLink.type;
+      syncTypePills();
+    }
     if (deepLink.area) state.locations.add(deepLink.area);
     for (const a of resolveAmenities(workingSet, deepLink.amenitySlugs)) {
       state.amenities.add(a);

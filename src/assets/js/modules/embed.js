@@ -27,6 +27,8 @@
  *                       "Website Address" embed — silently truncate.
  *
  * Campaign deep links (email buttons, social posts) — full map only:
+ *   ?type=<type>        pre-select a Community Type pill: condos /
+ *                       neighborhoods (singular forms accepted as aliases).
  *   ?area=<zone>        pre-check that Location-on-Island filter and land
  *                       the map framed on the zone's pins. Zones: north /
  *                       mid / south, with north-end / mid-key / south-end
@@ -108,6 +110,18 @@ export function getEmbedParams() {
   };
 }
 
+/** Community-type lookup for the ?type= deep link. Values map onto
+ *  state.type / the data's `type` field ("condo"|"neighborhood"); the
+ *  plural forms match the pill labels campaign authors will reach for. */
+const TYPE_ALIASES = {
+  condo: 'condo',
+  condos: 'condo',
+  condominium: 'condo',
+  condominiums: 'condo',
+  neighborhood: 'neighborhood',
+  neighborhoods: 'neighborhood',
+};
+
 /** Zone-id lookup for the ?area= deep link, aliases included. */
 const AREA_ALIASES = {
   north: 'north',
@@ -123,13 +137,15 @@ const AREA_ALIASES = {
 
 /**
  * Read the campaign deep-link params off the current URL.
- * @returns {{ area: string|null, amenitySlugs: string[],
+ * @returns {{ type: string|null, area: string|null, amenitySlugs: string[],
  *             view: string|null, any: boolean }}
- *   `area` is a canonical zone id (north/mid/south); `any` is true when the
- *   URL carries at least one deep-link param, i.e. it states fresh intent.
+ *   `type` is a canonical community type (condo/neighborhood); `area` is a
+ *   canonical zone id (north/mid/south); `any` is true when the URL carries
+ *   at least one deep-link param, i.e. it states fresh intent.
  */
 export function getDeepLinkParams() {
   const p = new URLSearchParams(window.location.search);
+  const type = TYPE_ALIASES[norm(p.get('type'))] || null;
   const area = AREA_ALIASES[norm(p.get('area'))] || null;
   const amenitySlugs = (p.get('amenity') || p.get('amenities') || '')
     .split(',')
@@ -137,7 +153,7 @@ export function getDeepLinkParams() {
     .filter(Boolean);
   const rawView = norm(p.get('view'));
   const view = rawView === 'map' || rawView === 'list' ? rawView : null;
-  return { area, amenitySlugs, view, any: !!(area || amenitySlugs.length || view) };
+  return { type, area, amenitySlugs, view, any: !!(type || area || amenitySlugs.length || view) };
 }
 
 /**
