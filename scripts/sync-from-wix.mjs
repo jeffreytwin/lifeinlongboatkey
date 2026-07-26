@@ -442,7 +442,10 @@ for (const raw of all) {
     priceRange: field(item, 'priceRange', 'Price Range'),
     sqft: field(item, 'squareFeet', 'sqft', 'Square Feet'),
     bedrooms: field(item, 'bedroomRange', 'bedrooms', 'Bedrooms'),
-    youtubeUrl: field(item, 'youtubeVideo', 'youTubeVideo', 'youtubeUrl', 'youTubeUrl', 'YouTube Video') || undefined,
+    // Always assigned (null when Wix has no value) so a video cleared in
+    // Wix is removed on the next sync instead of lingering; the null is
+    // dropped after merge to keep the JSON shape clean.
+    youtubeUrl: field(item, 'youtubeVideo', 'youTubeVideo', 'youtubeUrl', 'youTubeUrl', 'YouTube Video') || null,
     pageUrl: field(item, 'link-villages-title', 'link-houses-for-sale-dynamic-pages-title', 'pageUrl', 'slug') || undefined,
     // images / imageUrl resolved below from visualTourGallery →
     // topBackgroundImage. Assigned outside `updates` so empty results
@@ -569,6 +572,7 @@ for (const raw of all) {
     c.name = name;
   }
   Object.assign(c, updates);
+  if (c.youtubeUrl === null) delete c.youtubeUrl;
   // Re-derive zone from current lat — Wix doesn't own coords, but lat
   // could be stale if a previous run wrote one.
   c.location = zoneFromLat(c.lat) || c.location;
