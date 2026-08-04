@@ -462,6 +462,11 @@ function bootFull() {
     if (deepLink.type) {
       state.type = deepLink.type;
       syncTypePills();
+      // A condos arrival also starts with the Condominiums home type
+      // checked. Seeded state only, not a live coupling to the type pill —
+      // the visitor can uncheck it to surface the villa/townhome listings
+      // some condo communities carry.
+      if (deepLink.type === 'condo') state.homeTypes.add('Condominiums');
     }
     if (deepLink.area) state.locations.add(deepLink.area);
     for (const a of resolveAmenities(workingSet, deepLink.amenitySlugs)) {
