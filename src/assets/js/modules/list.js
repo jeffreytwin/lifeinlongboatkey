@@ -13,6 +13,7 @@ import { EXPLAINERS, openExplainer } from './explainers.js';
 import { galleryHtml, wireGallery } from './gallery.js';
 import { state } from './state.js';
 import { hasListingLevelFilters, listingMatchesActiveFilters, isLandListing } from './matches.js';
+import { track, communityParams } from './analytics.js';
 
 /** Callback passed from main.js for list-item clicks. */
 let onListItemClick = () => {};
@@ -196,7 +197,7 @@ function renderListingCard(l, baseHost) {
       // _top: navigate the page itself (and in an embed, the HOST page —
       // not the little iframe). Filter memory for the trip back is covered
       // by bfcache + the sessionStorage persistence in persist.js.
-      ? `<a class="listing-card-link" href="${escapeHtml(href)}" target="_top">${inner}</a>`
+      ? `<a class="listing-card-link" href="${escapeHtml(href)}" target="_top" data-track-price="${escapeHtml(l.priceText || '')}">${inner}</a>`
       : inner
   }</li>`;
 }
@@ -275,6 +276,10 @@ function wireListingsToggle(root, community) {
   if (!btn) return;
   btn.addEventListener('click', () => {
     listingsShowAll = !listingsShowAll;
+    track('listings_toggle', {
+      ...communityParams(community),
+      listings_expanded: listingsShowAll ? 'yes' : 'no',
+    });
     const section = root.querySelector('#detail-listings');
     if (section) section.outerHTML = renderListings(community);
     wireListingsToggle(root, community);
@@ -327,6 +332,32 @@ export function showDetail(community) {
   listingsShowAll = false;
   const el = document.getElementById('detailContent');
   if (!el) return;
+
+  // Outbound-click tracking — one delegated listener on the (stable)
+  // detail-content node covers the listing cards and the community-page
+  // CTAs across every re-render (the listings toggle and the live filter
+  // refresh both swap section HTML in place). gtag's beacon transport
+  // survives the target=_top navigation.
+  if (!el.dataset.analyticsWired) {
+    el.dataset.analyticsWired = '1';
+    el.addEventListener('click', (e) => {
+      const c = state.selectedCommunity;
+      if (!c) return;
+      const listing = e.target.closest('.listing-card-link');
+      if (listing) {
+        track('listing_click', {
+          ...communityParams(c),
+          listing_price: listing.dataset.trackPrice || null,
+        });
+        return;
+      }
+      // Anchors only — the "View Homes for Sale" scroll control is a
+      // <button class="detail-link"> and shouldn't count as an exit.
+      if (e.target.closest('a.detail-link')) {
+        track('community_page_click', communityParams(c));
+      }
+    });
+  }
 
   // Waterfront + 55+ are classification badges, rendered separately from
   // amenities (which get the icon grid).

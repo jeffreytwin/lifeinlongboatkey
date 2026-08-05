@@ -18,6 +18,8 @@
 
 import { escapeHtml, communityPhotoUrl, wixImageUrl, IMG_SIZES } from './utils.js';
 import { getHostViewport } from './embed-height.js';
+import { state } from './state.js';
+import { track, communityParams } from './analytics.js';
 
 const CAN_HOVER =
   typeof window !== 'undefined' &&
@@ -109,6 +111,19 @@ export function wireGallery(root) {
   const slides = gallery.querySelectorAll('.gallery-slide');
   const dots = gallery.querySelectorAll('.gallery-dot');
 
+  // One engagement event per rendered gallery — "did the visitor browse
+  // the photos at all, and how" — rather than an event per arrow click.
+  let engagementTracked = false;
+  const trackEngagement = (action) => {
+    if (engagementTracked) return;
+    engagementTracked = true;
+    const c = state.selectedCommunity;
+    track('gallery_interaction', {
+      gallery_action: action,
+      ...(c ? communityParams(c) : {}),
+    });
+  };
+
   const go = (i) => {
     current = (i + count) % count;
     slides.forEach((s, idx) => s.classList.toggle('is-active', idx === current));
@@ -120,15 +135,18 @@ export function wireGallery(root) {
 
   gallery.querySelector('.gallery-arrow-prev')?.addEventListener('click', (e) => {
     e.stopPropagation();
+    trackEngagement('arrow');
     go(current - 1);
   });
   gallery.querySelector('.gallery-arrow-next')?.addEventListener('click', (e) => {
     e.stopPropagation();
+    trackEngagement('arrow');
     go(current + 1);
   });
   dots.forEach((dot) =>
     dot.addEventListener('click', (e) => {
       e.stopPropagation();
+      trackEngagement('dot');
       go(Number(dot.dataset.idx));
     }),
   );
@@ -158,6 +176,7 @@ export function wireGallery(root) {
       // Only treat mostly-horizontal gestures as swipes.
       if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) return;
       suppressClick = true;
+      trackEngagement('swipe');
       if (dx < 0) go(current + 1);
       else go(current - 1);
     },
@@ -175,6 +194,7 @@ export function wireGallery(root) {
     // Arrows and dots already stopPropagation, so this click only
     // fires on the slide area itself.
     if (e.target.closest('.gallery-arrow, .gallery-dot')) return;
+    trackEngagement('lightbox');
     const images = [...gallery.querySelectorAll('.gallery-slide img')]
       .map((img) => ({
         hero: img.getAttribute('src'),

@@ -16,6 +16,7 @@
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { locationLabel, escapeHtml, communityThumbUrl } from './utils.js';
+import { track } from './analytics.js';
 
 const SOURCE_ID = 'communities';
 const CLUSTER_LAYER_ID = 'clusters';
@@ -238,6 +239,10 @@ class BasemapToggleControl {
     c.addEventListener('click', (e) => {
       const btn = e.target.closest('.basemap-btn');
       if (!btn) return;
+      // Only actual switches — re-clicking the active side is a no-op.
+      if (!btn.classList.contains('is-active')) {
+        track('basemap_toggle', { basemap: btn.dataset.style });
+      }
       setBasemap(btn.dataset.style);
       c.querySelectorAll('.basemap-btn').forEach((b) =>
         b.classList.toggle('is-active', b === btn),
@@ -317,10 +322,10 @@ function wireNeighborhoodPolygonInteractions(communities) {
     const c = communities.find((x) => x.name === name);
     if (!c) return;
     if (!canHover) {
-      handleTouchSelect(c, toClientXY(e.originalEvent));
+      handleTouchSelect(c, toClientXY(e.originalEvent), 'polygon');
     } else {
       hidePreview();
-      onSelect(c);
+      onSelect(c, 'polygon');
     }
   });
 
@@ -521,6 +526,7 @@ function buildZoneBubble(zone) {
     <div class="zone-bubble-label">${zone.label}</div>`;
   el.addEventListener('click', (e) => {
     e.stopPropagation();
+    track('zone_click', { island_zone: zone.id });
     focusZone(zone.id);
   });
   return new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([zone.lng, zone.lat]);
@@ -567,10 +573,10 @@ function buildMarker(c) {
   el.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!canHover) {
-      handleTouchSelect(c, { clientX: e.clientX, clientY: e.clientY });
+      handleTouchSelect(c, { clientX: e.clientX, clientY: e.clientY }, 'pin');
     } else {
       hidePreview();
-      onSelect(c);
+      onSelect(c, 'pin');
     }
   });
   if (canHover) {
@@ -641,10 +647,10 @@ function hideHoverCard() {
 }
 
 /** Touch two-tap dispatcher: first tap shows preview, second opens details. */
-function handleTouchSelect(c, xy) {
+function handleTouchSelect(c, xy, source) {
   if (previewedName === c.name) {
     hidePreview();
-    onSelect(c);
+    onSelect(c, source);
     return;
   }
   previewedName = c.name;
@@ -679,7 +685,7 @@ function wireHoverCardTap(communities) {
     if (!previewedName) return;
     const c = communities.find((x) => x.name === previewedName);
     hidePreview();
-    if (c) onSelect(c);
+    if (c) onSelect(c, 'preview_card');
   });
 }
 

@@ -10,6 +10,7 @@
 import { state, resetFilters } from './state.js';
 import { countsBy, escapeHtml } from './utils.js';
 import { matches, isLandListing } from './matches.js';
+import { track } from './analytics.js';
 
 export const LOCATION_OPTIONS = [
   { key: 'north', label: 'North End' },
@@ -142,8 +143,9 @@ export const BEDROOM_OPTIONS = ['1', '2', '3', '4', '5'];
  * @param {Record<string, number>} counts
  * @param {Set<string>} stateSet
  * @param {() => void} onChange
+ * @param {string} trackGroup  filter_group value for the GA event
  */
-function renderChecklist(containerId, options, counts, stateSet, onChange) {
+function renderChecklist(containerId, options, counts, stateSet, onChange, trackGroup) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = '';
@@ -162,7 +164,14 @@ function renderChecklist(containerId, options, counts, stateSet, onChange) {
     input.addEventListener('change', () => {
       if (input.checked) stateSet.add(key);
       else stateSet.delete(key);
+      // Track after onChange so the event's result_count context reflects
+      // this change (apply() runs synchronously inside it).
       onChange();
+      track('filter_change', {
+        filter_group: trackGroup,
+        filter_value: key,
+        filter_action: input.checked ? 'add' : 'remove',
+      });
     });
     el.appendChild(item);
   });
@@ -177,7 +186,7 @@ function renderChecklist(containerId, options, counts, stateSet, onChange) {
  * @param {Set<string>} stateSet
  * @param {() => void} onChange
  */
-function renderChips(containerId, options, counts, stateSet, onChange, labelFn) {
+function renderChips(containerId, options, counts, stateSet, onChange, labelFn, trackGroup) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = '';
@@ -198,6 +207,11 @@ function renderChips(containerId, options, counts, stateSet, onChange, labelFn) 
       else stateSet.delete(opt);
       btn.classList.toggle('active', nowActive);
       onChange();
+      track('filter_change', {
+        filter_group: trackGroup,
+        filter_value: opt,
+        filter_action: nowActive ? 'add' : 'remove',
+      });
     });
     el.appendChild(btn);
   });
@@ -226,6 +240,11 @@ function renderPriceChips(counts, onChange) {
       else state.priceTiers.delete(tier);
       btn.classList.toggle('active', nowActive);
       onChange();
+      track('filter_change', {
+        filter_group: 'price',
+        filter_value: tier,
+        filter_action: nowActive ? 'add' : 'remove',
+      });
     });
     el.appendChild(btn);
   });
@@ -262,8 +281,14 @@ function renderScopeChip(onChange) {
         title="Browse all of Longboat Key">✕</button>
     </div>`;
   host.querySelector('.scope-chip-x').addEventListener('click', () => {
+    const slug = state.group?.slug;
     state.group = null;
     onChange();
+    track('filter_change', {
+      filter_group: 'group',
+      filter_value: slug,
+      filter_action: 'remove',
+    });
   });
 }
 
@@ -312,11 +337,11 @@ export function renderFilters(communities, onChange) {
   // waterfront options (Gulf-front/Bay-front) into a single checklist. Each
   // option internally toggles its matching state Set.
   renderLocationFilter(locationCounts, waterfrontCounts, onChange);
-  renderChecklist('homeTypeList', homeTypeOptions, homeTypeCounts, state.homeTypes, onChange);
-  renderChecklist('amenityList', amenityOptions, amenityCounts, state.amenities, onChange);
+  renderChecklist('homeTypeList', homeTypeOptions, homeTypeCounts, state.homeTypes, onChange, 'home_type');
+  renderChecklist('amenityList', amenityOptions, amenityCounts, state.amenities, onChange, 'amenity');
   renderPriceChips(priceTierCounts, onChange);
   renderChips('bedroomList', BEDROOM_OPTIONS, bedCounts, state.bedrooms, onChange,
-    (o) => (o === '5' ? '5+' : o));
+    (o) => (o === '5' ? '5+' : o), 'bedrooms');
 }
 
 function renderLocationFilter(locationCounts, waterfrontCounts, onChange) {
@@ -329,21 +354,24 @@ function renderLocationFilter(locationCounts, waterfrontCounts, onChange) {
       label: opt.label,
       count: locationCounts[opt.key] || 0,
       set: state.locations,
+      group: 'island_zone',
     })),
     {
       key: 'Gulf-front',
       label: 'Gulf-front',
       count: waterfrontCounts['Gulf-front'] || 0,
       set: state.waterfronts,
+      group: 'waterfront',
     },
     {
       key: 'Bay-front',
       label: 'Bay-front',
       count: waterfrontCounts['Bay-front'] || 0,
       set: state.waterfronts,
+      group: 'waterfront',
     },
   ];
-  items.forEach(({ key, label, count, set }) => {
+  items.forEach(({ key, label, count, set, group }) => {
     const item = document.createElement('label');
     item.className = 'checklist-item' + (count === 0 ? ' is-zero' : '');
     item.innerHTML = `
@@ -356,6 +384,11 @@ function renderLocationFilter(locationCounts, waterfrontCounts, onChange) {
       if (input.checked) set.add(key);
       else set.delete(key);
       onChange();
+      track('filter_change', {
+        filter_group: group,
+        filter_value: key,
+        filter_action: input.checked ? 'add' : 'remove',
+      });
     });
     el.appendChild(item);
   });
@@ -380,6 +413,11 @@ export function setupStaticControls(communities, { apply, applyNarrowing, setLay
       pill.setAttribute('aria-checked', 'true');
       state.type = pill.dataset.type;
       applyNarrowing();
+      track('filter_change', {
+        filter_group: 'community_type',
+        filter_value: state.type,
+        filter_action: 'select',
+      });
     });
   });
 
@@ -389,6 +427,11 @@ export function setupStaticControls(communities, { apply, applyNarrowing, setLay
     state.hasListingsOnly = !state.hasListingsOnly;
     forSale.setAttribute('aria-pressed', state.hasListingsOnly ? 'true' : 'false');
     apply();
+    track('filter_change', {
+      filter_group: 'for_sale',
+      filter_value: state.hasListingsOnly ? 'on' : 'off',
+      filter_action: 'toggle',
+    });
   });
 
   // Clear all — bound to both the sidebar-header "Clear All" (desktop) and
@@ -406,6 +449,7 @@ export function setupStaticControls(communities, { apply, applyNarrowing, setLay
     // doesn't flip (apply() without narrowing).
     renderFilters(communities, applyNarrowing);
     apply();
+    track('clear_all');
   };
   document.getElementById('clearBtn')?.addEventListener('click', clearAll);
   document.getElementById('filtersClear')?.addEventListener('click', clearAll);
