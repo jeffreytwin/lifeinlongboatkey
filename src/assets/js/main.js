@@ -46,6 +46,7 @@ import {
   reportEmbedHeight,
 } from './modules/embed-height.js';
 import { saveFilterState, restoreFilterState } from './modules/persist.js';
+import { track, setAnalyticsContext, communityParams } from './modules/analytics.js';
 
 const communities = getCommunities();
 const { embed, communitySlug, groupSlug } = getEmbedParams();
@@ -65,6 +66,18 @@ const workingSet = embed && group ? filterByGroup(communities, group) : communit
 // 'Currently for sale' toggle hiding a community with no active listings.
 // Mark it as a map-render exception (see withFocusException / highlight).
 if (focusTarget) state.focusException = focusTarget.name;
+
+// Every GA event carries the surface it came from, so reports can split
+// the standalone map from the Wix embeds without URL gymnastics.
+setAnalyticsContext({
+  app_surface: embed
+    ? group
+      ? 'embed_group'
+      : focusTarget
+        ? 'embed_community'
+        : 'embed'
+    : 'full',
+});
 
 const totalEl = document.getElementById('totalCount');
 if (totalEl) totalEl.textContent = String(workingSet.length);
@@ -235,8 +248,13 @@ window.addEventListener('popstate', (e) => {
 
 /**
  * Open the details panel for a community and highlight its pin.
+ * `source` says which surface the open came from (pin / polygon /
+ * preview_card / list / deep_link) — user gestures only; history
+ * restores and the community embed's auto-open go through showDetail
+ * directly and stay untracked.
  */
-function openDetail(community) {
+function openDetail(community, source = 'map') {
+  track('community_view', { ...communityParams(community), select_source: source });
   highlight(community.name);
   showDetail(community);
   focusCommunity(community);
@@ -282,10 +300,35 @@ function withFocusException(filtered) {
   return exception ? [...filtered, exception] : filtered;
 }
 
+/** Compact "which filters are on" string for the zero_results event —
+ *  track() clamps it to GA4's 100-char param limit. */
+function activeFilterSummary() {
+  const parts = [];
+  if (state.group) parts.push(`group:${state.group.slug}`);
+  if (state.type !== 'all') parts.push(`type:${state.type}`);
+  if (state.priceTiers.size) parts.push(`price:${[...state.priceTiers].join(',')}`);
+  if (state.homeTypes.size) parts.push(`home:${[...state.homeTypes].join(',')}`);
+  if (state.bedrooms.size) parts.push(`beds:${[...state.bedrooms].join(',')}`);
+  if (state.amenities.size) parts.push(`amenity:${[...state.amenities].join(',')}`);
+  if (state.locations.size) parts.push(`zone:${[...state.locations].join(',')}`);
+  if (state.waterfronts.size) parts.push(`water:${[...state.waterfronts].join(',')}`);
+  if (!state.hasListingsOnly) parts.push('forsale:off');
+  return parts.join('|');
+}
+
+let wasZeroResults = false;
+
 function apply() {
   const filtered = getFiltered(workingSet);
   const resultCount = document.getElementById('resultCount');
   if (resultCount) resultCount.textContent = String(filtered.length);
+  setAnalyticsContext({ result_count: filtered.length });
+  // Fired once per transition into an empty result set — the clearest
+  // "stuck" signal, tagged with the filter combo that caused it.
+  if (filtered.length === 0 && !wasZeroResults) {
+    track('zero_results', { active_filters: activeFilterSummary() });
+  }
+  wasZeroResults = filtered.length === 0;
   renderMap(withFocusException(filtered));
   renderMobileList(filtered);
 
@@ -389,10 +432,12 @@ function wireInteractiveApp() {
   // Filter drawer: open the full-screen overlay; close via Save or the
   // browser back button (which dismisses in place, without the list jump).
   document.getElementById('filtersToggle')?.addEventListener('click', () => {
+    track('filter_drawer_open');
     document.body.classList.add('filters-open');
     settleHistory();
   });
   document.getElementById('filtersSave')?.addEventListener('click', () => {
+    track('filter_drawer_save');
     // Save ADVANCES to the results rather than dismissing the drawer, so
     // it pushes a new entry — back from the list reopens the drawer.
     forceAdvance = true;
@@ -402,10 +447,17 @@ function wireInteractiveApp() {
     setView('list');
   });
 
-  // View toggle (Map | List).
-  document.getElementById('viewMapBtn')?.addEventListener('click', () => setView('map'));
-  document.getElementById('viewListBtn')?.addEventListener('click', () => setView('list'));
-  setListItemClickHandler(openDetail);
+  // View toggle (Map | List). Tracked here — not in setView — so
+  // programmatic switches (boot, Save, history restores) stay silent.
+  document.getElementById('viewMapBtn')?.addEventListener('click', () => {
+    if (state.view !== 'map') track('view_toggle', { view_mode: 'map' });
+    setView('map');
+  });
+  document.getElementById('viewListBtn')?.addEventListener('click', () => {
+    if (state.view !== 'list') track('view_toggle', { view_mode: 'list' });
+    setView('list');
+  });
+  setListItemClickHandler((c) => openDetail(c, 'list'));
 
   // Clicking the reference map in the details panel flies the big map
   // to that community's coordinates. On desktop the side-column detail
@@ -414,6 +466,7 @@ function wireInteractiveApp() {
   // would hide the flyTo entirely, so close it first.
   const IS_TOUCH = !(window.matchMedia && window.matchMedia('(hover: hover)').matches);
   setLocateOnMapHandler((community) => {
+    track('locate_on_map', communityParams(community));
     if (IS_TOUCH) {
       // Close the fullscreen panel but keep the community highlighted —
       // it's the flight destination, and dropping the highlight would
@@ -480,7 +533,7 @@ function bootFull() {
   wireInteractiveApp();
 
   initMap(workingSet, {
-    onSelect: openDetail,
+    onSelect: (c, source) => openDetail(c, source || 'map'),
     neighborhoodPolygons: getNeighborhoodPolygons(),
     onReady: () => {
       // A group arrival frames its cluster. Zone bubbles stay enabled —
@@ -496,6 +549,12 @@ function bootFull() {
       // highlighted, details one tap away.
       if (focusTarget) {
         if (MOBILE_BACK_MQ.matches) {
+          // No panel opens here, but the arrival is still a deliberate
+          // "See It On The Map" click for this community — record it.
+          track('community_view', {
+            ...communityParams(focusTarget),
+            select_source: 'deep_link',
+          });
           highlight(focusTarget.name);
           focusCommunity(focusTarget, {
             // Same framing the community embeds use: polygons read as
@@ -504,7 +563,7 @@ function bootFull() {
             duration: 0,
           });
         } else {
-          openDetail(focusTarget);
+          openDetail(focusTarget, 'deep_link');
         }
       }
     },
@@ -555,7 +614,7 @@ function bootEmbedApp() {
   wireInteractiveApp();
 
   initMap(workingSet, {
-    onSelect: openDetail,
+    onSelect: (c, source) => openDetail(c, source || 'map'),
     neighborhoodPolygons: getNeighborhoodPolygons(),
     // Group embeds suppress the island-wide zone bubbles (no point
     // collapsing a small cluster); island-wide embeds keep them.
@@ -566,7 +625,7 @@ function bootEmbedApp() {
       if (group) {
         fitToCommunities(workingSet);
         // Honor a community deep-link inside the group if one was passed.
-        if (focusTarget) openDetail(focusTarget);
+        if (focusTarget) openDetail(focusTarget, 'deep_link');
       } else if (focusTarget) {
         // The page's own community: focus tight and open its panel.
         // (openDetail's own flyTo would land at a looser zoom.)
@@ -608,6 +667,7 @@ function bootEmbedApp() {
  */
 function showEmbedPoster() {
   document.documentElement.classList.add('embed-poster');
+  setAnalyticsContext({ app_surface: 'embed_poster' });
   // The poster has no natural height (the image fills whatever it gets, at
   // 100vh) — give an auto-height host a pleasing portrait proportion
   // derived from the frame's width. Width-driven, so no resize feedback.
@@ -622,6 +682,9 @@ function showEmbedPoster() {
   const cta = poster.querySelector('.embed-poster-cta');
   if (cta) cta.textContent = `Find your home in ${label}`;
   poster.setAttribute('aria-label', `Find your home in ${label}`);
+  // The tap opens a new tab (target=_blank); gtag's beacon transport
+  // survives the navigation.
+  poster.addEventListener('click', () => track('poster_click', { poster_target: label }));
   const img = staticMapForGroup(
     group ? workingSet : focusTarget ? [focusTarget] : workingSet,
   );
