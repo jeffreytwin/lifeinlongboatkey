@@ -1,10 +1,7 @@
-# PRE-LAUNCH LOCKOUT — remove before submitting to search engines.
-# Blocks all crawling of the map while the site is in final checks.
-#
-# At launch, replace this file's rules with the open version:
-#   User-agent: *
-#   Allow: /
-# (Crawling must be allowed at launch so crawlers can see the page-level
-# noindex on the embed variants — robots.txt blocking would hide it.)
+# Crawling is open. The embed iframe variants (?embed=…) are kept out of
+# the index by a page-level noindex meta (injected in index.html), which
+# crawlers can only see because crawling is allowed here — do not add a
+# Disallow rule, or the noindex becomes invisible and the embeds can
+# index anyway.
 User-agent: *
-Disallow: /
+Allow: /
